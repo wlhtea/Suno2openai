@@ -1,0 +1,2 @@
+# Suno2openai
+基于SunoSongsCreator逆向工程进行优化，以openai格式调用suno api，并将cookie保存为数据库，实现cookie池调用
