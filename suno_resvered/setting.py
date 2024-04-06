@@ -1,1 +1,0 @@
-DATABASE_URI = 'mysql+pymysql://root:12345678@127.0.0.1/sunoapi'
