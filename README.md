@@ -41,6 +41,8 @@ CREATE DATABASE IF NOT EXISTS WSunoAPI
 
 **补充内容**
 打开update_cookie_to_sql.py并将cookie填入cookies中
+![image](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+
 ```
 cookies = \
     ['cookie1','cookie2']
