@@ -22,7 +22,7 @@ git clone https://github.com/wlhtea/Suno2openai.git
 ```
 
 # docker-compose
-## **修改env.example为.env***
+## **修改env.example为.env**
 ## 进入项目文件
 ```
 cd ./Suno2openai
