@@ -39,6 +39,13 @@ CREATE DATABASE IF NOT EXISTS WSunoAPI
                                   user='root', password='12345678')
 ```
 
+**补充内容**
+打开update_cookie_to_sql.py并将cookie填入cookies中
+```
+cookies = \
+    ['cookie1','cookie2']
+```
+
 ## 运行docker
 - 安全组：这里会打开8000端口，请注意开放该端口
 - 证书问题：其次如果要接入newapi和chat-next-web这类项目，如果你部署这些项目是https，那么这个项目的反代网址应该也是https，否则这些项目会拒绝http服务
