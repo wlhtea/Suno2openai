@@ -9,7 +9,7 @@ async def create_database_and_table():
     cursor = await conn.cursor()
 
     # Create a new database 'SunoAPI' (if it doesn't exist)
-    await cursor.execute("CREATE DATABASE IF NOT EXISTS WSunoAPI")
+    # await cursor.execute("CREATE DATABASE IF NOT EXISTS WSunoAPI")
 
     # Select the newly created database
     await cursor.execute("USE WSunoAPI")
