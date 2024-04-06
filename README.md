@@ -33,6 +33,7 @@ CREATE DATABASE IF NOT EXISTS WSunoAPI
 ```
 
 然后将root密码填入init_sql.py文件中对应的位置（一般是root，如果你有自己的名字请自行修改）
+远程数据库把数据库权限设置为ip访问，填入项目ip地址，其他的照填即可。
 ```
     conn = await aiomysql.connect(host='127.0.0.1', port=3306,
                                   user='root', password='12345678')
@@ -58,3 +59,9 @@ uvicorn main:app
 # 接入new-api(one-api)
 只要在渠道中的代理填写项目地址即可，也就是http://(服务器IP):8000，建议用https和域名进行填入代理地址
 ![image](https://github.com/wlhtea/Suno2openai/assets/115779315/0b4d3741-b8d4-4aa8-9337-86d85868ed0b)
+
+# 效果
+![chat-next-web效果图](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
+
+该项目如果对你有帮助请给我点一个star吧！如果没有帮助也要给我点个star
+项目可能存在一些不足的地方和很大的进步空间！希望各位有能力和想法的小伙伴可以支持一下这个项目，万分感谢！
