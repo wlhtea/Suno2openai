@@ -40,9 +40,8 @@ cd . /Suno2openai
 ```
 **Additional content**
 Open update_cookie_to_sql.py and fill the cookie with cookies
-! [location of cookie](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+![location of cookie](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
 
-ðŸ "ðŸ "ðŸ "ðŸ "ðŸ "ðŸ "ñ
 cookies = \
     ['cookie1','cookie2']
 ```
@@ -62,10 +61,10 @@ docker compose build && docker compose up
 
 # Access to new-api (one-api)
 As long as the agent in the channel to fill in the project address can be, that is, http:// (server IP):8000, it is recommended to use https and domain name to fill in the agent address
-! [image](https://github.com/wlhtea/Suno2openai/assets/115779315/0b4d3741-b8d4-4aa8-9337-86d85868ed0b)
+![image](https://github.com/wlhtea/Suno2openai/assets/115779315/0b4d3741-b8d4-4aa8-9337-86d85868ed0b)
 
 # Effect
-! [chat-next-web effect image](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
+![chat-next-web effect image](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
 
 
 ## If there are bosses willing to accept me, a three-book pup with one more than a two-book, and two more than a one-book, to do an internship, you can send me an email.
