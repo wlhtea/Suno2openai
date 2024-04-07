@@ -104,7 +104,7 @@ async def generate_data(chat_user_message):
         _return_prompt = False
         _return_image_url = False
         _return_video_url = False
-        db_manager = DatabaseManager(SQL_IP, SQL_dk, SQL_name, SQL_password, SQL_name)
+        db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
         await db_manager.create_pool()
         cookie = await db_manager.get_non_working_cookie()
         print(cookie)

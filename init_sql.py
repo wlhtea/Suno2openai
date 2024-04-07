@@ -15,15 +15,15 @@ SQL_dk = os.getenv('SQL_dk')
 
 async def create_database_and_table():
     # Connect to the MySQL Server
-    conn = await aiomysql.connect(host=SQL_IP, port=SQL_dk,
+    conn = await aiomysql.connect(host=SQL_IP, port=int(SQL_dk),
                                   user=SQL_name, password=SQL_password)
     cursor = await conn.cursor()
 
     # Create a new database 'SunoAPI' (if it doesn't exist)
-    await cursor.execute("CREATE DATABASE IF NOT EXISTS WSunoAPI")
+    # await cursor.execute("CREATE DATABASE IF NOT EXISTS WSunoAPI")
 
     # Select the newly created database
-    # await cursor.execute("USE WSunoAPI")
+    await cursor.execute(f"USE {SQL_name}")
 
     # Create a new table 'cookies' (if it doesn't exist)
     await cursor.execute("""

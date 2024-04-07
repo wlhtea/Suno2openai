@@ -23,7 +23,7 @@ async def fetch_limit_left(cookie,db_manager):
         print(cookie)
 
 async def main():
-    db_manager = DatabaseManager(SQL_IP, SQL_dk, SQL_name, SQL_password, SQL_name)
+    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
     await db_manager.create_pool()
     tasks = [fetch_limit_left(cookie,db_manager) for cookie in cookies if cookie]
     await asyncio.gather(*tasks)
