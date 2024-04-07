@@ -91,15 +91,15 @@ class DatabaseManager:
                     return result[0]
                 else:
                     return None
-async def main():
-    db_manager = DatabaseManager('127.0.0.1', 3306, 'root', '12345678', 'WSunoAPI')
-    await db_manager.create_pool()
-    # await db_manager.create_database_and_table()
-    await db_manager.insert_cookie('example_cookie', 1, True)
-    await db_manager.update_cookie_count('example_cookie', 5)
-    await db_manager.update_cookie_working('example_cookie', False)
-    cookies = await db_manager.query_cookies()
-    cookie = await db_manager.get_non_working_cookie()
+# async def main():
+#     db_manager = DatabaseManager('127.0.0.1', 3306, 'root', '12345678', 'WSunoAPI')
+#     await db_manager.create_pool()
+#     # await db_manager.create_database_and_table()
+#     await db_manager.insert_cookie('example_cookie', 1, True)
+#     await db_manager.update_cookie_count('example_cookie', 5)
+#     await db_manager.update_cookie_working('example_cookie', False)
+#     cookies = await db_manager.query_cookies()
+#     cookie = await db_manager.get_non_working_cookie()
 #
 # if __name__ == "__main__":
 #     asyncio.run(main())

@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
 import json
+import os
+
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Cookie
 from fastapi.middleware.cors import CORSMiddleware
 from utils import generate_music, get_feed, generate_lyrics, get_lyrics
@@ -10,6 +12,8 @@ from utils import generate_music,get_feed
 import asyncio
 from suno.suno import SongsGen
 from starlette.responses import StreamingResponse
+
+
 
 app = FastAPI()
 
@@ -78,7 +82,12 @@ import random
 import string
 import time
 from sql_uilts import DatabaseManager
-
+BASE_URL = os.getenv('BASE_URL')
+SESSION_ID = os.getenv('SESSION_ID')
+SQL_name = os.getenv('SQL_name')
+SQL_password = os.getenv('SQL_password')
+SQL_IP = os.getenv('SQL_IP')
+SQL_dk = os.getenv('SQL_dk')
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
@@ -95,7 +104,7 @@ async def generate_data(chat_user_message):
         _return_prompt = False
         _return_image_url = False
         _return_video_url = False
-        db_manager = DatabaseManager('127.0.0.1', 3306, 'root', '12345678', 'WSunoAPI')
+        db_manager = DatabaseManager(SQL_IP, SQL_dk, SQL_name, SQL_password, SQL_name)
         await db_manager.create_pool()
         cookie = await db_manager.get_non_working_cookie()
         print(cookie)
