@@ -15,14 +15,12 @@
 - 有机会写一个对标官网的前端页面
 - 如果有什么建议可以向我提出 邮箱:1544007699@qq.com
 
-# 如何使用Suno2openai
-如果其中有哪一步卡住了，请自行gpt或者搜索相关解决方案！
+# docker-compose（更新时间：2024/4/7:18点18分）
+
 ## 克隆项目到服务器
 ```
 git clone https://github.com/wlhtea/Suno2openai.git
 ```
-
-# docker-compose
 
 ## 创建数据库
 - 创建一个数据库名字随意，密码记住了就好
