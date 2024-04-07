@@ -1,4 +1,4 @@
-Chinese [English](https://github.com/wlhtea/Suno2openai/blob/main/README_en.md)
+[Chinese](https://github.com/wlhtea/Suno2openai/blob/main/README.md) English
 
 # Suno2openai
 This is a project based on the combination of [SunoSongsCretor](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API). I integrated and standardized the interface to openai format.
