@@ -18,7 +18,7 @@ This is a project based on the combination of [SunoSongsCretor](https://github.c
 # docker-compose deployment (updated 2024/4/7:18:18)
 
 ## Clone project to server
-``
+```
 git clone https://github.com/wlhtea/Suno2openai.git
 ```
 
@@ -26,7 +26,7 @@ git clone https://github.com/wlhtea/Suno2openai.git
 - Create a database with whatever name you want and a password you want to remember.
 
 ## **Modify env.example to .env, and fill in the content according to the format....
-``
+```
 BASE_URL=https://studio-api.suno.ai
 SESSION_ID=cookie (don't bother with this, don't even delete this sentence)
 SQL_name=database name
@@ -50,7 +50,7 @@ cookies = \
 - Security group: here it will open port 8000, please take care to open this port
 - Certificate issues: secondly if you want to access projects like newapi and chat-next-web, if you deploy these projects as https, then the reverse generation URL of this project should be https as well, otherwise these projects will reject http services
 
-``
+```
 docker compose build && docker compose up
 ```
 
