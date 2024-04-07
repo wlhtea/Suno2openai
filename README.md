@@ -1,9 +1,5 @@
 中文   [English](https://github.com/wlhtea/Suno2openai/blob/main/README_en.md)
 
--- 稍等正在创建docker --
--- Waiting for the docker to be created. --
-
-
 # Suno2openai
 这是一个基于[SunoSongsCretor](https://github.com/yihong0618/SunoSongsCreator)和[Suno-API](https://github.com/SunoAI-API/Suno-API)两个项目结合而成，我进行整合和接口标准化为openai格式
 
@@ -27,28 +23,28 @@ git clone https://github.com/wlhtea/Suno2openai.git
 ```
 
 # docker-compose
-## **修改env.example为.env**
+
+## 创建数据库
+创建一个数据库
+
+## **修改env.example为.env,并按照格式进行填写内容**
+```
+BASE_URL=https://studio-api.suno.ai
+SESSION_ID=cookie（不需要理会这个，甚至这句话都不用删）
+SQL_name=数据库名称
+SQL_password=数据库密码
+SQL_IP=数据库主机IP
+SQL_dk=数据库主机IP的暴露端口（3306）
+```
 ## 进入项目文件
 ```
 cd ./Suno2openai
 ```
 
-## 创建数据库
-创建一个名字为WSunoAPI的数据库
-```mysql
-CREATE DATABASE IF NOT EXISTS WSunoAPI
-```
-
-然后将root密码填入init_sql.py文件中对应的位置（一般是root，如果你有自己的名字请自行修改）
-远程数据库把数据库权限设置为ip访问，填入项目ip地址，其他的照填即可。
-```
-    conn = await aiomysql.connect(host='127.0.0.1', port=3306,
-                                  user='root', password='12345678')
-```
 
 **补充内容**
 打开update_cookie_to_sql.py并将cookie填入cookies中
-![image](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+![cookie的位置](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
 
 ```
 cookies = \
@@ -63,14 +59,10 @@ cookies = \
 docker compose build && docker compose up
 ```
 
-# 本地部署
+# 由于不知道什么愿因 在chat-next-web直接填入部署的网址，是可以对sunoapi进行调用 但是经过new-api就不行了 前几天也会但是当时 我改了一个位置就好了 现在不记得了又得去看new-api源码了
 
-一步一步来 我比较懒写一起了
-```
-cd ./Suno2openai
-pip3 install -r requirements.txt
-uvicorn main:app 
-```
+# 本地部署
+（这一段先这样 本地二开的 其实和docker-compose一样的）
 
 # 接入new-api(one-api)
 只要在渠道中的代理填写项目地址即可，也就是http://(服务器IP):8000，建议用https和域名进行填入代理地址
