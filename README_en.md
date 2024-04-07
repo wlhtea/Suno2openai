@@ -42,6 +42,7 @@ cd . /Suno2openai
 Open update_cookie_to_sql.py and fill the cookie with cookies
 ![location of cookie](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
 
+```
 cookies = \
     ['cookie1','cookie2']
 ```
