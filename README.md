@@ -25,7 +25,7 @@ git clone https://github.com/wlhtea/Suno2openai.git
 # docker-compose
 
 ## 创建数据库
-创建一个数据库
+- 创建一个数据库名字随意，密码记住了就好
 
 ## **修改env.example为.env,并按照格式进行填写内容**
 ```
