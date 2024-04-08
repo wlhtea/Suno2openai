@@ -4,6 +4,8 @@ import os
 
 from fastapi import FastAPI, HTTPException, status, Depends, Request, Cookie
 from fastapi.middleware.cors import CORSMiddleware
+
+from init_sql import create_database_and_table
 from utils import generate_music, get_feed, generate_lyrics, get_lyrics
 from deps import get_token
 import schemas
@@ -82,11 +84,11 @@ import random
 import string
 import time
 from sql_uilts import DatabaseManager
-BASE_URL = os.getenv('BASE_URL',None)
-SESSION_ID = os.getenv('SESSION_ID','cookie')
-SQL_name = os.getenv('SQL_name',None)
-SQL_password = os.getenv('SQL_password',None)
-SQL_IP = os.getenv('SQL_IP',None)
+BASE_URL = os.getenv('BASE_URL','https://studio-api.suno.ai')
+SESSION_ID = os.getenv('SESSION_ID','')
+SQL_name = os.getenv('SQL_name','')
+SQL_password = os.getenv('SQL_password','')
+SQL_IP = os.getenv('SQL_IP','')
 SQL_dk = os.getenv('SQL_dk',3306)
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -104,7 +106,12 @@ async def generate_data(chat_user_message):
         _return_prompt = False
         _return_image_url = False
         _return_video_url = False
-        db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
+        while True:
+            try:
+                db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
+                break
+            except:
+                await create_database_and_table()
         await db_manager.create_pool()
         cookie = await db_manager.get_non_working_cookie()
         print(cookie)
@@ -209,7 +216,7 @@ async def generate_data(chat_user_message):
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data):
-    if BASE_URL is None:
+    if SQL_IP == '' or SQL_password == '' or SQL_name == '':
         raise ValueError("BASE_URL is not set")
     else:
         last_user_content = None

@@ -5,11 +5,11 @@ import os
 
 load_dotenv()
 
-BASE_URL = os.getenv('BASE_URL',None)
-SESSION_ID = os.getenv('SESSION_ID','cookie')
-SQL_name = os.getenv('SQL_name',None)
-SQL_password = os.getenv('SQL_password',None)
-SQL_IP = os.getenv('SQL_IP',None)
+BASE_URL = os.getenv('BASE_URL','https://studio-api.suno.ai')
+SESSION_ID = os.getenv('SESSION_ID','')
+SQL_name = os.getenv('SQL_name','')
+SQL_password = os.getenv('SQL_password','')
+SQL_IP = os.getenv('SQL_IP','')
 SQL_dk = os.getenv('SQL_dk',3306)
 async def create_database_and_table():
     # Connect to the MySQL Server
@@ -39,12 +39,12 @@ async def create_database_and_table():
 
 
 async def main():
-    if BASE_URL is None:
+    if SQL_IP == '' or SQL_password == '' or SQL_name == '':
         raise ValueError("BASE_URL is not set")
     else:
         await create_database_and_table()
         # Here, you can continue with other database operations such as insert, update, etc.
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(main())
