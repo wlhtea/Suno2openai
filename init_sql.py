@@ -6,12 +6,12 @@ import os
 load_dotenv()
 
 # 直接从环境变量中读取所需的参数
-BASE_URL = os.getenv('BASE_URL')
-SESSION_ID = os.getenv('SESSION_ID')
-SQL_name = os.getenv('SQL_name')
-SQL_password = os.getenv('SQL_password')
-SQL_IP = os.getenv('SQL_IP')
-SQL_dk = os.getenv('SQL_dk')
+BASE_URL = os.getenv('BASE_URL','127.0.0.1')
+SESSION_ID = os.getenv('SESSION_ID','cookie')
+SQL_name = os.getenv('SQL_name','wsunoapi')
+SQL_password = os.getenv('SQL_password',123456)
+SQL_IP = os.getenv('SQL_IP',"127.0.0.1")
+SQL_dk = os.getenv('SQL_dk',3306)
 
 async def create_database_and_table():
     # Connect to the MySQL Server
