@@ -82,11 +82,11 @@ import random
 import string
 import time
 from sql_uilts import DatabaseManager
-BASE_URL = os.getenv('BASE_URL','127.0.0.1')
+BASE_URL = os.getenv('BASE_URL',None)
 SESSION_ID = os.getenv('SESSION_ID','cookie')
-SQL_name = os.getenv('SQL_name','wsunoapi')
-SQL_password = os.getenv('SQL_password',123456)
-SQL_IP = os.getenv('SQL_IP',"127.0.0.1")
+SQL_name = os.getenv('SQL_name',None)
+SQL_password = os.getenv('SQL_password',None)
+SQL_IP = os.getenv('SQL_IP',None)
 SQL_dk = os.getenv('SQL_dk',3306)
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -209,13 +209,16 @@ async def generate_data(chat_user_message):
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data):
-    last_user_content = None
-    for message in reversed(data.messages):
-        if message.role == "user":
-            last_user_content = message.content
-            break
+    if BASE_URL is None:
+        raise ValueError("BASE_URL is not set")
+    else:
+        last_user_content = None
+        for message in reversed(data.messages):
+            if message.role == "user":
+                last_user_content = message.content
+                break
 
-    if last_user_content is None:
-        raise HTTPException(status_code=400, detail="No user message found")
+        if last_user_content is None:
+            raise HTTPException(status_code=400, detail="No user message found")
 
-    return StreamingResponse(generate_data(last_user_content), media_type="text/event-stream")
+        return StreamingResponse(generate_data(last_user_content), media_type="text/event-stream")
