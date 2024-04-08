@@ -14,6 +14,8 @@
 - 支持自定义参数（如 `tags`、`prompt`、`style` 及对歌曲的续写）。
 - 探索开发类似官网的前端页面。
 - 欢迎提出宝贵建议！📧 **邮箱**: 1544007699@qq.com
+  
+---
 
 ## 🫙 Docker部署
 
@@ -42,7 +44,7 @@
    docker run -d --name wsunoapi \
    -p 8000:8000 \
    -e BASE_URL='https://studio-api.suno.ai' \
-   -e SESSION_ID='<your-session-id>' \
+   -e SESSION_ID='<your-session-id 可以不管>' \
    -e SQL_name='<SQL_NAME>' \
    -e SQL_password='<SQL_PASSWORD>' \
    -e SQL_IP='<SQL_IP>' \
@@ -67,8 +69,6 @@
 在运行Docker容器之前，确保你替换了占位符，如`<SQL_NAME>`、`<SQL_PASSWORD>`、`<SQL_IP>`以及`<your-session-id>`为实际值。
 
 ---
-
-此文档模板可以被保存为`.md`文件，并用于教育或指导目的分享。记住在准备运行命令时替换实际值。
 
 ## 📦 docker-compose 部署
 _更新时间：2024/4/7 18:18_
