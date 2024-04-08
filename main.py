@@ -109,11 +109,12 @@ async def generate_data(chat_user_message):
         while True:
             try:
                 db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
+                await db_manager.create_pool()
+                cookie = await db_manager.get_non_working_cookie()
                 break
             except:
                 await create_database_and_table()
-        await db_manager.create_pool()
-        cookie = await db_manager.get_non_working_cookie()
+
         print(cookie)
         await db_manager.update_cookie_working(cookie, True)
         await db_manager.update_cookie_count(cookie, 1)
