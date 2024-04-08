@@ -17,8 +17,8 @@ async def fetch_limit_left(cookie,db_manager):
     try:
         # remaining_count = song_gen.get_limit_left()
         # print(f"Remaining count: {remaining_count}")
-
-        await db_manager.insert_cookie(cookie, remaining_count, False)
+        
+        await db_manager.insert_cookie(cookie, 0, False)
     except:
         print(cookie)
 
