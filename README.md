@@ -1,80 +1,128 @@
-中文   [English](https://github.com/wlhtea/Suno2openai/blob/main/README_en.md)
-
 # Suno2openai
-这是一个基于[SunoSongsCretor](https://github.com/yihong0618/SunoSongsCreator)和[Suno-API](https://github.com/SunoAI-API/Suno-API)两个项目结合而成，我进行整合和接口标准化为openai格式
+> 基于 [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) 和 [Suno-API](https://github.com/SunoAI-API/Suno-API) 项目整合，提供符合OpenAI格式的接口标准化服务。
 
-## 项目特点
-- 支持Openai格式调用并流式输出内容
-- 支持chat-next-web等前端项目的使用
-- 支持docker-compose部署
-- 支持多个cookie进行轮询使用
+中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README_en.md)
 
-## 后续计划
-- 添加对请求的队列等待优化
-- 添加自定义参数支持（tags、prompt、style和对歌曲的续写）
-- 有机会写一个对标官网的前端页面
-- 如果有什么建议可以向我提出 邮箱:1544007699@qq.com
+## ✨ 项目特点
+- **OpenAI格式调用**：支持流式输出内容。
+- **前端兼容性**：适配 `chat-next-web` 等前端项目。
+- **Docker部署**：简化部署流程，支持 `docker-compose`。
+- **多Cookie管理**：实现多个Cookie轮询使用。
 
-# docker-compose部署（更新时间：2024/4/7:18点18分）
+## 🚀 后续计划
+- 引入请求队列等待优化。
+- 支持自定义参数（如 `tags`、`prompt`、`style` 及对歌曲的续写）。
+- 探索开发类似官网的前端页面。
+- 欢迎提出宝贵建议！📧 **邮箱**: 1544007699@qq.com
 
-## 克隆项目到服务器
-```
+## 🫙 Docker部署
+
+本教程提供如何使用特定的环境变量及端口映射来运行一个Docker容器的分步指导。为了本指南的目的，敏感信息如SQL名称、密码和IP地址将被替换为占位符。
+
+## 前提条件
+
+- 你的机器上安装了Docker。
+- 你具有Docker命令行界面的基础知识。
+
+## 操作步骤
+
+1. **拉取Docker镜像**
+
+   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:latest`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
+
+   ```bash
+   docker pull wlhtea/suno2openai:latest
+   ```
+
+2. **运行Docker容器**
+
+   使用必要的环境变量和端口映射来运行Docker容器。将`<SQL_NAME>`、`<SQL_PASSWORD>`和`<SQL_IP>`替换为你的SQL数据库连接的实际值。这些值应当保密，不应公开分享。
+
+   ```bash
+   docker run -d --name wsunoapi \
+   -p 8000:8000 \
+   -e BASE_URL='https://studio-api.suno.ai' \
+   -e SESSION_ID='<your-session-id>' \
+   -e SQL_name='<SQL_NAME>' \
+   -e SQL_password='<SQL_PASSWORD>' \
+   -e SQL_IP='<SQL_IP>' \
+   -e SQL_dk=3306 \
+   --restart=always \
+   wlhtea/suno2openai:latest
+   ```
+
+   **参数说明:**
+   - `-d`: 以后台模式运行容器并打印容器ID。
+   - `--name wsunoapi`: 为你的容器命名为`wsunoapi`，以便于引用。
+   - `-p 8000:8000`: 将容器的8000端口映射到宿主机的8000端口。
+   - `-e`: 为你的容器设置环境变量。
+   - `--restart=always`: 确保容器始终重启，除非手动停止。
+
+3. **访问应用程序**
+
+   一旦容器运行，其内部的应用程序应该可以通过`http://localhost:8000`或你的Docker宿主机的IP地址的8000端口访问。
+
+## 注意
+
+在运行Docker容器之前，确保你替换了占位符，如`<SQL_NAME>`、`<SQL_PASSWORD>`、`<SQL_IP>`以及`<your-session-id>`为实际值。
+
+---
+
+此文档模板可以被保存为`.md`文件，并用于教育或指导目的分享。记住在准备运行命令时替换实际值。
+
+## 📦 docker-compose 部署
+_更新时间：2024/4/7 18:18_
+
+### 克隆项目到服务器
+```bash
 git clone https://github.com/wlhtea/Suno2openai.git
 ```
 
-## 创建数据库
-- 创建一个数据库名字随意，密码记住了就好，记得打开权限（设置为所有IP可连接，或者设置指定ip为docker容器IP）
+### 创建数据库
+创建一个数据库（名称随意），记得保存密码，并确保数据库权限正确设置（允许所有IP连接或仅限Docker容器IP）。
 
-## **修改env.example为.env,并按照格式进行填写内容**
-```
+### 配置环境变量
+**将 `env.example` 文件重命名为 `.env` 并填写相应内容：**
+```plaintext
 BASE_URL=https://studio-api.suno.ai
-SESSION_ID=cookie（不需要理会这个，甚至这句话都不用删）
-SQL_name=数据库名称
-SQL_password=数据库密码
-SQL_IP=数据库主机IP
-SQL_dk=数据库主机IP的暴露端口（3306）
-```
-## 进入项目文件
-```
-cd ./Suno2openai
+SESSION_ID=cookie # 此项不需修改
+SQL_name=<数据库名称>
+SQL_password=<数据库密码>
+SQL_IP=<数据库主机IP>
+SQL_dk=3306 # 数据库端口
 ```
 
-
-**补充内容**
-打开update_cookie_to_sql.py并将cookie填入cookies中
-![cookie的位置](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
-
-```
-cookies = \
-    ['cookie1','cookie2']
+### 进入项目目录
+```bash
+cd Suno2openai
 ```
 
-## 运行docker
-- 安全组：这里会打开8000端口，请注意开放该端口
-- 证书问题：其次如果要接入newapi和chat-next-web这类项目，如果你部署这些项目是https，那么这个项目的反代网址应该也是https，否则这些项目会拒绝http服务
-
+### 更新Cookie
+编辑 `update_cookie_to_sql.py` 文件，将你的cookies填入下方数组中：
+```python
+cookies = ['cookie1', 'cookie2']
 ```
+![cookie位置示例](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+
+### 启动Docker
+```bash
 docker compose build && docker compose up
 ```
+**注意事项**：
+- **安全组配置**：确保8000端口已开放。
+- **HTTPS支持**：若前端项目使用HTTPS，本项目的反代网址也应使用HTTPS。
 
-# 由于不知道什么愿因 在chat-next-web直接填入部署的网址，是可以对sunoapi进行调用 但是经过new-api就不行了 前几天也会但是当时 我改了一个位置就好了 现在不记得了又得去看new-api源码了
+## 🤔 常见问题
+- 直接在 `chat-next-web` 中使用部署网址可以调用sunoapi，但通过 `new-api` 就不行。可能需要检查 `new-api` 的源码。
 
-# 本地部署
-（这一段先这样 本地二开的 其实和docker-compose一样的）
+## 🔌 接入 new-api(one-api)
+在渠道的代理设置中填写本项目地址，格式为：`http://<服务器IP>:8000`。建议使用HTTPS和域名。
 
-# 接入new-api(one-api)
-只要在渠道中的代理填写项目地址即可，也就是http://(服务器IP):8000，建议用https和域名进行填入代理地址
-![image](https://github.com/wlhtea/Suno2openai/assets/115779315/0b4d3741-b8d4-4aa8-9337-86d85868ed0b)
-
-# 效果
+## 🎉 效果展示
 ![chat-next-web效果图](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
 
+## 💌 实习机会征集
+若有意向接纳一名拥有数据分析和前后端开发经验的大三学生实习，请联系：
+- 📧 **邮箱**: 1544007699@qq.com
 
-## 如果有老板愿意接受我这个比二本多一本，比一本多两本的三本崽去实习可以发送邮件给我
-- 邮箱 1544007699@qq.com
-- 大三简历还没写 数据分析和前后端 (比赛经历中等丰富中等成绩)
-- 如果有老板想要私有化部署大模型的我可以试试
-
-该项目如果对你有帮助请给我点一个star吧！如果没有帮助也要给我点个star
-项目可能存在一些不足的地方和很大的进步空间！希望各位有能力和想法的小伙伴可以支持一下这个项目，万分感谢！
-这是我的[中转站](https://token.w-l-h.xyz)提供openai接口
+**给予支持**：如果这个项目对你有帮助，请不吝赐予星标⭐！欢迎任何形式的支持和建议，让我们一起进步！
