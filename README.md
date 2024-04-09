@@ -69,6 +69,8 @@
    working = 0
    ```
 
+数据库可能报错：'NoneType' object has no attribute 'items' ，[此处检查是否正确](https://github.com/wlhtea/Suno2openai/issues/10)
+
 5. **访问应用程序**
 
    一旦容器运行，其内部的应用程序应该可以通过`http://localhost:8000`或你的Docker宿主机的IP地址的8000端口访问。
