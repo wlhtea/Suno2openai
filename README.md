@@ -6,7 +6,7 @@
 ## ✨ 项目特点
 - **OpenAI格式调用**：支持流式输出内容。
 - **前端兼容性**：适配 `chat-next-web` 等前端项目。
-- **Docker部署**：简化部署流程，支持 `docker-compose`。
+- **Docker部署**：简化部署流程，支持 `docker-compose`、`docker`。
 - **多Cookie管理**：实现多个Cookie轮询使用。
 
 ## 🚀 后续计划
