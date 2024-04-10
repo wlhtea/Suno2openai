@@ -34,7 +34,7 @@ This tutorial provides step-by-step instructions on how to run a Docker containe
 
    First, make sure you have the Docker image `wlhtea/suno2openai:latest` on your machine. If not, you can pull it from the Docker repository using the following command:
 
-   ``bash
+   ```bash
    docker pull wlhtea/suno2openai:0.0.2
    ```
 
