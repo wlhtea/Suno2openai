@@ -54,6 +54,7 @@ This tutorial provides step-by-step instructions on how to run a Docker containe
    --restart=always \
    wlhtea/suno2openai:latest
    \ --restart=always
+   ```
 
    **Parameter description:**
    - `-d`: Run the container in background mode and print the container ID.
@@ -89,14 +90,14 @@ _Updated: 2024/4/7 18:18_
 ### Clone the project to the server
 ```bash
 git clone https://github.com/wlhtea/Suno2openai.git
-``
+```
 
 ### Create a database
 Create a database (with any name you want), remember to save the password and make sure the database permissions are set correctly (Allow all IPs to connect or Docker container IPs only).
 
 ### Configure environment variables
 **Rename the `env.example` file to `.env` and fill in the following fields:** ``plaintext
-``plaintext
+```plaintext
 BASE_URL=https://studio-api.suno.ai
 SESSION_ID=cookie # This does not need to be changed.
 SQL_name=<database name
@@ -114,14 +115,14 @@ cd Suno2openai
 Edit the ``update_cookie_to_sql.py`` file and fill the array below with your cookies:
 ```python
 cookies = ['cookie1', 'cookie2']
-``
+```
 ! [cookie location example](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
 
 ### Start Docker
 ```bash
 docker compose build && docker compose up
-``##
-**Notes**:
+```
+## **Notes**:
 - **Security group configuration**: make sure port 8000 is open.
 - **HTTPS support**: If the front-end project uses HTTPS, the reverse proxy URL for this project should also use HTTPS.
 
