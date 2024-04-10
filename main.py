@@ -90,6 +90,8 @@ SQL_name = os.getenv('SQL_name','')
 SQL_password = os.getenv('SQL_password','')
 SQL_IP = os.getenv('SQL_IP','')
 SQL_dk = os.getenv('SQL_dk',3306)
+db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
+
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
@@ -97,27 +99,26 @@ def generate_timestamp_async():
     return int(time.time())
 
 async def generate_data(chat_user_message):
+    global db_manager
     chat_id = generate_random_string_async(32)
     timeStamp = generate_timestamp_async()
-
+    while True:
+        try:
+            await db_manager.create_pool()
+            cookie = await db_manager.get_non_working_cookie()
+            break
+        except:
+            await create_database_and_table()
     try:
         _return_tags = False
         _return_title = False
         _return_prompt = False
         _return_image_url = False
         _return_video_url = False
-        while True:
-            try:
-                db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
-                await db_manager.create_pool()
-                cookie = await db_manager.get_non_working_cookie()
-                break
-            except:
-                await create_database_and_table()
 
-        print(cookie)
         await db_manager.update_cookie_working(cookie, True)
         await db_manager.update_cookie_count(cookie, 1)
+
         token, sid = SongsGen(cookie)._get_auth_token(w=1)
         suno_auth.set_session_id(sid)
         suno_auth.load_cookie(cookie)
@@ -135,8 +136,6 @@ async def generate_data(chat_user_message):
             try:
                 response_clips = response["clips"]
                 clip_ids = [clip["id"] for clip in response_clips]
-                # clip_ids_tags = [clip["metadata"].get('tags') for clip in response_clips]
-                # clip_ids_prompt = [clip["metadata"].get('prompt') for clip in response_clips]
                 if not clip_ids:
                     return
                 break
@@ -192,9 +191,6 @@ async def generate_data(chat_user_message):
                         image_url_lager_data = f"**图片链接:** ![封面图片_大]({now_data[0]['image_large_url']}) \n"
                         yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
                         yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
-
-                        # yield f'data:{json.dumps({"state": 200, "message": now_data[0]["image_url"]})}'
-                        # yield f'data:{json.dumps({"state": 200, "message": now_data[0]["image_large_url"]})}'
                         _return_image_url = True
                 elif 'audio_url' in now_data[0]:
                     print(response)
@@ -202,10 +198,8 @@ async def generate_data(chat_user_message):
                     if audio_url_ != '':
                         audio_url_data = f"\n **音乐链接**:{audio_url_}"
                         yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data}, "finish_reason": None}]})}\n\n"""
-                        await db_manager.update_cookie_working(cookie, False)
                         break
                 else:
-                    # yield f'data:{json.dumps({"state": 200, "message": "Waiting for audio URL..."})}'
                     content_wait = "."
                     yield f"""data:{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":content_wait},"finish_reason":None}]})}\n\n"""
                     await asyncio.sleep(5)  # 等待5秒再次尝试
@@ -214,6 +208,8 @@ async def generate_data(chat_user_message):
     except Exception as e:
         yield f"""data:{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":str(e)},"finish_reason":None}]})}\n\n"""
         yield f"""data:{[str('DONE')]}\n\n"""
+    finally:
+        await db_manager.update_cookie_working(cookie, False)
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data):
