@@ -21,9 +21,9 @@ _ = load_dotenv(find_dotenv())
 
 ua = UserAgent(browsers=["edge"])
 
-get_session_url = "https://clerk.suno.ai/v1/client?_clerk_js_version=4.70.5"
+get_session_url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.72.0-snapshot.vc141245"
 exchange_token_url = (
-    "https://clerk.suno.ai/v1/client/sessions/{sid}/tokens/api?_clerk_js_version=4.70.0"
+    "https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_clerk_js_version=4.72.0-snapshot.vc141245"
 )
 
 base_url = "https://studio-api.suno.ai"
@@ -78,13 +78,14 @@ class SongsGen:
         r = data.get("response")
         sid = None
         if r:
-            sid = r.get("last_active_session_id")
+            sid = r.get('sessions')[0].get('id')
         if not sid:
             raise Exception("Failed to get session id")
         self.sid = sid
         response = self.session.post(
             exchange_token_url.format(sid=sid), impersonate=browser_version
         )
+        print(response.text)
         data = response.json()
         if w is not None:
             return data.get('jwt'),sid
@@ -131,6 +132,7 @@ class SongsGen:
             "https://studio-api.suno.ai/api/billing/info/",
             headers={"Impersonate": "browser_version"}
         )
+        print(r.text)
         return int(r.json()["total_credits_left"] / 10)
 
     def _parse_lyrics(self, data: dict) -> Tuple[str, str]:
