@@ -3,6 +3,8 @@
 
 中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README_en.md)
 
+2024.4.10 由于suno官方更新 部分项目功能无法使用 已经重新更改 在2024/4/10：15：04之前拉去的项目 请重新拉去即可 docker晚点更新
+
 ## ✨ 项目特点
 - **OpenAI格式调用**：支持流式输出内容。
 - **前端兼容性**：适配 `chat-next-web` 等前端项目。
