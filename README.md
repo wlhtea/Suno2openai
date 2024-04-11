@@ -52,7 +52,7 @@
    -e SQL_IP='<SQL_IP>' \
    -e SQL_dk=3306 \
    --restart=always \
-   wlhtea/suno2openai:latest
+   wlhtea/suno2openai:0.0.3
    ```
 
    **参数说明:**
