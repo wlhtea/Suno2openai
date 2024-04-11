@@ -85,7 +85,6 @@ class SongsGen:
         response = self.session.post(
             exchange_token_url.format(sid=sid), impersonate=browser_version
         )
-        print(response.text)
         data = response.json()
         if w is not None:
             return data.get('jwt'),sid
@@ -132,7 +131,6 @@ class SongsGen:
             "https://studio-api.suno.ai/api/billing/info/",
             headers={"Impersonate": "browser_version"}
         )
-        print(r.text)
         return int(r.json()["total_credits_left"] / 10)
 
     def _parse_lyrics(self, data: dict) -> Tuple[str, str]:
@@ -300,60 +298,3 @@ class SongsGen:
             encoding="utf-8",
         ) as lyric_file:
             lyric_file.write(f"{song_name}\n\n{lyric}")
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-U", help="Auth cookie from browser", type=str, default="")
-    parser.add_argument(
-        "--prompt",
-        help="Prompt to generate songs for",
-        type=str,
-        required=True,
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        help="Output directory",
-        type=str,
-        default="./output",
-    )
-    parser.add_argument(
-        "--is_custom",
-        dest="is_custom",
-        action="store_true",
-        help="use custom mode, need to provide title and tags",
-    )
-    parser.add_argument(
-        "--title",
-        help="Title of the song",
-        type=str,
-        default="",
-    )
-    parser.add_argument(
-        "--tags",
-        help="Tags of the song",
-        type=str,
-        default="",
-    )
-
-    args = parser.parse_args()
-
-    # Create song generator
-    # follow old style
-    song_generator = SongsGen(
-        os.environ.get("SUNO_COOKIE") or args.U,
-    )
-    print(f"{song_generator.get_limit_left()} times left")
-    song_generator.save_songs(
-        prompt=args.prompt,
-        output_dir=args.output_dir,
-        title=args.title,
-        tags=args.tags,
-        make_instrumental=False,
-        is_custom=args.is_custom,
-    )
-
-
-if __name__ == "__main__":
-    main()
