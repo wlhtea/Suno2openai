@@ -34,50 +34,50 @@ async def get_root():
     return schemas.Response()
 
 
-@app.post("/generate")
-async def generate(data: schemas.GenerateBase):
-    cookie = data.dict().get('cookie')
-    session_id = data.dict().get('session_id')
-    token = data.dict().get('token')
-    try:
-        suno_auth.set_session_id(session_id)
-        suno_auth.load_cookie(cookie)
-        resp = await generate_music(data.dict(), token)
-        return resp
-    except Exception as e:
-        raise HTTPException(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@app.get("/feed/{aid}")
-async def fetch_feed(aid: str, token: str = Depends(get_token)):
-    try:
-        resp = await get_feed(aid, token)
-        return resp
-    except Exception as e:
-        raise HTTPException(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@app.post("/generate/lyrics/")
-async def generate_lyrics_post(request: Request, token: str = Depends(get_token)):
-    req = await request.json()
-    prompt = req.get("prompt")
-    if prompt is None:
-        raise HTTPException(detail="prompt is required", status_code=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        resp = await generate_lyrics(prompt, token)
-        return resp
-    except Exception as e:
-        raise HTTPException(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@app.get("/lyrics/{lid}")
-async def fetch_lyrics(lid: str, token: str = Depends(get_token)):
-    try:
-        resp = await get_lyrics(lid, token)
-        return resp
-    except Exception as e:
-        raise HTTPException(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# @app.post("/generate")
+# async def generate(data: schemas.GenerateBase):
+#     cookie = data.dict().get('cookie')
+#     session_id = data.dict().get('session_id')
+#     token = data.dict().get('token')
+#     try:
+#         suno_auth.set_session_id(session_id)
+#         suno_auth.load_cookie(cookie)
+#         resp = await generate_music(data.dict(), token)
+#         return resp
+#     except Exception as e:
+#         raise HTTPException(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#
+#
+# @app.get("/feed/{aid}")
+# async def fetch_feed(aid: str, token: str = Depends(get_token)):
+#     try:
+#         resp = await get_feed(aid, token)
+#         return resp
+#     except Exception as e:
+#         raise HTTPException(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#
+#
+# @app.post("/generate/lyrics/")
+# async def generate_lyrics_post(request: Request, token: str = Depends(get_token)):
+#     req = await request.json()
+#     prompt = req.get("prompt")
+#     if prompt is None:
+#         raise HTTPException(detail="prompt is required", status_code=status.HTTP_400_BAD_REQUEST)
+#
+#     try:
+#         resp = await generate_lyrics(prompt, token)
+#         return resp
+#     except Exception as e:
+#         raise HTTPException(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#
+#
+# @app.get("/lyrics/{lid}")
+# async def fetch_lyrics(lid: str, token: str = Depends(get_token)):
+#     try:
+#         resp = await get_lyrics(lid, token)
+#         return resp
+#     except Exception as e:
+#         raise HTTPException(detail=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 import asyncio
 import random
@@ -85,12 +85,11 @@ import string
 import time
 from sql_uilts import DatabaseManager
 BASE_URL = os.getenv('BASE_URL','https://studio-api.suno.ai')
-SESSION_ID = os.getenv('SESSION_ID','')
+SESSION_ID = os.getenv('SESSION_ID')
 SQL_name = os.getenv('SQL_name','')
 SQL_password = os.getenv('SQL_password','')
 SQL_IP = os.getenv('SQL_IP','')
 SQL_dk = os.getenv('SQL_dk',3306)
-db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
 
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -99,8 +98,8 @@ def generate_timestamp_async():
     return int(time.time())
 
 async def generate_data(chat_user_message):
-    global db_manager
-    chat_id = generate_random_string_async(32)
+    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
+    chat_id = generate_random_string_async(29)
     timeStamp = generate_timestamp_async()
     while True:
         try:
@@ -146,9 +145,7 @@ async def generate_data(chat_user_message):
         for clip_id in clip_ids:
             attempts = 0
             while attempts < 60:  # 限制尝试次数以避免无限循环
-                print(_return_title)
                 now_data = await get_feed(ids=clip_id, token=token)
-                print(now_data)
                 more_information_ = now_data[0]['metadata']
                 if type(now_data) == dict:
                     if now_data.get('detail') == 'Unauthorized':
@@ -161,6 +158,7 @@ async def generate_data(chat_user_message):
                         title = now_data[0]["title"]
                         if title != '':
                             title_data = f"**歌名**:{title} \n"
+                            print(title)
                             yield str(f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n""")
                             _return_title = True
                     except:
@@ -170,6 +168,7 @@ async def generate_data(chat_user_message):
                         tags = more_information_["tags"]
                         if tags is not None:
                             tags_data = f"**类型**:{tags} \n"
+                            print(tags)
                             yield str(f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
                             _return_tags = True
                     except:
@@ -178,6 +177,7 @@ async def generate_data(chat_user_message):
                     try:
                         prompt = more_information_["prompt"]
                         if prompt is not None:
+                            print(prompt)
                             prompt_data = f"**歌词**:{prompt} \n"
                             yield str(f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
                             _return_prompt = True
@@ -187,8 +187,11 @@ async def generate_data(chat_user_message):
 
                 elif not _return_image_url:
                     if now_data[0].get('image_url') is not None:
+
                         image_url_small_data = f"**图片链接:** ![封面图片_小]({now_data[0]['image_url']}) \n"
                         image_url_lager_data = f"**图片链接:** ![封面图片_大]({now_data[0]['image_large_url']}) \n"
+                        print(image_url_lager_data)
+                        print(image_url_small_data)
                         yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
                         yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                         _return_image_url = True
@@ -207,9 +210,12 @@ async def generate_data(chat_user_message):
         yield f"""data:{[str('DONE')]}\n\n"""
     except Exception as e:
         yield f"""data:{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":str(e)},"finish_reason":None}]})}\n\n"""
-        yield f"""data:{[str('DONE')]}\n\n"""
+        yield f"""data:[DONE]\n\n"""
     finally:
-        await db_manager.update_cookie_working(cookie, False)
+        try:
+            await db_manager.update_cookie_working(cookie, False)
+        except:
+            print('No sql')
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data):

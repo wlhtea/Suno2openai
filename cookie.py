@@ -33,10 +33,7 @@ class SunoCookie:
         self.token = token
 
 
-suno_auth = SunoCookie()
 
-# suno_auth.set_session_id(os.getenv("SESSION_ID"))
-# suno_auth.load_cookie(os.getenv("COOKIE"))
 
 
 def update_token(suno_cookie):
@@ -73,6 +70,15 @@ def start_keep_alive(suno_cookie: SunoCookie):
     t.start()
 
 
-start_keep_alive(suno_auth)
+
+suno_auth = SunoCookie()
+# first = True
+# suno_auth.set_session_id(os.getenv("SESSION_ID"))
+# suno_auth.load_cookie(os.getenv("COOKIE"))
+# if first:
+#     start_keep_alive(suno_auth)
+#     first = False
+# else:
+#     print('cookie保活失败')
 
 
