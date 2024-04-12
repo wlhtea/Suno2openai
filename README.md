@@ -4,7 +4,7 @@
 中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README_en.md)
 
 ## 更新日志
-- 2024.4.12 **完成对newapi(one-api)**接入，选择openai调用，并填入项目部署地址（不需要/v1/）密钥空着即可。
+- 2024.4.12 **完成对new-api和one-api**接入，选择openai调用，并填入项目部署地址（不需要/v1/）密钥空着即可。
 - 2024.4.10 由于suno官方更新 部分项目功能无法使用 已经重新更改 在2024/4/10：15：04之前拉去的项目 请重新拉去即可 docker晚点更新(已更新，拉去时注意拉去版本号。)
 
 ## ✨ 项目特点
