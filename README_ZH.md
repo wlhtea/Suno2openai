@@ -1,7 +1,7 @@
+中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README.md)
+
 # Suno2openai
 > 基于 [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) 和 [Suno-API](https://github.com/SunoAI-API/Suno-API) 项目整合，提供符合OpenAI格式的接口标准化服务。
-
-中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README.md)
 
 ## 更新日志
 - 2024.4.12 **完成对new-api和one-api**接入，选择openai调用，并填入项目部署地址（不需要/v1/）密钥空着即可。
