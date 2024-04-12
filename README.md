@@ -127,9 +127,6 @@ docker compose build && docker compose up
 - **安全组配置**：确保8000端口已开放。
 - **HTTPS支持**：若前端项目使用HTTPS，本项目的反代网址也应使用HTTPS。
 
-## 🤔 常见问题
-- 直接在 `chat-next-web` 中使用部署网址可以调用sunoapi，但通过 `new-api` 就不行。可能需要检查 `new-api` 的源码。
-
 ## 🔌 接入 new-api(one-api)
 在渠道的代理设置中填写本项目地址，格式为：`http://<服务器IP>:8000`。建议使用HTTPS和域名。
 
