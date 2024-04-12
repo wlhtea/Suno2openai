@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import datetime
 import json
 import os
 
@@ -128,7 +129,7 @@ async def generate_data(chat_user_message):
             "title": "",
             "tags": ""
         }
-        yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created" : timeStamp, "choices": [{"index": 0, "delta": {"role":"assistant","content":" "}, "finish_reason": None}]})}\n\n"""
+        yield f"""data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created" : timeStamp, "choices": [{"index": 0, "delta": {"role":"assistant","content":""}, "finish_reason": None}]})}\n\n"""
         response = await generate_music(data=data, token=token)
         await asyncio.sleep(3)
         while True:
@@ -151,7 +152,7 @@ async def generate_data(chat_user_message):
                     if now_data.get('detail') == 'Unauthorized':
                         link = f'https://audiopipe.suno.ai/?item_id={clip_id}'
                         link_data = f"\n **音乐链接**:{link}\n"
-                        yield str(f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": link_data}, "finish_reason": None}]})}\n\n""")
+                        yield """data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": link_data}, "finish_reason": None}]})}\n\n"""
                         break
                 elif not _return_title:
                     try:
@@ -159,7 +160,7 @@ async def generate_data(chat_user_message):
                         if title != '':
                             title_data = f"**歌名**:{title} \n"
                             print(title)
-                            yield str(f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n""")
+                            yield """data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
                             _return_title = True
                     except:
                         pass
@@ -169,7 +170,7 @@ async def generate_data(chat_user_message):
                         if tags is not None:
                             tags_data = f"**类型**:{tags} \n"
                             print(tags)
-                            yield str(f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
+                            yield str(f"""data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
                             _return_tags = True
                     except:
                         pass
@@ -179,7 +180,7 @@ async def generate_data(chat_user_message):
                         if prompt is not None:
                             print(prompt)
                             prompt_data = f"**歌词**:{prompt} \n"
-                            yield str(f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
+                            yield str(f"""data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
                             _return_prompt = True
                     except:
                         pass
@@ -192,25 +193,25 @@ async def generate_data(chat_user_message):
                         image_url_lager_data = f"**图片链接:** ![封面图片_大]({now_data[0]['image_large_url']}) \n"
                         print(image_url_lager_data)
                         print(image_url_small_data)
-                        yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
-                        yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
+                        yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
+                        yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                         _return_image_url = True
                 elif 'audio_url' in now_data[0]:
                     print(response)
                     audio_url_ = now_data[0]['audio_url']
                     if audio_url_ != '':
                         audio_url_data = f"\n **音乐链接**:{audio_url_}"
-                        yield f"""data:{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data}, "finish_reason": None}]})}\n\n"""
+                        yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data}, "finish_reason": None}]})}\n\n"""
                         break
                 else:
                     content_wait = "."
-                    yield f"""data:{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":content_wait},"finish_reason":None}]})}\n\n"""
+                    yield f"""data:""" +' '+f"""{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":content_wait},"finish_reason":None}]})}\n\n"""
                     await asyncio.sleep(5)  # 等待5秒再次尝试
                     attempts += 1
-        yield f"""data:{[str('DONE')]}\n\n"""
+        yield f"""data: [DONE]\n\n"""
     except Exception as e:
-        yield f"""data:{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":str(e)},"finish_reason":None}]})}\n\n"""
-        yield f"""data:[DONE]\n\n"""
+        yield f"""data:"""+' '+f"""{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":str(e)},"finish_reason":None}]})}\n\n"""
+        yield f"""data:"""+' '+f"""[DONE]\n\n"""
     finally:
         try:
             await db_manager.update_cookie_working(cookie, False)
@@ -230,5 +231,12 @@ async def get_last_user_message(data: schemas.Data):
 
         if last_user_content is None:
             raise HTTPException(status_code=400, detail="No user message found")
-
-        return StreamingResponse(generate_data(last_user_content), media_type="text/event-stream")
+        headers = {
+            'Cache-Control': 'no-cache',
+            'Content-Type': 'text/event-stream',
+            'Date': datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'),
+            'Server': 'uvicorn',
+            'X-Accel-Buffering': 'no',
+            'Transfer-Encoding': 'chunked'
+        }
+        return StreamingResponse(generate_data(last_user_content),headers=headers, media_type="text/event-stream")
