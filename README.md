@@ -1,7 +1,8 @@
+[中文](https://github.com/wlhtea/Suno2openai/blob/main/README_ZH.md) English
+
 # Suno2openai
 > Based on the [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, this integration provides a service that conforms to OpenAI's interface standards.
 
-[中文](https://github.com/wlhtea/Suno2openai/blob/main/README_ZH.md) English
 
 ## Update Log
 - 2024.4.12 **Completed the integration of new-api and one-api**, select OpenAI for calls, and enter the project deployment address (no need for /v1/); the key can be left empty.
