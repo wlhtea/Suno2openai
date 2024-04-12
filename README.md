@@ -32,10 +32,10 @@
 
 1. **拉取Docker镜像**
 
-   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:0.0.3`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
+   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:0.1.0`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
 
    ```bash
-   docker pull wlhtea/suno2openai:0.0.3
+   docker pull wlhtea/suno2openai:0.1.0
    ```
 
 2. **运行Docker容器**
@@ -52,7 +52,7 @@
    -e SQL_IP='<SQL_IP>' \
    -e SQL_dk=3306 \
    --restart=always \
-   wlhtea/suno2openai:0.0.3
+   wlhtea/suno2openai:0.1.0
    ```
 
    **参数说明:**
