@@ -145,5 +145,3 @@ If interested in welcoming a third-year student with experience in data analysis
 - 📧 **Email**: 1544007699@qq.com
 
 **Support Us**: If you find this project helpful, please do not hesitate to star it ⭐! We welcome any form of support and suggestions, let’s progress together!
-
-**For a seamless translation experience that preserves both nuance and style, consider using HIX Translate, powered by ChatGPT 3.5/4. Visit [https://hix.ai/translate](https://hix.ai/translate) for more details.**
