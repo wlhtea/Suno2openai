@@ -98,10 +98,36 @@ def generate_random_string_async(length):
 def generate_timestamp_async():
     return int(time.time())
 
-async def generate_data(chat_user_message):
+import tiktoken
+
+def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str) -> (int, int):
+    """
+    Calculate the number of tokens for the input and output prompts based on the specified model.
+
+    Parameters:
+    input_prompt (str): The input prompt string.
+    output_prompt (str): The output prompt string.
+    model_name (str): The model name to determine the encoding.
+
+    Returns:
+    tuple: A tuple containing the number of tokens for the input prompt and the output prompt.
+    """
+    # Load the correct encoding for the given model
+    encoding = tiktoken.encoding_for_model(model_name)
+
+    # Encode the prompts
+    input_tokens = encoding.encode(input_prompt)
+    output_tokens = encoding.encode(output_prompt)
+
+    # Count the tokens
+    input_token_count = len(input_tokens)
+    output_token_count = len(output_tokens)
+
+    return input_token_count, output_token_count
+
+async def generate_data(chat_user_message,chat_id,timeStamp):
     db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
-    chat_id = generate_random_string_async(29)
-    timeStamp = generate_timestamp_async()
+
     while True:
         try:
             await db_manager.create_pool()
@@ -220,9 +246,12 @@ async def generate_data(chat_user_message):
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data):
+    content_all = ''
     if SQL_IP == '' or SQL_password == '' or SQL_name == '':
         raise ValueError("BASE_URL is not set")
     else:
+        chat_id = generate_random_string_async(29)
+        timeStamp = generate_timestamp_async()
         last_user_content = None
         for message in reversed(data.messages):
             if message.role == "user":
@@ -239,4 +268,41 @@ async def get_last_user_message(data: schemas.Data):
             'X-Accel-Buffering': 'no',
             'Transfer-Encoding': 'chunked'
         }
-        return StreamingResponse(generate_data(last_user_content),headers=headers, media_type="text/event-stream")
+
+        if not data.stream:
+            async for data_string in generate_data(last_user_content,chat_id,timeStamp):
+                try:
+                    json_data = data_string.split('data: ')[1].strip()
+
+                    parsed_data = json.loads(json_data)
+                    content = parsed_data['choices'][0]['delta']['content']
+                    content_all += content
+                    print(content_all)
+                except:
+                    pass
+            input_tokens, output_tokens = calculate_token_costs(last_user_content,content_all,'gpt-3.5-turbo')
+            json_string = {
+                "id": f"chatcmpl-{chat_id}",
+                "object": "chat.completion",
+                "created": timeStamp,
+                "model": "suno-v3",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": content_all
+                        },
+                        "finish_reason": "stop"
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": input_tokens,
+                    "completion_tokens": output_tokens,
+                    "total_tokens": input_tokens+output_tokens
+                }
+            }
+
+            return json_string
+        else:
+            return StreamingResponse(generate_data(last_user_content,chat_id,timeStamp),headers=headers, media_type="text/event-stream")
