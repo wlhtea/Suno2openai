@@ -1,55 +1,54 @@
 [中文](https://github.com/wlhtea/Suno2openai/blob/main/README_ZH.md) English
-
 # Suno2openai
-> Based on the [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, this integration provides a service that conforms to OpenAI's interface standards.
+> Integrated based on [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant with OpenAI formats.
 
+## Changelog
+- 2024.4.14 Updated a script to automatically retrieve cookies from registered Outlook emails and write them into the database.
+- 2024.4.12 **Completed integration of new-api and one-api**, select OpenAI calls, and input the project deployment address (no need for /v1/); the key can be left empty.
+- 2024.4.10 Due to Suno's official updates, some project features were inoperable, now modified. Please re-pull the projects pulled before 2024/4/10 15:04; Docker to be updated later (already updated, be mindful of the version number when pulling).
 
-## Update Log
-- 2024.4.12 **Completed the integration of new-api and one-api**, select OpenAI for calls, and enter the project deployment address (no need for /v1/); the key can be left empty.
-- 2024.4.10 Due to updates from Suno official, some project features were unavailable and have been changed. Projects pulled before 2024/4/10 15:04 should be pulled again; Docker has been updated later (note to pull the version number when doing so).
-
-## ✨ Project Features
-- **OpenAI format calling**: Supports streaming output content.
-- **Front-end compatibility**: Compatible with front-end projects such as `chat-next-web`.
-- **Docker deployment**: Simplifies the deployment process, supports `docker-compose`, `docker`.
-- **Multi-Cookie management**: Implements the use of multiple cookies in rotation.
+## ✨ Project Highlights
+- **OpenAI Format Calls**: Supports streaming output.
+- **Front-end Compatibility**: Compatible with front-end projects like `chat-next-web`.
+- **Docker Deployment**: Simplifies deployment process, supports `docker-compose`, `docker`.
+- **Multiple Cookie Management**: Implements rotation of multiple cookies.
 
 ## 🚀 Future Plans
-- Introduce request queuing for optimization.
-- Support custom parameters (such as `tags`, `prompt`, `style` and continuation of songs).
-- Explore the development of front-end pages similar to the official website.
-- Welcome any valuable suggestions! 📧 **Email**: 1544007699@qq.com
+- Introduce request queueing optimizations.
+- Support for custom parameters (such as `tags`, `prompt`, `style`, and song continuation).
+- Explore development of official-like frontend pages.
+- Welcome valuable suggestions! 📧 **Email**: 1544007699@qq.com
 
 ---
 
 ## 🫙 Docker Deployment
 
-This tutorial provides step-by-step guidance on how to run a Docker container using specific environment variables and port mappings. For the purposes of this guide, sensitive information such as SQL name, password, and IP address will be replaced with placeholders.
+This tutorial provides step-by-step guidance on running a Docker container with specific environment variables and port mappings. For the purpose of this guide, sensitive information such as SQL names, passwords, and IP addresses will be replaced with placeholders.
 
 ## Prerequisites
 
 - Docker is installed on your machine.
-- You have basic knowledge of the Docker command line interface.
+- Basic knowledge of Docker CLI.
 
 ## Steps
 
-1. **Pull the Docker Image**
+1. **Pull Docker Image**
 
-   First, ensure that the Docker image `wlhtea/suno2openai:0.1.0` is already on your machine. If not, you can pull it from the Docker repository using the following command:
+   Ensure the Docker image `wlhtea/suno2openai:0.1.0` is available on your machine. If not, you can pull it from the Docker repository using:
 
    ```bash
    docker pull wlhtea/suno2openai:0.1.0
    ```
 
-2. **Run the Docker Container**
+2. **Run Docker Container**
 
-   Run the Docker container using the necessary environment variables and port mappings. Replace `<SQL_NAME>`, `<SQL_PASSWORD>`, and `<SQL_IP>` with the actual values of your SQL database connection. These values should be kept confidential and not shared publicly.
+   Run the Docker container using necessary environment variables and port mappings. Replace `<SQL_NAME>`, `<SQL_PASSWORD>`, and `<SQL_IP>` with your actual SQL database connection values. These should be kept confidential and not shared publicly.
 
    ```bash
    docker run -d --name wsunoapi \
    -p 8000:8000 \
    -e BASE_URL='https://studio-api.suno.ai' \
-   -e SESSION_ID='<your-session-id, can be ignored>' \
+   -e SESSION_ID='<your-session-id not required>' \
    -e SQL_name='<SQL_NAME>' \
    -e SQL_password='<SQL_PASSWORD>' \
    -e SQL_IP='<SQL_IP>' \
@@ -61,12 +60,12 @@ This tutorial provides step-by-step guidance on how to run a Docker container us
    **Parameter Explanation:**
    - `-d`: Run the container in detached mode and print the container ID.
    - `--name wsunoapi`: Name your container `wsunoapi` for easy reference.
-   - `-p 8000:8000`: Map the container's port 8000 to the host machine's port 8000.
+   - `-p 8000:8000`: Map the container's 8000 port to the host machine's 8000 port.
    - `-e`: Set environment variables for your container.
-   - `--restart=always`: Ensure the container always restarts unless manually stopped.
+   - `--restart=always`: Ensure the container always restarts, unless manually stopped.
 
-3. **Add Cookies to the Database**
-   Open the database and add cookies as needed, count as remaining uses (will add an automatic import feature later).
+3. **Add Cookie to Database**
+   Simply open the database and add cookies with the remaining count (an automatic import feature will be added later).
    ```mysql
    id = int
    cookie = Cookie
@@ -74,7 +73,7 @@ This tutorial provides step-by-step guidance on how to run a Docker container us
    working = 0
    ```
 
-The database might report an error: 'NoneType' object has no attribute 'items', [check here for correctness](https://github.com/wlhtea/Suno2openai/issues/10)
+Database may report error: 'NoneType' object has no attribute 'items', [check here if correct](https://github.com/wlhtea/Suno2openai/issues/10)
 
 5. **Access the Application**
 
@@ -82,29 +81,26 @@ The database might report an error: 'NoneType' object has no attribute 'items', 
 
 ## Note
 
-Before running the Docker container, ensure you replace placeholders such as `<SQL_NAME>`, `<SQL_PASSWORD>`, `<SQL_IP>`, and `<your-session-id>` with actual values.
+Before running the Docker container, make sure you replace placeholders like `<SQL_NAME>`, `<SQL_PASSWORD>`, `<SQL_IP>`, and `<your-session-id>` with actual values.
+## 📦 Docker-Compose Deployment
+_Update Time: 2024/4/7 18:18_
 
----
-
-## 📦 docker-compose Deployment
-_Last Updated: 2024/4/7 18:18_
-
-### Clone the Project to the Server
+### Clone the Project to Your Server
 ```bash
 git clone https://github.com/wlhtea/Suno2openai.git
 ```
 
 ### Create a Database
-Create a database (name at your discretion), remember to save the password, and ensure the database permissions are set correctly (allow all IP connections or only Docker container IPs).
+Create a database (name it as you wish), remember to save the password, and ensure the database permissions are set correctly (allow connections from all IPs or only from Docker container IPs).
 
 ### Configure Environment Variables
-**Rename the `env.example` file to `.env` and fill in the relevant content:**
+**Rename the `env.example` file to `.env` and fill in the corresponding details:**
 ```plaintext
 BASE_URL=https://studio-api.suno.ai
-SESSION_ID=cookie # This item does not need modification
-SQL_name=<database name>
-SQL_password=<database password>
-SQL_IP=<database host IP>
+SESSION_ID=cookie # This item does not need to be changed
+SQL_name=<Database Name>
+SQL_password=<Database Password>
+SQL_IP=<Database Host IP>
 SQL_dk=3306 # Database port
 ```
 
@@ -114,28 +110,40 @@ cd Suno2openai
 ```
 
 ### Update Cookie
-Edit the `update_cookie_to_sql.py` file, entering your cookies in the array below:
-```python
-cookies = ['cookie1', 'cookie2']
-```
-![Example of cookie location](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+
 
 ### Start Docker
 ```bash
 docker compose build && docker compose up
 ```
-**Considerations**:
-- **Security Group Configuration**: Ensure the 8000 port is open.
-- **HTTPS Support**: If the front-end project uses HTTPS, the proxy URL for this project should also use HTTPS.
+**Notes**:
+- **Security Group Configuration**: Ensure the port 8000 is open.
+- **HTTPS Support**: If the frontend project uses HTTPS, the proxy URL of this project should also use HTTPS.
 
-## 🔌 Connect new-api (one-api)
-In the channel's proxy settings, enter the project address in the format: `http://<server IP>:8000`. HTTPS and domain name are recommended.
+## 🍪 Obtaining Cookies
+### For Personal Use
+Edit the `update_cookie_to_sql.py` file and insert your cookies into the array below:
+```python
+cookies = ['cookie1', 'cookie2']
+```
+![Example of Cookie Location](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
 
-## 🎉 Display Effect
-![Effect in chat-next-web](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
+### For Team Use
+- Obtain cookies in bulk through the [file-based program](https://github.com/wlhtea/Suno2openai/tree/main/suno_%E6%89%93%E5%8F%B7%E5%8F%96cookie).
+- After obtaining, place the generated `outlook.csv` in the same directory as `sign_suno.py` to retrieve cookies.
+- Paste the obtained cookies into the `update_cookie_to_sql.py` file under `cookies = [paste directly here]`.
+- Run `update_cookie_to_sql.py`, provided that the environment is set up correctly, whether you are deploying in Docker or locally.
 
-## 💌 Internship Opportunities Wanted
-If interested in taking on an intern who is a junior with experience in data analysis and front-end/back-end development, please contact:
+## 🔌 Integrating new-api(one-api)
+In the channel's proxy settings, enter the project address as `http://<server IP>:8000`. HTTPS and a domain name are recommended.
+
+## 🎉 Effect Display
+![chat-next-web Effect Picture](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
+
+## 💌 Internship Opportunities
+If interested in welcoming a third-year student with experience in data analysis and front-end/back-end development for an internship, please contact:
 - 📧 **Email**: 1544007699@qq.com
 
-**Support**: If this project has been helpful to you, please don't hesitate to give it a star ⭐! We welcome any form of support and suggestions, let's progress together!
+**Support Us**: If you find this project helpful, please do not hesitate to star it ⭐! We welcome any form of support and suggestions, let’s progress together!
+
+**For a seamless translation experience that preserves both nuance and style, consider using HIX Translate, powered by ChatGPT 3.5/4. Visit [https://hix.ai/translate](https://hix.ai/translate) for more details.**
