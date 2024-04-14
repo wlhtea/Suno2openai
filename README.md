@@ -35,10 +35,10 @@ This tutorial provides step-by-step guidance on running a Docker container with 
 
 1. **Pull Docker Image**
 
-   Ensure the Docker image `wlhtea/suno2openai:0.1.0` is available on your machine. If not, you can pull it from the Docker repository using:
+   Ensure the Docker image `wlhtea/suno2openai:0.1.1` is available on your machine. If not, you can pull it from the Docker repository using:
 
    ```bash
-   docker pull wlhtea/suno2openai:0.1.0
+   docker pull wlhtea/suno2openai:0.1.1
    ```
 
 2. **Run Docker Container**
@@ -55,7 +55,7 @@ This tutorial provides step-by-step guidance on running a Docker container with 
    -e SQL_IP='<SQL_IP>' \
    -e SQL_dk=3306 \
    --restart=always \
-   wlhtea/suno2openai:0.1.0
+   wlhtea/suno2openai:0.1.1
    ```
 
    **Parameter Explanation:**
