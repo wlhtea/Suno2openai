@@ -91,9 +91,7 @@ _Last Updated: 2024/4/7 18:18_
 
 ### Clone the Project to the Server
 ```bash
-git clone https://github.com/wlhtea/Suno2openai
-
-.git
+git clone https://github.com/wlhtea/Suno2openai.git
 ```
 
 ### Create a Database
