@@ -114,11 +114,7 @@ cd Suno2openai
 ```
 
 ### 更新Cookie
-编辑 `update_cookie_to_sql.py` 文件，将你的cookies填入下方数组中：
-```python
-cookies = ['cookie1', 'cookie2']
-```
-![cookie位置示例](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+
 
 ### 启动Docker
 ```bash
@@ -127,6 +123,20 @@ docker compose build && docker compose up
 **注意事项**：
 - **安全组配置**：确保8000端口已开放。
 - **HTTPS支持**：若前端项目使用HTTPS，本项目的反代网址也应使用HTTPS。
+
+## 🍪 获取cookie
+### 个人使用
+编辑 `update_cookie_to_sql.py` 文件，将你的cookies填入下方数组中：
+```python
+cookies = ['cookie1', 'cookie2']
+```
+![cookie位置示例](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+
+### 团队使用
+- 通过[文件种程序](https://github.com/wlhtea/Suno2openai/tree/main/suno_%E6%89%93%E5%8F%B7%E5%8F%96cookie)批量获取账号
+- 获取后将生成的`outlook.csv`放在`sign_suno.py`同级目录下获取cookie
+- 并将得到的cookie粘贴到`update_cookie_to_sql.py` 文件中`cookies = [直接粘贴在这]`
+- 运行`update_cookie_to_sql.py`，前提是已经正确配置好环境，无论你是在docker还是在本地中部署
 
 ## 🔌 接入 new-api(one-api)
 在渠道的代理设置中填写本项目地址，格式为：`http://<服务器IP>:8000`。建议使用HTTPS和域名。
