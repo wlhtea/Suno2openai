@@ -3,6 +3,7 @@
 > Integrated based on [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant with OpenAI formats.
 
 ## Changelog
+- 2024.4.14 Support for non-streaming output with `stream=False` docker version 0.1.1 No need to update if you don't need this feature.
 - 2024.4.14 Updated a script to automatically retrieve cookies from registered Outlook emails and write them into the database.
 - 2024.4.12 **Completed integration of new-api and one-api**, select OpenAI calls, and input the project deployment address (no need for /v1/); the key can be left empty.
 - 2024.4.10 Due to Suno's official updates, some project features were inoperable, now modified. Please re-pull the projects pulled before 2024/4/10 15:04; Docker to be updated later (already updated, be mindful of the version number when pulling).
