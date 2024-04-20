@@ -4,6 +4,6 @@ services:
   suno-api:
     build: .
     ports:
-      - "8000:8000"
+      - "8093:8000"
     env_file:
       - .env

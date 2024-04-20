@@ -8,8 +8,13 @@ SQL_name = os.getenv('SQL_name','')
 SQL_password = os.getenv('SQL_password','')
 SQL_IP = os.getenv('SQL_IP','')
 SQL_dk = os.getenv('SQL_dk',3306)
-cookies = \
-    ['cookie1','cookie2']
+
+# 从环境变量获取 cookies
+COOKIE1 = os.getenv('COOKIE1', '')
+COOKIE2 = os.getenv('COOKIE2', '')
+
+# 使用列表来组织多个 cookies
+COOKIES = [COOKIE1, COOKIE2]
 
 async def fetch_limit_left(cookie,db_manager):
     # song_gen = SongsGen(cookie)
