@@ -145,10 +145,11 @@ docker compose build && docker compose up
 
 ### 个人使用
 
-编辑 `update_cookie_to_sql.py` 文件，将你的cookies填入下方数组中：
+编辑 `.env` 文件，将cookies填入。
 
-```python
-cookies = ['cookie1', 'cookie2']
+```
+COOKIE1=
+COOKIE2=
 ```
 
 ![cookie位置示例](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
