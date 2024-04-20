@@ -15,7 +15,7 @@ SQL_dk = os.getenv('SQL_dk',3306)
 async def create_database_and_table():
     # Connect to the MySQL Server
     conn = await aiomysql.connect(host=SQL_IP, port=int(SQL_dk),
-                                  user=SQL_name, password=SQL_password)
+                                  user=SQL_user, password=SQL_password)
     cursor = await conn.cursor()
 
     # Create a new database 'SunoAPI' (if it doesn't exist)
