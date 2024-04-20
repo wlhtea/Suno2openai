@@ -140,7 +140,11 @@ docker compose build && docker compose up
 
 - **安全组配置**：确保8000端口已开放。
 - **HTTPS支持**：若前端项目使用HTTPS，本项目的反代网址也应使用HTTPS。
-
+- 
+## 🫙 编译部署
+```
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
 ## 🍪 获取cookie
 
 ### 个人使用
