@@ -88,6 +88,7 @@ from sql_uilts import DatabaseManager
 BASE_URL = os.getenv('BASE_URL','https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
 SQL_name = os.getenv('SQL_name','')
+SQL_username = os.getenv('SQL_username','')
 SQL_password = os.getenv('SQL_password','')
 SQL_IP = os.getenv('SQL_IP','')
 SQL_dk = os.getenv('SQL_dk',3306)
@@ -126,7 +127,7 @@ def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str
     return input_token_count, output_token_count
 
 async def generate_data(chat_user_message,chat_id,timeStamp):
-    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
+    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_username, SQL_password, SQL_name)
 
     while True:
         try:
