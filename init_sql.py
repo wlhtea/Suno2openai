@@ -1,17 +1,19 @@
-import asyncio
+import os
+
 import aiomysql
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
-BASE_URL = os.getenv('BASE_URL','https://studio-api.suno.ai')
-SESSION_ID = os.getenv('SESSION_ID','')
-SQL_name = os.getenv('SQL_name','')
-SQL_user = os.getenv('SQL_user','')
-SQL_password = os.getenv('SQL_password','')
-SQL_IP = os.getenv('SQL_IP','')
-SQL_dk = os.getenv('SQL_dk',3306)
+BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
+SESSION_ID = os.getenv('SESSION_ID', '')
+SQL_name = os.getenv('SQL_name', '')
+SQL_user = os.getenv('SQL_user', '')
+SQL_password = os.getenv('SQL_password', '')
+SQL_IP = os.getenv('SQL_IP', '')
+SQL_dk = os.getenv('SQL_dk', 3306)
+
+
 async def create_database_and_table():
     # Connect to the MySQL Server
     conn = await aiomysql.connect(host=SQL_IP, port=int(SQL_dk),
@@ -45,7 +47,6 @@ async def main():
     else:
         await create_database_and_table()
         # Here, you can continue with other database operations such as insert, update, etc.
-
 
 # if __name__ == "__main__":
 #     asyncio.run(main())

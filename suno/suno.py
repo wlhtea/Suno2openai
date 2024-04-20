@@ -1,21 +1,19 @@
-import argparse
 import contextlib
 import json
 import os
+import random
 import re
 import time
 from http.cookies import SimpleCookie
 from typing import Tuple
-import random
+from typing import Union
 
 from curl_cffi import requests
 from curl_cffi.requests import Cookies
+from dotenv import load_dotenv, find_dotenv
 from fake_useragent import UserAgent
 from requests import get as rget
 from rich import print
-from typing import Union
-
-from dotenv import load_dotenv, find_dotenv
 
 _ = load_dotenv(find_dotenv())
 
@@ -72,7 +70,7 @@ class SongsGen:
         # now data
         self.now_data = {}
 
-    def _get_auth_token(self,w=None):
+    def _get_auth_token(self, w=None):
         response = self.session.get(get_session_url, impersonate=browser_version)
         data = response.json()
         r = data.get("response")
@@ -87,7 +85,7 @@ class SongsGen:
         )
         data = response.json()
         if w is not None:
-            return data.get('jwt'),sid
+            return data.get('jwt'), sid
         return data.get("jwt")
 
     def _renew_auth_token(self):
@@ -137,7 +135,7 @@ class SongsGen:
         song_name = data.get("title", "")
         mt = data.get("metadata")
         if (
-            not mt
+                not mt
         ):  # Remove checking for title because custom songs have no title if not specified
             return "", ""
         lyrics = re.sub(r"\[.*?\]", "", mt.get("prompt"))
@@ -191,12 +189,12 @@ class SongsGen:
             return True
 
     def get_songs(
-        self,
-        prompt: str,
-        tags: Union[str, None] = None,
-        title: str = "",
-        make_instrumental: bool = False,
-        is_custom: bool = False,
+            self,
+            prompt: str,
+            tags: Union[str, None] = None,
+            title: str = "",
+            make_instrumental: bool = False,
+            is_custom: bool = False,
     ) -> dict:
         url = f"{base_url}/api/generate/v2/"
         self.session.headers["user-agent"] = ua.random
@@ -250,13 +248,13 @@ class SongsGen:
         return self.song_info_dict
 
     def save_songs(
-        self,
-        prompt: str,
-        output_dir: str = "./output",
-        tags: Union[str, None] = None,
-        title: Union[str, None] = None,
-        make_instrumental: bool = False,
-        is_custom: bool = False,
+            self,
+            prompt: str,
+            output_dir: str = "./output",
+            tags: Union[str, None] = None,
+            title: Union[str, None] = None,
+            make_instrumental: bool = False,
+            is_custom: bool = False,
     ) -> None:
         mp3_index = 0
         try:
@@ -284,7 +282,7 @@ class SongsGen:
             raise Exception("Could not download song")
         # save response to file
         with open(
-            os.path.join(output_dir, f"suno_{mp3_index + 1}.mp3"), "wb"
+                os.path.join(output_dir, f"suno_{mp3_index + 1}.mp3"), "wb"
         ) as output_file:
             for chunk in response.iter_content(chunk_size=1024):
                 # If the chunk is not empty, write it to the file.
@@ -293,8 +291,8 @@ class SongsGen:
         if not song_name:
             song_name = "Untitled"
         with open(
-            os.path.join(output_dir, f"{song_name.replace(' ', '_')}.lrc"),
-            "w",
-            encoding="utf-8",
+                os.path.join(output_dir, f"{song_name.replace(' ', '_')}.lrc"),
+                "w",
+                encoding="utf-8",
         ) as lyric_file:
             lyric_file.write(f"{song_name}\n\n{lyric}")

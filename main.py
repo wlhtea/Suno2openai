@@ -3,23 +3,17 @@ import datetime
 import json
 import os
 
-from fastapi import FastAPI, HTTPException, status, Depends, Request, Cookie
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
-from init_sql import create_database_and_table
-from utils import generate_music, get_feed, generate_lyrics, get_lyrics
-from deps import get_token
-import schemas
-from cookie import suno_auth
-from utils import generate_music,get_feed
-import asyncio
-from suno.suno import SongsGen
 from starlette.responses import StreamingResponse
 
-
+import schemas
+from cookie import suno_auth
+from init_sql import create_database_and_table
+from suno.suno import SongsGen
+from utils import generate_music, get_feed
 
 app = FastAPI()
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,21 +79,26 @@ import random
 import string
 import time
 from sql_uilts import DatabaseManager
-BASE_URL = os.getenv('BASE_URL','https://studio-api.suno.ai')
+
+BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
-SQL_name = os.getenv('SQL_name','')
-SQL_user = os.getenv('SQL_user','')
-SQL_password = os.getenv('SQL_password','')
-SQL_IP = os.getenv('SQL_IP','')
-SQL_dk = os.getenv('SQL_dk',3306)
+SQL_name = os.getenv('SQL_name', '')
+SQL_user = os.getenv('SQL_user', '')
+SQL_password = os.getenv('SQL_password', '')
+SQL_IP = os.getenv('SQL_IP', '')
+SQL_dk = os.getenv('SQL_dk', 3306)
+
 
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
+
 def generate_timestamp_async():
     return int(time.time())
 
+
 import tiktoken
+
 
 def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str) -> (int, int):
     """
@@ -126,7 +125,8 @@ def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str
 
     return input_token_count, output_token_count
 
-async def generate_data(chat_user_message,chat_id,timeStamp):
+
+async def generate_data(chat_user_message, chat_id, timeStamp):
     db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_user, SQL_password, SQL_name)
 
     while True:
@@ -156,7 +156,7 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
             "title": "",
             "tags": ""
         }
-        yield f"""data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created" : timeStamp, "choices": [{"index": 0, "delta": {"role":"assistant","content":""}, "finish_reason": None}]})}\n\n"""
+        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "finish_reason": None}]})}\n\n"""
         response = await generate_music(data=data, token=token)
         await asyncio.sleep(3)
         while True:
@@ -179,7 +179,7 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
                     if now_data.get('detail') == 'Unauthorized':
                         link = f'https://audiopipe.suno.ai/?item_id={clip_id}'
                         link_data = f"\n **音乐链接**:{link}\n"
-                        yield """data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": link_data}, "finish_reason": None}]})}\n\n"""
+                        yield """data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": link_data}, "finish_reason": None}]})}\n\n"""
                         break
                 elif not _return_title:
                     try:
@@ -187,7 +187,7 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
                         if title != '':
                             title_data = f"**歌名**:{title} \n"
                             print(title)
-                            yield """data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
+                            yield """data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
                             _return_title = True
                     except:
                         pass
@@ -197,7 +197,8 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
                         if tags is not None:
                             tags_data = f"**类型**:{tags} \n"
                             print(tags)
-                            yield str(f"""data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
+                            yield str(
+                                f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
                             _return_tags = True
                     except:
                         pass
@@ -207,7 +208,8 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
                         if prompt is not None:
                             print(prompt)
                             prompt_data = f"**歌词**:{prompt} \n"
-                            yield str(f"""data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
+                            yield str(
+                                f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
                             _return_prompt = True
                     except:
                         pass
@@ -215,35 +217,35 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
 
                 elif not _return_image_url:
                     if now_data[0].get('image_url') is not None:
-
                         image_url_small_data = f"**图片链接:** ![封面图片_小]({now_data[0]['image_url']}) \n"
                         image_url_lager_data = f"**图片链接:** ![封面图片_大]({now_data[0]['image_large_url']}) \n"
                         print(image_url_lager_data)
                         print(image_url_small_data)
-                        yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
-                        yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
+                        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
+                        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                         _return_image_url = True
                 elif 'audio_url' in now_data[0]:
                     print(response)
                     audio_url_ = now_data[0]['audio_url']
                     if audio_url_ != '':
                         audio_url_data = f"\n **音乐链接**:{audio_url_}"
-                        yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data}, "finish_reason": None}]})}\n\n"""
+                        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data}, "finish_reason": None}]})}\n\n"""
                         break
                 else:
                     content_wait = "."
-                    yield f"""data:""" +' '+f"""{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":content_wait},"finish_reason":None}]})}\n\n"""
+                    yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": content_wait}, "finish_reason": None}]})}\n\n"""
                     await asyncio.sleep(5)  # 等待5秒再次尝试
                     attempts += 1
         yield f"""data: [DONE]\n\n"""
     except Exception as e:
-        yield f"""data:"""+' '+f"""{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":str(e)},"finish_reason":None}]})}\n\n"""
-        yield f"""data:"""+' '+f"""[DONE]\n\n"""
+        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
+        yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
     finally:
         try:
             await db_manager.update_cookie_working(cookie, False)
         except:
             print('No sql')
+
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data):
@@ -271,7 +273,7 @@ async def get_last_user_message(data: schemas.Data):
         }
 
         if not data.stream:
-            async for data_string in generate_data(last_user_content,chat_id,timeStamp):
+            async for data_string in generate_data(last_user_content, chat_id, timeStamp):
                 try:
                     json_data = data_string.split('data: ')[1].strip()
 
@@ -281,7 +283,7 @@ async def get_last_user_message(data: schemas.Data):
                     print(content_all)
                 except:
                     pass
-            input_tokens, output_tokens = calculate_token_costs(last_user_content,content_all,'gpt-3.5-turbo')
+            input_tokens, output_tokens = calculate_token_costs(last_user_content, content_all, 'gpt-3.5-turbo')
             json_string = {
                 "id": f"chatcmpl-{chat_id}",
                 "object": "chat.completion",
@@ -300,10 +302,11 @@ async def get_last_user_message(data: schemas.Data):
                 "usage": {
                     "prompt_tokens": input_tokens,
                     "completion_tokens": output_tokens,
-                    "total_tokens": input_tokens+output_tokens
+                    "total_tokens": input_tokens + output_tokens
                 }
             }
 
             return json_string
         else:
-            return StreamingResponse(generate_data(last_user_content,chat_id,timeStamp),headers=headers, media_type="text/event-stream")
+            return StreamingResponse(generate_data(last_user_content, chat_id, timeStamp), headers=headers,
+                                     media_type="text/event-stream")

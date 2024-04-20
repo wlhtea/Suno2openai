@@ -87,23 +87,24 @@
 # r = requests.post("http://127.0.0.1:8000/v1/chat/completions")
 # for i in r:
 #     print(i)
-import json
 
 import requests
+
 
 def stream_response(url):
     data = {
         "model": "gpt-4",
-        "messages":[
+        "messages": [
             {"role": "user", "content": "rap"},
         ],
-        "stream":True
+        "stream": True
     }
-    with requests.post(url, stream=True,json=data) as response:
+    with requests.post(url, stream=True, json=data) as response:
         response.raise_for_status()  # 确保请求成功
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:  # 过滤掉“keep-alive”新的块
                 print(chunk)  # 处理每个块（例如打印或保存）
+
 
 # 使用函数
 stream_response('https://suno.w-l-h.xyz/v1/chat/completions/')

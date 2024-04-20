@@ -10,14 +10,13 @@ Export: outlook.csv
 """
 
 import csv
+import random
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.support.ui import Select
-import random
-
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 
@@ -154,8 +153,6 @@ def main():
 if __name__ == '__main__':
     main()
 
-
-
 # u79cjxvt8yblyu9p@outlook.com,lmagm56hvsi5mp7j
 # j4fs0hjq5mhbt32l@outlook.com,n73ejvl8hb4w4en7
 # zm05szdjcmktsxqr@outlook.com,bgfj0sl8g95tyerq
@@ -167,5 +164,3 @@ if __name__ == '__main__':
 
 # rp97r61z4r0fainq@outlook.com,kg8c4nb2cwb7d76p
 # yjqtnt57y94b61h9@outlook.com,6bk0scqvruszntof
-
-

@@ -10,14 +10,13 @@ Export: outlook.csv
 """
 
 import csv
+import random
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.support.ui import Select
-import random
-
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 

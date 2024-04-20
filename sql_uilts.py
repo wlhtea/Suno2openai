@@ -1,5 +1,6 @@
 import aiomysql
 
+
 class DatabaseManager:
     def __init__(self, host, port, user, password, db_name):
         self.host = host
@@ -50,7 +51,7 @@ class DatabaseManager:
                     WHERE cookie = %s
                 """, (count_increment, working, cookie))
 
-    async def update_cookie_count(self, cookie, count_increment,update=None):
+    async def update_cookie_count(self, cookie, count_increment, update=None):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 if update is not None:
