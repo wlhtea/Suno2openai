@@ -97,7 +97,7 @@ items' ，[此处检查是否正确](https://github.com/wlhtea/Suno2openai/issue
 
 ## 📦 docker-compose 部署
 
-_更新时间：2024/4/7 18:18_
+_更新时间：2024/4/21 10:18_
 
 ### 克隆项目到服务器
 
@@ -117,6 +117,7 @@ git clone https://github.com/wlhtea/Suno2openai.git
 BASE_URL=https://studio-api.suno.ai
 SESSION_ID=cookie # 此项不需修改
 SQL_name=<数据库名称>
+SQL_user=<数据库用户名>
 SQL_password=<数据库密码>
 SQL_IP=<数据库主机IP>
 SQL_dk=3306 # 数据库端口
@@ -140,7 +141,7 @@ docker-compose build && docker-compose up
 
 - **安全组配置**：确保8000端口已开放。
 - **HTTPS支持**：若前端项目使用HTTPS，本项目的反代网址也应使用HTTPS。
-- 
+- **buildx**：docker-compose必须支持buildx插件
 ## 🫙 编译部署
 ```
 uvicorn main:app --host 0.0.0.0 --port 8000
@@ -154,6 +155,13 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 COOKIE1=
 COOKIE2=
+```
+
+如果对话时报错'NoneType' object has no attribute 'items'，
+请去数据库插入cookies
+```
+INSERT INTO cookies (id, cookie, count, working) 
+VALUES (1, 'chocolate', 10, TRUE);
 ```
 
 ![cookie位置示例](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
