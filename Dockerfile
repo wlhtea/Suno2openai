@@ -5,6 +5,7 @@ FROM python:3.10-slim-buster
 ARG BASE_URL
 ARG SESSION_ID
 ARG SQL_name
+ARG SQL_user
 ARG SQL_password
 ARG SQL_IP
 ARG SQL_dk
@@ -13,6 +14,7 @@ ARG SQL_dk
 ENV BASE_URL=${BASE_URL} \
     SESSION_ID=${SESSION_ID} \
     SQL_name=${SQL_name} \
+    SQL_user=${SQL_user} \
     SQL_password=${SQL_password} \
     SQL_IP=${SQL_IP} \
     SQL_dk=${SQL_dk}
