@@ -161,7 +161,7 @@ COOKIE2=
 请去数据库插入cookies
 ```
 INSERT INTO cookies (id, cookie, count, working) 
-VALUES (1, 'chocolate', 10, TRUE);
+VALUES (1, 'chocolate', 10, 0);
 ```
 
 ![cookie位置示例](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
