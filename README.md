@@ -143,7 +143,7 @@ cd Suno2openai
 ### Start Docker
 
 ```bash
-docker compose build && docker compose up
+docker-compose build && docker-compose up
 ```
 
 **Notes**:

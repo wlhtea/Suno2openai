@@ -144,7 +144,7 @@ cookies = ['cookie1', 'cookie2']
 ### Start Docker
 
 ```bash
-docker compose build && docker compose up
+docker-compose build && docker-compose up
 ```
 
 ## **Notes**:

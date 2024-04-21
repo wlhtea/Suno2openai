@@ -133,7 +133,7 @@ cd Suno2openai
 ### 启动Docker
 
 ```bash
-docker compose build && docker compose up
+docker-compose build && docker-compose up
 ```
 
 **注意事项**：
