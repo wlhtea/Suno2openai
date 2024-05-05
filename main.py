@@ -136,6 +136,7 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
         except:
             await create_database_and_table()
     try:
+        _return_ids = False
         _return_tags = False
         _return_title = False
         _return_prompt = False
@@ -171,7 +172,7 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
         # 使用 clip_ids 查询音频链接
         for clip_id in clip_ids:
             attempts = 0
-            while attempts < 60:  # 限制尝试次数以避免无限循环
+            while attempts < 120:  # 限制尝试次数以避免无限循环
                 now_data = await get_feed(ids=clip_id, token=token)
                 more_information_ = now_data[0]['metadata']
                 if type(now_data) == dict:
@@ -180,12 +181,29 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
                         link_data = f"\n **音乐链接**:{link}\n"
                         yield """data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": link_data}, "finish_reason": None}]})}\n\n"""
                         break
+
+                elif not _return_ids:
+                    try:
+                        song_id_1 = clip_ids[0]
+                        song_id_2 = clip_ids[1]
+                        song_id_text = (f""
+                                        f"**歌曲id[1]** : {song_id_1}\n"
+                                        f"**歌曲id[2]** : {song_id_2}\n"
+                                        f"**完整歌曲链接（生成音乐链接后几分钟才生效）**: \n"
+                                        f"歌曲① {'https://cdn1.suno.ai/'+song_id_1+'.mp3'} \n"
+                                        f"歌曲② {'https://cdn1.suno.ai/'+song_id_2+'.mp3'} \n")
+                        yield str(
+                            f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": song_id_text}, "finish_reason": None}]})}\n\n""")
+
+                        _return_ids = True
+                    except:
+                        pass
+
                 elif not _return_title:
                     try:
                         title = now_data[0]["title"]
                         if title != '':
                             title_data = f"**歌名**:{title} \n"
-                            print(title)
                             yield """data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
                             _return_title = True
                     except:
@@ -195,7 +213,6 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
                         tags = more_information_["tags"]
                         if tags is not None:
                             tags_data = f"**类型**:{tags} \n"
-                            print(tags)
                             yield str(f"""data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
                             _return_tags = True
                     except:
@@ -204,7 +221,6 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
                     try:
                         prompt = more_information_["prompt"]
                         if prompt is not None:
-                            print(prompt)
                             prompt_data = f"**歌词**:{prompt} \n"
                             yield str(f"""data:"""+' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
                             _return_prompt = True
@@ -217,24 +233,23 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
 
                         image_url_small_data = f"**图片链接:** ![封面图片_小]({now_data[0]['image_url']}) \n"
                         image_url_lager_data = f"**图片链接:** ![封面图片_大]({now_data[0]['image_large_url']}) \n"
-                        print(image_url_lager_data)
-                        print(image_url_small_data)
                         yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
                         yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                         _return_image_url = True
                 elif 'audio_url' in now_data[0]:
-                    print(response)
                     audio_url_ = now_data[0]['audio_url']
                     if audio_url_ != '':
-                        audio_url_data = f"\n **音乐链接**:{audio_url_}"
+                        audio_url_data = f"\n **音乐链接(临时)**:{audio_url_}"
                         yield f"""data:""" +' '+f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data}, "finish_reason": None}]})}\n\n"""
                         break
                 else:
                     content_wait = "."
                     yield f"""data:""" +' '+f"""{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":content_wait},"finish_reason":None}]})}\n\n"""
-                    await asyncio.sleep(5)  # 等待5秒再次尝试
+                    print(attempts)
+                    print(now_data)
+                    time.sleep(5)  # 等待5秒再次尝试
                     attempts += 1
-        yield f"""data: [DONE]\n\n"""
+        yield f"""data:"""+' '+f"""[DONE]\n\n"""
     except Exception as e:
         yield f"""data:"""+' '+f"""{json.dumps({"id":f"chatcmpl-{chat_id}","object":"chat.completion.chunk","model":"suno-v3","created":timeStamp,"choices":[{"index":0,"delta":{"content":str(e)},"finish_reason":None}]})}\n\n"""
         yield f"""data:"""+' '+f"""[DONE]\n\n"""
@@ -277,7 +292,6 @@ async def get_last_user_message(data: schemas.Data):
                     parsed_data = json.loads(json_data)
                     content = parsed_data['choices'][0]['delta']['content']
                     content_all += content
-                    print(content_all)
                 except:
                     pass
             input_tokens, output_tokens = calculate_token_costs(last_user_content,content_all,'gpt-3.5-turbo')
