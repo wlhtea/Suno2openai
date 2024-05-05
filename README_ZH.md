@@ -38,10 +38,10 @@
 
 1. **拉取Docker镜像**
 
-   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:0.1.1`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
+   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:0.1.`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
 
    ```bash
-   docker pull wlhtea/suno2openai:0.1.1
+   docker pull wlhtea/suno2openai:0.1.2
    ```
 
 2. **运行Docker容器**
@@ -58,7 +58,7 @@
    -e SQL_IP='<SQL_IP>' \
    -e SQL_dk=3306 \
    --restart=always \
-   wlhtea/suno2openai:0.1.1
+   wlhtea/suno2openai:0.1.2
    ```
 
    **参数说明:**
@@ -76,6 +76,8 @@
    count = int
    working = 0
    ```
+   `count` 为账号剩余次数
+   `working` 为是否正在工作，1为工作中，0为等待指令
 
 数据库可能报错：'NoneType' object has no attribute 'items' ，[此处检查是否正确](https://github.com/wlhtea/Suno2openai/issues/10)
 
