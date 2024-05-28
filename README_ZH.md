@@ -1,4 +1,7 @@
-这是一个[pull request](https://github.com/eddsi/Suno2openai/tree/main) 但是我并没有太多时间去看 如果大家觉得没问题请给我反馈一下 我就直接合并了
+
+
+# **本项目暂时不会更新 感谢您的支持**
+
 
 中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README.md)
 
