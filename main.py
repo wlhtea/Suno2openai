@@ -125,7 +125,7 @@ def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str
 
     return input_token_count, output_token_count
 
-async def generate_data(chat_user_message,chat_id,timeStamp):
+async def generate_data(chat_user_message,chat_id,timeStamp,ModelVersion):
     db_manager = DatabaseManager(SQL_IP, int(SQL_dk), SQL_name, SQL_password, SQL_name)
 
     while True:
@@ -149,10 +149,18 @@ async def generate_data(chat_user_message,chat_id,timeStamp):
         token, sid = SongsGen(cookie)._get_auth_token(w=1)
         suno_auth.set_session_id(sid)
         suno_auth.load_cookie(cookie)
+        Model = "chirp-v3-0"
+        if ModelVersion == "suno-v3":
+            Model = "chirp-v3-0"
+        elif ModelVersion == "suno-v3.5":
+            Model = "chirp-v3-5"
+        else:
+            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("请选择suno-v3 或者 suno-v3.5其中一个")}, "finish_reason": None}]})}\n\n"""
+            yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
         data = {
             "gpt_description_prompt": f"{chat_user_message}",
             "prompt": "",
-            "mv": "chirp-v3-0",
+            "mv": Model,
             "title": "",
             "tags": ""
         }
@@ -319,4 +327,4 @@ async def get_last_user_message(data: schemas.Data):
 
             return json_string
         else:
-            return StreamingResponse(generate_data(last_user_content,chat_id,timeStamp),headers=headers, media_type="text/event-stream")
+            return StreamingResponse(generate_data(last_user_content,chat_id,timeStamp,data.model),headers=headers, media_type="text/event-stream")

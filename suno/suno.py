@@ -21,9 +21,9 @@ _ = load_dotenv(find_dotenv())
 
 ua = UserAgent(browsers=["edge"])
 
-get_session_url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.72.0-snapshot.vc141245"
+get_session_url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.73.2"
 exchange_token_url = (
-    "https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_clerk_js_version=4.72.0-snapshot.vc141245"
+    "https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_client?_clerk_js_version=4.73.2"
 )
 
 base_url = "https://studio-api.suno.ai"
@@ -202,6 +202,7 @@ class SongsGen:
         self.session.headers["user-agent"] = ua.random
         payload = {
             "gpt_description_prompt": prompt,
+            # chirp-v3-5
             "mv": "chirp-v3-0",
             "prompt": "",
             "make_instrumental": make_instrumental,
