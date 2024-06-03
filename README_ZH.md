@@ -4,7 +4,8 @@
 > 基于 [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) 和 [Suno-API](https://github.com/SunoAI-API/Suno-API) 项目整合，提供符合OpenAI格式的接口标准化服务。
 
 ## 更新日志
-- 2024.4.14 支持非流式输出，参数设置`stream=False` docker版本为0.1.1 如无需该功能不必更新
+- 2024.6.03 新增suno-v3.5模型调用和cdn链接获取
+- 2024.4.14 支持非流式输出，参数设置`stream=False` docker版本为latest 如无需该功能不必更新
 - 2024.4.14 跟新一个脚本自动将注册的outlook邮箱获取cookie并将cookie写入数据库
 - 2024.4.12 **完成对new-api和one-api**接入，选择openai调用，并填入项目部署地址（不需要/v1/）密钥空着即可。
 - 2024.4.10 由于suno官方更新 部分项目功能无法使用 已经重新更改 在2024/4/10：15：04之前拉去的项目 请重新拉去即可 docker晚点更新(已更新，拉去时注意拉去版本号。)
@@ -36,10 +37,10 @@
 
 1. **拉取Docker镜像**
 
-   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:0.1.`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
+   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:latest`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
 
    ```bash
-   docker pull wlhtea/suno2openai:0.1.2
+   docker pull wlhtea/suno2openai:latest
    ```
 
 2. **运行Docker容器**
@@ -56,7 +57,7 @@
    -e SQL_IP='<SQL_IP>' \
    -e SQL_dk=3306 \
    --restart=always \
-   wlhtea/suno2openai:0.1.2
+   wlhtea/suno2openai:latest
    ```
 
    **参数说明:**
