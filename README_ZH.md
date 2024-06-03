@@ -1,8 +1,3 @@
-
-
-# **本项目暂时不会更新 感谢您的支持**
-
-
 中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README.md)
 
 # Suno2openai
