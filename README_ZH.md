@@ -68,39 +68,6 @@
    - `--restart=always`: 确保容器始终重启，除非手动停止。
 
 
-   **补充内容**
-    ### 1. 创建数据库
-    首先，创建数据库。数据库名称和用户名我都默认设为一致，后续可以根据需要修改。
-    
-    ### 2. 获取 Cookie
-    获取 Cookie 的方法如下：
-    ![获取 Cookie](upload://bDmbh0W5ErdUweMeMMIBswdycEQ.png)
-    
-    ### 3. 使用 Docker 部署
-    注意不要把环境变量用单引号或者双引号括起来：
-    - 'databasename' ❌
-    - databasename   ✔
-    
-    ### 4. 部署方式
-    - **自用**: 分为两种情况。如果是自己用，可以本地部署，直接用 OpenAI 格式访问 `http://127.0.0.1:8000/v1/chat/completions`
-    - **中转**: 最好有几个账号轮询使用。由于用户大多是在 chat-next-web 这种地方使用，而这种前端项目基本都是 https 对 https 的请求，如果不弄 SSL 证书，就无法进行请求。
-    
-    ### 5. 如何批量填入数据库 Cookie
-    1. 首先拉取我的项目：
-        ```bash
-        git clone https://github.com/wlhtea/Suno2openai.git
-        ```
-    
-    2. 然后复制环境变量文件：
-        ```bash
-        cp env.example .env 
-        ```
-    
-    3. 按照要求修改 `.env` 文件的内容，然后将 Cookie 填入 `update_cookie_to_sql.py` 对应的位置，运行程序：
-        ```bash
-        python update_cookie_to_sql.py
-        ```
-
 4. **添加cookie进数据库**
    打开数据库添加cookie即可 count为剩余次数（后续会添加一个自动导入的）
    ```mysql
@@ -111,6 +78,22 @@
    ```
    `count` 为账号剩余次数
    `working` 为是否正在工作，1为工作中，0为等待指令
+
+  ### 用python批量填入数据库
+    1. 首先拉取我的项目：
+      ```bash
+      git clone https://github.com/wlhtea/Suno2openai.git
+      ```
+  
+    2. 然后复制环境变量文件：
+        ```bash
+        cp env.example .env 
+        ```
+    
+    3. 按照要求修改 `.env` 文件的内容，然后将 Cookie 填入 `update_cookie_to_sql.py` 对应的位置，运行程序：
+        ```bash
+        python update_cookie_to_sql.py
+        ```
 
 数据库可能报错：'NoneType' object has no attribute 'items' ，[此处检查是否正确](https://github.com/wlhtea/Suno2openai/issues/10)
 
