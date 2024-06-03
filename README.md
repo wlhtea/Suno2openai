@@ -4,6 +4,7 @@
 > Integrated based on [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant with OpenAI formats.
 
 ## Changelog
+- 2024.6.03 Added suno-v3.5 model call and cdn link fetch.
 - 2024.4.14 Support for non-streaming output with `stream=False` docker version 0.1.1 No need to update if you don't need this feature.
 - 2024.4.14 Updated a script to automatically retrieve cookies from registered Outlook emails and write them into the database.
 - 2024.4.12 **Completed integration of new-api and one-api**, select OpenAI calls, and input the project deployment address (no need for /v1/); the key can be left empty.
@@ -36,10 +37,10 @@ This tutorial provides step-by-step guidance on running a Docker container with 
 
 1. **Pull Docker Image**
 
-   Ensure the Docker image `wlhtea/suno2openai:0.1.1` is available on your machine. If not, you can pull it from the Docker repository using:
+   Ensure the Docker image `wlhtea/suno2openai:latest` is available on your machine. If not, you can pull it from the Docker repository using:
 
    ```bash
-   docker pull wlhtea/suno2openai:0.1.1
+   docker pull wlhtea/suno2openai:latest
    ```
 
 2. **Run Docker Container**
@@ -56,7 +57,7 @@ This tutorial provides step-by-step guidance on running a Docker container with 
    -e SQL_IP='<SQL_IP>' \
    -e SQL_dk=3306 \
    --restart=always \
-   wlhtea/suno2openai:0.1.1
+   wlhtea/suno2openai:latest
    ```
 
    **Parameter Explanation:**
