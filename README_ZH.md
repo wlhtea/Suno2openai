@@ -4,6 +4,7 @@
 > 基于 [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) 和 [Suno-API](https://github.com/SunoAI-API/Suno-API) 项目整合，提供符合OpenAI格式的接口标准化服务。
 
 ## 更新日志
+- 2024.6.05 将数据库名称和用户名称分开
 - 2024.6.03 新增suno-v3.5模型调用和cdn链接获取
 - 2024.4.14 支持非流式输出，参数设置`stream=False` docker版本为latest 如无需该功能不必更新
 - 2024.4.14 跟新一个脚本自动将注册的outlook邮箱获取cookie并将cookie写入数据库
@@ -43,29 +44,40 @@
    docker pull wlhtea/suno2openai:latest
    ```
 
-2. **运行Docker容器**
+   2. **运行Docker容器**
 
-   使用必要的环境变量和端口映射来运行Docker容器。将`<SQL_NAME>`、`<SQL_PASSWORD>`和`<SQL_IP>`替换为你的SQL数据库连接的实际值。这些值应当保密，不应公开分享。
+      使用必要的环境变量和端口映射来运行Docker容器。将`<SQL_NAME>`、`<SQL_PASSWORD>`和`<SQL_IP>`替换为你的SQL数据库连接的实际值。这些值应当保密，不应公开分享。
 
-   ```bash
-   docker run -d --name wsunoapi \
-   -p 8000:8000 \
-   -e BASE_URL='https://studio-api.suno.ai' \
-   -e SESSION_ID='<your-session-id 可以不管>' \
-   -e SQL_name='<SQL_NAME>' \
-   -e SQL_password='<SQL_PASSWORD>' \
-   -e SQL_IP='<SQL_IP>' \
-   -e SQL_dk=3306 \
-   --restart=always \
-   wlhtea/suno2openai:latest
-   ```
+      ```bash
+      docker run -d --name wsunoapi \
+      -p 8000:8000 \
+      -e USER_Name='<USER_Name>'
+      -e SQL_name='<SQL_NAME>' \
+      -e SQL_password='<SQL_PASSWORD>' \
+      -e SQL_IP='<SQL_IP>' \
+      -e SQL_dk=3306 \
+      --restart=always \
+      wlhtea/suno2openai:latest
+      ```
+      例子
+      ```
+      docker run -d --name wsunoapi \
+         -p 8000:8000 \
+         -e USER_Name=suno2openaiUsername
+         -e SQL_name=suno2openaiSQLname \
+         -e SQL_password=12345678 \
+         -e SQL_IP=100.101.102.103 \
+         -e SQL_dk=3306 \
+         --restart=always \
+         wlhtea/suno2openai:latest
+      ```
 
-   **参数说明:**
-   - `-d`: 以后台模式运行容器并打印容器ID。
-   - `--name wsunoapi`: 为你的容器命名为`wsunoapi`，以便于引用。
-   - `-p 8000:8000`: 将容器的8000端口映射到宿主机的8000端口。
-   - `-e`: 为你的容器设置环境变量。
-   - `--restart=always`: 确保容器始终重启，除非手动停止。
+      **参数说明:**
+      - `-d`: 以后台模式运行容器并打印容器ID。
+      - `--name wsunoapi`: 为你的容器命名为`wsunoapi`，以便于引用。
+      - `-p 8000:8000`: 将容器的8000端口映射到宿主机的8000端口。
+      - `-e`: 为你的容器设置环境变量。
+      - `--restart=always`: 确保容器始终重启，除非手动停止。
 
 
 4. **添加cookie进数据库**
@@ -127,6 +139,7 @@ SQL_name=<数据库名称>
 SQL_password=<数据库密码>
 SQL_IP=<数据库主机IP>
 SQL_dk=3306 # 数据库端口
+USER_name=<Database 用户名>
 ```
 
 ### 进入项目目录

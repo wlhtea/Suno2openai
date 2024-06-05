@@ -4,6 +4,7 @@
 > Integrated based on [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant with OpenAI formats.
 
 ## Changelog
+- 2024.6.05 Separate database names from user names
 - 2024.6.03 Added suno-v3.5 model call and cdn link fetch.
 - 2024.4.14 Support for non-streaming output with `stream=False` docker version 0.1.1 No need to update if you don't need this feature.
 - 2024.4.14 Updated a script to automatically retrieve cookies from registered Outlook emails and write them into the database.
@@ -48,18 +49,31 @@ This tutorial provides step-by-step guidance on running a Docker container with 
    Run the Docker container using necessary environment variables and port mappings. Replace `<SQL_NAME>`, `<SQL_PASSWORD>`, and `<SQL_IP>` with your actual SQL database connection values. These should be kept confidential and not shared publicly.
 
    ```bash
+      docker run -d --name wsunoapi \
+      -p 8000:8000 \
+      -e USER_Name='<USER_Name>'
+      -e SQL_name='<SQL_NAME>' \
+      -e SQL_password='<SQL_PASSWORD>' \
+      -e SQL_IP='<SQL_IP>' \
+      -e SQL_dk=3306 \
+      --restart=always \
+      wlhtea/suno2openai:latest
+   ```
+   
+   ### **example**
+   ```         
    docker run -d --name wsunoapi \
-   -p 8000:8000 \
-   -e BASE_URL='https://studio-api.suno.ai' \
-   -e SESSION_ID='<your-session-id not required>' \
-   -e SQL_name='<SQL_NAME>' \
-   -e SQL_password='<SQL_PASSWORD>' \
-   -e SQL_IP='<SQL_IP>' \
-   -e SQL_dk=3306 \
-   --restart=always \
-   wlhtea/suno2openai:latest
+         -p 8000:8000 \
+         -e USER_Name=suno2openaiUsername
+         -e SQL_name=suno2openaiSQLname \
+         -e SQL_password=12345678 \
+         -e SQL_IP=100.101.102.103 \
+         -e SQL_dk=3306 \
+         --restart=always \
+         wlhtea/suno2openai:latest
    ```
 
+   
    **Parameter Explanation:**
    - `-d`: Run the container in detached mode and print the container ID.
    - `--name wsunoapi`: Name your container `wsunoapi` for easy reference.
@@ -67,13 +81,13 @@ This tutorial provides step-by-step guidance on running a Docker container with 
    - `-e`: Set environment variables for your container.
    - `--restart=always`: Ensure the container always restarts, unless manually stopped.
 
-3. **Add Cookie to Database**
+   **Add Cookie to Database**
    Simply open the database and add cookies with the remaining count (an automatic import feature will be added later).
    ```mysql
-   id = int
-   cookie = Cookie
-   count = int
-   working = 0
+      id = int
+      cookie = Cookie
+      count = int
+      working = 0
    ```
 
 Database may report error: 'NoneType' object has no attribute 'items', [check here if correct](https://github.com/wlhtea/Suno2openai/issues/10)
@@ -99,12 +113,11 @@ Create a database (name it as you wish), remember to save the password, and ensu
 ### Configure Environment Variables
 **Rename the `env.example` file to `.env` and fill in the corresponding details:**
 ```plaintext
-BASE_URL=https://studio-api.suno.ai
-SESSION_ID=cookie # This item does not need to be changed
 SQL_name=<Database Name>
 SQL_password=<Database Password>
 SQL_IP=<Database Host IP>
 SQL_dk=3306 # Database port
+USER_name=<Database Username>
 ```
 
 ### Enter the Project Directory

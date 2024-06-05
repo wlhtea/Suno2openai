@@ -38,7 +38,7 @@ class DatabaseManager:
                 await cur.execute("""
                     INSERT INTO cookies (cookie, count, working)
                     VALUES (%s, %s, %s)
-                    ON DUPLICATE KEY UPDATE count = count + 1, working = %s
+                    ON DUPLICATE KEY UPDATE count = count, working = %s
                 """, (cookie, count, working, working))
 
     async def update_cookie(self, cookie, count_increment, working):
