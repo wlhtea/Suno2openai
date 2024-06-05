@@ -151,7 +151,7 @@ docker compose build && docker compose up
 ```python
 cookies = ['cookie1', 'cookie2']
 ```
-![cookie位置示例](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+![cookie位置示例](https://cdn.linux.do/uploads/default/original/3X/5/1/518adc3a227e60dc759a69da2335778e9dcd3854.png)
 
 ### 团队使用
 - 通过[文件种程序](https://github.com/wlhtea/Suno2openai/tree/main/suno_%E6%89%93%E5%8F%B7%E5%8F%96cookie)批量获取账号
