@@ -211,7 +211,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion):
                     except:
                         pass
 
-                elif not _return_title:
+                if not _return_title:
                     try:
                         title = now_data[0]["title"]
                         if title != '':
@@ -220,7 +220,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion):
                             _return_title = True
                     except:
                         pass
-                elif not _return_tags:
+                if not _return_tags:
                     try:
                         tags = more_information_["tags"]
                         if tags is not None:
@@ -230,7 +230,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion):
                             _return_tags = True
                     except:
                         pass
-                elif not _return_prompt:
+                if not _return_prompt:
                     try:
                         prompt = more_information_["prompt"]
                         if prompt is not None:
@@ -242,14 +242,14 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion):
                         pass
 
 
-                elif not _return_image_url:
+                if not _return_image_url:
                     if now_data[0].get('image_url') is not None:
                         image_url_small_data = f"## ✨ 歌曲图片\n**🖼️ 图片链接①** ![封面图片_小]({now_data[0]['image_url']}) \n"
                         image_url_lager_data = f"**🖼️ 图片链接②** ![封面图片_大]({now_data[0]['image_large_url']}) \n"
                         yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
                         yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                         _return_image_url = True
-                elif 'audio_url' in now_data[0]:
+                if 'audio_url' in now_data[0]:
                     audio_url_ = now_data[0]['audio_url']
                     if audio_url_ != '':
                         audio_url_data = f"\n **📌 音乐链接(临时)**：{audio_url_}"
