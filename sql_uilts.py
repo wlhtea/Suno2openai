@@ -85,11 +85,13 @@ class DatabaseManager:
         await self.create_pool()  # 确保连接池已创建
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute("SELECT cookie FROM cookies WHERE working = FALSE LIMIT 1")
+                await cur.execute("SELECT cookie FROM cookies WHERE working = FALSE AND count > 0 LIMIT 1")
                 result = await cur.fetchone()
                 if result:
+                    print(f"本次调用选择了{result[0]}")
                     return result[0]
                 else:
+                    print(f"出现了异常，可能是因为没有合适的cookies了......")
                     return None
 # async def main():
 #     db_manager = DatabaseManager('127.0.0.1', 3306, 'root', '12345678', 'WSunoAPI')
