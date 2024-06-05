@@ -129,7 +129,7 @@ Edit the `update_cookie_to_sql.py` file and insert your cookies into the array b
 ```python
 cookies = ['cookie1', 'cookie2']
 ```
-![Example of Cookie Location](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+![cookie位置示例](https://cdn.linux.do/uploads/default/original/3X/5/1/518adc3a227e60dc759a69da2335778e9dcd3854.png)
 
 ### For Team Use
 - Obtain cookies in bulk through the [file-based program](https://github.com/wlhtea/Suno2openai/tree/main/suno_%E6%89%93%E5%8F%B7%E5%8F%96cookie).
@@ -141,7 +141,7 @@ cookies = ['cookie1', 'cookie2']
 In the channel's proxy settings, enter the project address as `http://<server IP>:8000`. HTTPS and a domain name are recommended.
 
 ## 🎉 Effect Display
-![chat-next-web Effect Picture](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
+![效果图](https://github.com/wlhtea/Suno2openai/assets/115779315/3bcf2cee-770f-46a9-8438-b8bbfced0143)
 
 ## 💌 Internship Opportunities
 If interested in welcoming a third-year student with experience in data analysis and front-end/back-end development for an internship, please contact:
