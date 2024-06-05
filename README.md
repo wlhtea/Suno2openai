@@ -1,13 +1,10 @@
 [中文](https://github.com/wlhtea/Suno2openai/blob/main/README_ZH.md) English
 
-
-# **This project will not be updated for a while Thank you for your support**
-
-
 # Suno2openai
 > Integrated based on [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant with OpenAI formats.
 
 ## Changelog
+- 2024.6.03 Added suno-v3.5 model call and cdn link fetch.
 - 2024.4.14 Support for non-streaming output with `stream=False` docker version 0.1.1 No need to update if you don't need this feature.
 - 2024.4.14 Updated a script to automatically retrieve cookies from registered Outlook emails and write them into the database.
 - 2024.4.12 **Completed integration of new-api and one-api**, select OpenAI calls, and input the project deployment address (no need for /v1/); the key can be left empty.
@@ -40,10 +37,10 @@ This tutorial provides step-by-step guidance on running a Docker container with 
 
 1. **Pull Docker Image**
 
-   Ensure the Docker image `wlhtea/suno2openai:0.1.1` is available on your machine. If not, you can pull it from the Docker repository using:
+   Ensure the Docker image `wlhtea/suno2openai:latest` is available on your machine. If not, you can pull it from the Docker repository using:
 
    ```bash
-   docker pull wlhtea/suno2openai:0.1.1
+   docker pull wlhtea/suno2openai:latest
    ```
 
 2. **Run Docker Container**
@@ -60,7 +57,7 @@ This tutorial provides step-by-step guidance on running a Docker container with 
    -e SQL_IP='<SQL_IP>' \
    -e SQL_dk=3306 \
    --restart=always \
-   wlhtea/suno2openai:0.1.1
+   wlhtea/suno2openai:latest
    ```
 
    **Parameter Explanation:**
@@ -132,7 +129,7 @@ Edit the `update_cookie_to_sql.py` file and insert your cookies into the array b
 ```python
 cookies = ['cookie1', 'cookie2']
 ```
-![Example of Cookie Location](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+![cookie位置示例](https://cdn.linux.do/uploads/default/original/3X/5/1/518adc3a227e60dc759a69da2335778e9dcd3854.png)
 
 ### For Team Use
 - Obtain cookies in bulk through the [file-based program](https://github.com/wlhtea/Suno2openai/tree/main/suno_%E6%89%93%E5%8F%B7%E5%8F%96cookie).
@@ -144,7 +141,7 @@ cookies = ['cookie1', 'cookie2']
 In the channel's proxy settings, enter the project address as `http://<server IP>:8000`. HTTPS and a domain name are recommended.
 
 ## 🎉 Effect Display
-![chat-next-web Effect Picture](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
+![效果图](https://github.com/wlhtea/Suno2openai/assets/115779315/3bcf2cee-770f-46a9-8438-b8bbfced0143)
 
 ## 💌 Internship Opportunities
 If interested in welcoming a third-year student with experience in data analysis and front-end/back-end development for an internship, please contact:

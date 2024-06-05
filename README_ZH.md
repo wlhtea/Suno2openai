@@ -1,15 +1,11 @@
-
-
-# **本项目暂时不会更新 感谢您的支持**
-
-
 中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README.md)
 
 # Suno2openai
 > 基于 [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) 和 [Suno-API](https://github.com/SunoAI-API/Suno-API) 项目整合，提供符合OpenAI格式的接口标准化服务。
 
 ## 更新日志
-- 2024.4.14 支持非流式输出，参数设置`stream=False` docker版本为0.1.1 如无需该功能不必更新
+- 2024.6.03 新增suno-v3.5模型调用和cdn链接获取
+- 2024.4.14 支持非流式输出，参数设置`stream=False` docker版本为latest 如无需该功能不必更新
 - 2024.4.14 跟新一个脚本自动将注册的outlook邮箱获取cookie并将cookie写入数据库
 - 2024.4.12 **完成对new-api和one-api**接入，选择openai调用，并填入项目部署地址（不需要/v1/）密钥空着即可。
 - 2024.4.10 由于suno官方更新 部分项目功能无法使用 已经重新更改 在2024/4/10：15：04之前拉去的项目 请重新拉去即可 docker晚点更新(已更新，拉去时注意拉去版本号。)
@@ -41,10 +37,10 @@
 
 1. **拉取Docker镜像**
 
-   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:0.1.`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
+   首先，确保你的机器上已经有了Docker镜像`wlhtea/suno2openai:latest`。如果没有，你可以使用以下命令从Docker仓库中拉取它：
 
    ```bash
-   docker pull wlhtea/suno2openai:0.1.2
+   docker pull wlhtea/suno2openai:latest
    ```
 
 2. **运行Docker容器**
@@ -61,7 +57,7 @@
    -e SQL_IP='<SQL_IP>' \
    -e SQL_dk=3306 \
    --restart=always \
-   wlhtea/suno2openai:0.1.2
+   wlhtea/suno2openai:latest
    ```
 
    **参数说明:**
@@ -71,7 +67,8 @@
    - `-e`: 为你的容器设置环境变量。
    - `--restart=always`: 确保容器始终重启，除非手动停止。
 
-3. **添加cookie进数据库**
+
+4. **添加cookie进数据库**
    打开数据库添加cookie即可 count为剩余次数（后续会添加一个自动导入的）
    ```mysql
    id = int
@@ -81,6 +78,22 @@
    ```
    `count` 为账号剩余次数
    `working` 为是否正在工作，1为工作中，0为等待指令
+
+  ### 用python批量填入数据库
+    1. 首先拉取我的项目：
+      ```bash
+      git clone https://github.com/wlhtea/Suno2openai.git
+      ```
+  
+    2. 然后复制环境变量文件：
+        ```bash
+        cp env.example .env 
+        ```
+    
+    3. 按照要求修改 `.env` 文件的内容，然后将 Cookie 填入 `update_cookie_to_sql.py` 对应的位置，运行程序：
+        ```bash
+        python update_cookie_to_sql.py
+        ```
 
 数据库可能报错：'NoneType' object has no attribute 'items' ，[此处检查是否正确](https://github.com/wlhtea/Suno2openai/issues/10)
 
@@ -138,7 +151,7 @@ docker compose build && docker compose up
 ```python
 cookies = ['cookie1', 'cookie2']
 ```
-![cookie位置示例](https://github.com/wlhtea/Suno2openai/assets/115779315/6edf9969-9eb6-420f-bfcd-dbf4b282ecbf)
+![cookie位置示例](https://cdn.linux.do/uploads/default/original/3X/5/1/518adc3a227e60dc759a69da2335778e9dcd3854.png)
 
 ### 团队使用
 - 通过[文件种程序](https://github.com/wlhtea/Suno2openai/tree/main/suno_%E6%89%93%E5%8F%B7%E5%8F%96cookie)批量获取账号
@@ -150,7 +163,7 @@ cookies = ['cookie1', 'cookie2']
 在渠道的代理设置中填写本项目地址，格式为：`http://<服务器IP>:8000`。建议使用HTTPS和域名。
 
 ## 🎉 效果展示
-![chat-next-web效果图](https://github.com/wlhtea/Suno2openai/assets/115779315/6495e840-b025-4667-82f6-19116ce71c8e)
+![效果图](https://github.com/wlhtea/Suno2openai/assets/115779315/3bcf2cee-770f-46a9-8438-b8bbfced0143)
 
 ## 💌 实习机会征集
 若有意向接纳一名拥有数据分析和前后端开发经验的大三学生实习，请联系：
