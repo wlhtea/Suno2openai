@@ -38,7 +38,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/myapp:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}/suno2openai:latest
         build-args: |
           BASE_URL=${{ secrets.BASE_URL }}
           SESSION_ID=${{ secrets.SESSION_ID }}
