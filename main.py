@@ -299,7 +299,7 @@ async def get_last_user_message(data: schemas.Data):
         }
 
         if not data.stream:
-            async for data_string in generate_data(last_user_content, chat_id, timeStamp):
+            async for data_string in generate_data(last_user_content, chat_id, timeStamp, data.model):
                 try:
                     json_data = data_string.split('data: ')[1].strip()
 
