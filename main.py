@@ -160,7 +160,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion):
         try:
             # await db_manager.create_pool()
             cookie = await db_manager.get_non_working_cookie()
-            logging.info(f"初始化sql成功，并获取到cookie:{cookie}")
+            logging.info(f"获取到cookie:{cookie}")
             break
         except Exception as e:
             logging.error(f"第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
