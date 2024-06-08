@@ -312,10 +312,14 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion):
 
 
 @app.post("/v1/chat/completions")
-async def get_last_user_message(data: schemas.Data):
+async def get_last_user_message(data: schemas.Data, authorization: str = Header(...)):
     content_all = ''
     if SQL_IP == '' or SQL_password == '' or SQL_name == '':
-        raise ValueError("BASE_URL is not set")
+        raise HTTPException(status_code=400, detail="BASE_URL is not set")
+    try:
+        await verify_auth_header(authorization)
+    except HTTPException as http_exc:
+        raise http_exc
     try:
         chat_id = generate_random_string_async(29)
         timeStamp = generate_timestamp_async()
@@ -394,12 +398,12 @@ async def get_last_user_message(data: schemas.Data):
 async def verify_auth_header(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
-    if authorization != f"Bearer {auth_key}":
+    if authorization.split() != f"Bearer {auth_key}":
         raise HTTPException(status_code=403, detail="Invalid authorization key")
 
 
 # 获取cookie
-@app.get(f"/{cookies_prefix}/cookies")
+@app.post(f"/{cookies_prefix}/cookies")
 async def get_last_user_message(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -412,7 +416,7 @@ async def get_last_user_message(authorization: str = Header(...)):
 
 
 # 添加cookies
-@app.post(f"/{cookies_prefix}/cookies")
+@app.put(f"/{cookies_prefix}/cookies")
 async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
