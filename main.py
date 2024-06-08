@@ -103,7 +103,7 @@ SQL_password = os.getenv('SQL_password', '')
 SQL_IP = os.getenv('SQL_IP', '')
 SQL_dk = os.getenv('SQL_dk', 3306)
 cookies_prefix = os.getenv('COOKIES_PREFIX', "")
-auth_key = os.getenv('auth_key', str(time.time()))
+auth_key = os.getenv('AUTH_KEY', str(time.time()))
 db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
 
 logging.info(f"==========================================")
@@ -115,7 +115,7 @@ logging.info(f"SQL_password: {SQL_password}")
 logging.info(f"SQL_IP: {SQL_IP}")
 logging.info(f"SQL_dk: {SQL_dk}")
 logging.info(f"COOKIES_PREFIX: {cookies_prefix}")
-logging.info(f"auth_key: {auth_key}")
+logging.info(f"AUTH_KEY: {auth_key}")
 logging.info(f"==========================================")
 
 
