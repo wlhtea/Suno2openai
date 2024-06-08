@@ -398,7 +398,7 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
 async def verify_auth_header(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
-    if authorization.split() != f"Bearer {auth_key}":
+    if authorization.strip() != f"Bearer {auth_key}":
         raise HTTPException(status_code=403, detail="Invalid authorization key")
 
 
