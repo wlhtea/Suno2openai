@@ -10,6 +10,7 @@ class DatabaseManager:
         self.db_name = db_name
         self.pool = None
 
+    # 创建连接池 
     async def create_pool(self):
         if not self.pool:
             self.pool = await aiomysql.create_pool(
@@ -22,6 +23,7 @@ class DatabaseManager:
                 maxsize=20,
             )
 
+    # 创建数据库和表 
     async def create_database_and_table(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -92,6 +94,7 @@ class DatabaseManager:
                     WHERE songID = %s OR songID2 = %s
                 ''', (songid, songid))
 
+    # 更新cookie的count，如果update为True，则更新为count_increment，否则更新为count - count_increment 
     async def update_cookie_count(self, cookie, count_increment, update=None):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -119,6 +122,7 @@ class DatabaseManager:
                     WHERE cookie = %s AND count > 0
                 ''', (cookie,))
 
+    # 获取工作状态的cookies   
     async def query_cookies(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -136,3 +140,46 @@ class DatabaseManager:
                     SET songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
                     WHERE cookie = %s
                 ''', (songID1, songID2, cookie))
+
+    # 获取非工作状态且有空次数的cookies    
+    async def get_non_working_cookie(self):
+        await self.create_pool()  # 确保连接池已创建
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("SELECT cookie FROM cookies WHERE working = FALSE AND count > 0")
+                cookies = await cur.fetchall()
+                # 如果有符合条件的记录，则随机选择一个
+                if cookies:
+                    selected_cookie = random.choice(cookies)['cookie']
+                    return selected_cookie
+                else:
+                    selected_cookie = None
+                    print(f"出现了异常，可能是因为没有合适的cookies了......")
+                    return None
+
+    # 获取所有cookies
+    async def get_cookies(self):
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("SELECT cookie, count, working FROM cookies")
+                return await cur.fetchall()
+
+    # 删除相应的cookies
+    async def delete_cookies(self, cookie: str):
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("DELETE FROM cookies WHERE cookie = %s", cookie)
+                return True
+
+# async def main():
+#     db_manager = DatabaseManager('127.0.0.1', 3306, 'root', '12345678', 'WSunoAPI')
+#     await db_manager.create_pool()
+#     # await db_manager.create_database_and_table()
+#     await db_manager.insert_cookie('example_cookie', 1, True)
+#     await db_manager.update_cookie_count('example_cookie', 5)
+#     await db_manager.update_cookie_working('example_cookie', False)
+#     cookies = await db_manager.query_cookies()
+#     cookie = await db_manager.get_non_working_cookie()
+#
+# if __name__ == "__main__":
+#     asyncio.run(main())
