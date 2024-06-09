@@ -49,8 +49,14 @@ async def refresh_cookies():
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     # 创建数据库
     global db_manager
-    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
-    await db_manager.create_pool()
+    try:
+        db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
+        await db_manager.create_pool()
+        await create_database_and_table()
+        logging.info(f"初始化sql成功！")
+    except Exception as e:
+        logging.error(f"初始化sql失败: {str(e)}")
+        raise
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
