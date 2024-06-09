@@ -12,6 +12,7 @@ class DatabaseManager:
         self.db_name = db_name
         self.pool = None
 
+    # 创建连接池 
     async def create_pool(self):
         if self.pool is None:
             self.pool = await aiomysql.create_pool(
@@ -23,6 +24,7 @@ class DatabaseManager:
                 autocommit=True
             )
 
+    # 创建数据库和表 
     async def create_database_and_table(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
@@ -36,15 +38,16 @@ class DatabaseManager:
                     )
                 """)
 
+    # 插入cookie，如果存在相应的cookie，则更新count
     async def insert_cookie(self, cookie, count, working):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 await cur.execute("""
                     INSERT INTO cookies (cookie, count, working)
                     VALUES (%s, %s, %s)
-                    ON DUPLICATE KEY UPDATE count = IF(FALSE, VALUES(count), count)
+                    ON DUPLICATE KEY UPDATE count = VALUES(count)
                 """, (cookie, count, working))
-
+    # 更新cookie的count和working状态 
     async def update_cookie(self, cookie, count_increment, working):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
@@ -54,6 +57,7 @@ class DatabaseManager:
                     WHERE cookie = %s
                 """, (count_increment, working, cookie))
 
+    # 更新cookie的count，如果update为True，则更新为count_increment，否则更新为count - count_increment 
     async def update_cookie_count(self, cookie, count_increment, update=None):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
@@ -70,6 +74,7 @@ class DatabaseManager:
                         WHERE cookie = %s
                     """, (count_increment, cookie))
 
+    # 更新cookie的工作状态
     async def update_cookie_working(self, cookie, working):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
@@ -79,12 +84,14 @@ class DatabaseManager:
                     WHERE cookie = %s
                 """, (working, cookie))
 
+    # 获取工作状态的cookies   
     async def query_cookies(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute("SELECT * FROM cookies WHERE working = TRUE")
                 return await cur.fetchall()
 
+    # 获取非工作状态且有空次数的cookies    
     async def get_non_working_cookie(self):
         await self.create_pool()  # 确保连接池已创建
         async with self.pool.acquire() as conn:
@@ -100,12 +107,14 @@ class DatabaseManager:
                     print(f"出现了异常，可能是因为没有合适的cookies了......")
                     return None
 
+    # 获取所有cookies
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute("SELECT cookie, count, working FROM cookies")
                 return await cur.fetchall()
 
+    # 删除相应的cookies
     async def delete_cookies(self, cookie: str):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:

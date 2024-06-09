@@ -7,8 +7,12 @@ import os
 import random
 import string
 import time
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 import tiktoken
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -21,7 +25,43 @@ from sql_uilts import DatabaseManager
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
 
-app = FastAPI()
+
+# 刷新cookies
+async def refresh_cookies():
+    try:
+        logging.info(f"==========================================")
+        logging.info("开始更新数据库里的 cookies.........")
+        cookies = await db_manager.get_cookies()
+        add_tasks = []
+        for cookie in cookies:
+            add_tasks.append(fetch_limit_left(cookie))
+        results = await asyncio.gather(*add_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+    except Exception as e:
+        logging.error({"错误": str(e)})
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator:
+    # 创建数据库
+    global db_manager
+    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
+    await db_manager.create_pool()
+
+    # 初始化并启动 APScheduler
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(refresh_cookies, CronTrigger(hour=3, minute=0), id='updateRefresh_run')
+    scheduler.start()
+    yield
+
+    # 停止调度器
+    scheduler.shutdown()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,6 +78,7 @@ log_level_dict = {
     'ERROR': logging.ERROR,
     'CRITICAL': logging.CRITICAL
 }
+
 # 配置日志记录器
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -403,7 +444,7 @@ async def verify_auth_header(authorization: str = Header(...)):
 
 
 # 获取cookie
-@app.post(f"/{cookies_prefix}/cookies")
+@app.post(f"{cookies_prefix}/cookies")
 async def get_last_user_message(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -416,7 +457,7 @@ async def get_last_user_message(authorization: str = Header(...)):
 
 
 # 添加cookies
-@app.put(f"/{cookies_prefix}/cookies")
+@app.put(f"{cookies_prefix}/cookies")
 async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -438,7 +479,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
 
 # 删除cookie
-@app.delete(f"/{cookies_prefix}/cookies")
+@app.delete(f"{cookies_prefix}/cookies")
 async def get_last_user_message(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -470,10 +511,3 @@ async def fetch_limit_left(cookie):
     except Exception as e:
         logging.error(cookie + f"，添加失败：{e}")
         return False
-
-
-@app.on_event("startup")
-async def startup_event():
-    global db_manager
-    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
-    await db_manager.create_pool()
