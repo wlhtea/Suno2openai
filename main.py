@@ -483,6 +483,28 @@ async def get_last_user_message(data: schemas.Cookies, authorization: str = Head
         return JSONResponse(status_code=500, content={"error": e})
 
 
+# 请求刷新cookies
+@app.get(f"{cookies_prefix}/refresh/cookies")
+async def get_refresh_cookies():
+    try:
+        logging.info(f"==========================================")
+        logging.info("开始更新数据库里的 cookies.........")
+        cookies = await db_manager.get_cookies()
+        add_tasks = []
+        for cookie in cookies:
+            add_tasks.append(fetch_limit_left(cookie))
+        results = await asyncio.gather(*add_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        return JSONResponse(
+            content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": e})
+
+
 # 添加cookie的函数
 async def fetch_limit_left(cookie):
     song_gen = SongsGen(cookie)
