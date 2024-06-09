@@ -49,9 +49,7 @@ class DatabaseManager:
                     VALUES (%s, %s, %s)
                     ON DUPLICATE KEY UPDATE count = VALUES(count)
                 """
-                result = await cur.execute(sql, (cookie, count, working))
-                await conn.commit()
-                print(f"Affected rows: {result}")
+                await cur.execute(sql, (cookie, count, working))
 
     # 更新cookie的count和working状态
     async def update_cookie(self, cookie, count_increment, working):
