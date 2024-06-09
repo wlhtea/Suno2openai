@@ -502,7 +502,7 @@ async def get_refresh_cookies():
         results = await asyncio.gather(*add_tasks, return_exceptions=True)
         success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
-
+        logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
         return JSONResponse(
             content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
     except HTTPException as http_exc:
