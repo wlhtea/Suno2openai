@@ -44,11 +44,14 @@ class DatabaseManager:
     async def insert_cookie(self, cookie, count, working):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute("""
+                sql = """
                     INSERT INTO cookies (cookie, count, working)
                     VALUES (%s, %s, %s)
-                    ON DUPLICATE KEY UPDATE count = %s
-                """, (cookie, count, working, count))
+                    ON DUPLICATE KEY UPDATE count = VALUES(count)
+                """
+                result = await cur.execute(sql, (cookie, count, working))
+                await conn.commit()
+                print(f"Affected rows: {result}")
 
     # 更新cookie的count和working状态
     async def update_cookie(self, cookie, count_increment, working):
