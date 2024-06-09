@@ -48,8 +48,14 @@ async def refresh_cookies():
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     # 创建数据库
     global db_manager
-    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
-    await db_manager.create_pool()
+    try:
+        db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
+        await db_manager.create_pool()
+        await create_database_and_table()
+        logging.info(f"初始化sql成功！")
+    except Exception as e:
+        logging.error(f"初始化sql失败: {str(e)}")
+        raise
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
@@ -199,8 +205,9 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion):
     cookie = None
     for attempt in range(retries):
         try:
-            # await db_manager.create_pool()
             cookie = await db_manager.get_non_working_cookie()
+            if cookie is None:
+                raise RuntimeError("没有可用的cookie")
             logging.info(f"获取到cookie:{cookie}")
             break
         except Exception as e:
@@ -208,11 +215,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion):
             if attempt < retries - 1:
                 await asyncio.sleep(0.1)
             else:
-                await create_database_and_table()
-                raise
-
-    if cookie is None:
-        raise RuntimeError("没有可用的cookie")
+                raise RuntimeError(f"获取cookie失败cookie发生异常: {e}")
 
     try:
         _return_ids = False

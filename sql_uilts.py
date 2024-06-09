@@ -32,10 +32,12 @@ class DatabaseManager:
                 await cursor.execute(f"USE {self.db_name}")
                 await cursor.execute("""
                     CREATE TABLE IF NOT EXISTS cookies (
-                        cookie VARCHAR(255) PRIMARY KEY,
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        cookie TEXT NOT NULL,
                         count INT NOT NULL,
-                        working BOOLEAN NOT NULL
-                    )
+                        working BOOLEAN NOT NULL,
+                        UNIQUE(cookie(255))
+                        )
                 """)
 
     # 插入cookie，如果存在相应的cookie，则更新count
@@ -45,9 +47,10 @@ class DatabaseManager:
                 await cur.execute("""
                     INSERT INTO cookies (cookie, count, working)
                     VALUES (%s, %s, %s)
-                    ON DUPLICATE KEY UPDATE count = VALUES(count)
-                """, (cookie, count, working))
-    # 更新cookie的count和working状态 
+                    ON DUPLICATE KEY UPDATE count = %s
+                """, (cookie, count, working, count))
+
+    # 更新cookie的count和working状态
     async def update_cookie(self, cookie, count_increment, working):
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
