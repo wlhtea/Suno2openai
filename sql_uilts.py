@@ -27,28 +27,30 @@ class DatabaseManager:
                     maxsize=20,
                 )
         except Exception as e:
-            print(f"An error occurred: {e}")
-            connection = await aiomysql.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                autocommit=True
-            )
+            if self.user == 'root':
+                connection = await aiomysql.connect(
+                    host=self.host,
+                    port=self.port,
+                    user=self.user,
+                    password=self.password,
+                    autocommit=True
+                )
+                # 用于root账户密码新建数据库
+                async with connection.cursor() as cursor:
+                    await cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(self.db_name))
+                await connection.close()
 
-            async with connection.cursor() as cursor:
-                await cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(self.db_name))
-            await connection.close()
-
-            self.pool = await aiomysql.create_pool(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                db=self.db_name,
-                autocommit=True,
-                maxsize=20,
-            )
+                self.pool = await aiomysql.create_pool(
+                    host=self.host,
+                    port=self.port,
+                    user=self.user,
+                    password=self.password,
+                    db=self.db_name,
+                    autocommit=True,
+                    maxsize=20,
+                )
+            else:
+                logging.error(f"An error occurred: {e}")
 
     # 创建数据库和表
     async def create_database_and_table(self):
