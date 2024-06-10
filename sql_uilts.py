@@ -32,8 +32,9 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 try:
-                    await cursor.execute(f"CREATE DATABASE IF NOT EXISTS {self.db_name}")
-                    await cursor.execute(f"USE {self.db_name}")
+                    await cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{self.db_name}`")
+                    logging.info(f"Database `{self.db_name}` created or already exists.")
+                    await cursor.execute(f"USE `{self.user}`")
                     await cursor.execute(f"""
                         CREATE TABLE IF NOT EXISTS suno2openai (
                             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -45,6 +46,7 @@ class DatabaseManager:
                             UNIQUE(cookie(255))
                         )
                     """)
+                    logging.info("Table `suno2openai` created or already exists.")
                 except Exception as e:
                     logging.error(f"An error occurred: {e}")
 
