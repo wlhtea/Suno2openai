@@ -25,13 +25,14 @@ async def create_database_and_table():
 
     # Create a new table 'cookies' (if it doesn't exist)
     await cursor.execute("""
-        CREATE TABLE IF NOT EXISTS cookies (
+        CREATE TABLE IF NOT EXISTS suno2openai (
             id INT AUTO_INCREMENT PRIMARY KEY,
             cookie TEXT NOT NULL,
-            count INT NOT NULL,
-            working BOOLEAN NOT NULL,
-            UNIQUE(cookie(255))
-            )
+            songID VARCHAR(255),
+            songID2 VARCHAR(255),
+            count INT,
+            time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
     """)
 
     await cursor.close()
