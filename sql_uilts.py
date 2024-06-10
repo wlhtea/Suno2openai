@@ -27,7 +27,14 @@ class DatabaseManager:
                         autocommit=True
                     )
                     async with connection.cursor() as cursor:
-                        await cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(self.db_name))
+                        await cursor.execute(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
+                                             f"WHERE SCHEMA_NAME = '{self.db_name}'")
+                        result = await cursor.fetchone()
+                        if not result:
+                            await cursor.execute(f"CREATE DATABASE {self.db_name}")
+                            logging.info(f"Database {self.db_name} created.")
+                        else:
+                            logging.info(f"Database {self.db_name} already exists.")
                     await connection.close()
                 self.pool = await aiomysql.create_pool(
                     host=self.host,
@@ -39,7 +46,7 @@ class DatabaseManager:
                     maxsize=20,
                 )
         except Exception as e:
-            logging.error(f"An error occurred: {e}")
+            logging.error(f"An error occurred while creating pool: {e}")
 
     # 创建数据库和表
     async def create_database_and_table(self):
@@ -159,7 +166,14 @@ class DatabaseManager:
                     WHERE cookie = %s
                 ''', (songID1, songID2, cookie))
 
-    # 获取所有cookies
+    # 获取所有cookies的count
+    async def get_cookies_count(self):
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("SELECT COUNT(count) as cookie_count FROM suno2openai")
+                result = await cur.fetchone()
+                return result['cookie_count']
+
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:

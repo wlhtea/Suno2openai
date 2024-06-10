@@ -456,7 +456,8 @@ async def get_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         cookies = await db_manager.get_cookies()
-        return JSONResponse(content={"count": len(cookies), "cookies": cookies})
+        count = await db_manager.get_cookies_count()
+        return JSONResponse(content={"cookie_count": len(cookies), "remaining_count": count, "cookies": cookies})
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
