@@ -37,6 +37,7 @@ class DatabaseManager:
                             songID2 VARCHAR(255),
                             count INT,
                             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            UNIQUE(cookie(255))
                         )
                     """)
                 except Exception as e:
@@ -61,31 +62,12 @@ class DatabaseManager:
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                # 查找是否存在相同的cookie
-                await cur.execute('''
-                    SELECT id FROM suno2openai WHERE cookie = %s
-                ''', (cookie,))
-                result = await cur.fetchone()
-
-                if result:
-                    # 如果存在，则更新count
-                    await self.update_count(cur, result['id'], count, songID, songID2)
-                else:
-                    # 如果不存在，则插入新的记录
-                    await self.insert_data(cur, cookie, songID, songID2, count)
-
-    async def update_count(self, cur, record_id, count, songID=None, songID2=None):
-        await cur.execute('''
-            UPDATE suno2openai
-            SET count = %s, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-            WHERE id = %s
-        ''', (count, songID, songID2, record_id))
-
-    async def insert_data(self, cur, cookie, songID=None, songID2=None, count=0):
-        await cur.execute('''
-            INSERT INTO suno2openai (cookie, songID, songID2, count)
-            VALUES (%s, %s, %s, %s)
-        ''', (cookie, songID, songID2, count))
+                sql = """
+                    INSERT INTO suno2openai (cookie, songID, songID2, count)
+                    VALUES (%s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE count = VALUES(count), songID = VALUES(songID), songID2 = VALUES(songID2), time = CURRENT_TIMESTAMP
+                """
+                await cur.execute(sql, (cookie, songID, songID2, count))
 
     async def get_cookie_by_songid(self, songid):
         await self.create_pool()

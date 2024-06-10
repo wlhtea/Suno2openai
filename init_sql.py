@@ -32,6 +32,7 @@ async def create_database_and_table():
             songID2 VARCHAR(255),
             count INT,
             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            UNIQUE(cookie(255))
         )
     """)
 
