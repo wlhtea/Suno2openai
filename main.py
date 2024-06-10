@@ -48,6 +48,7 @@ SQL_IP = os.getenv('SQL_IP', '')
 SQL_DK = os.getenv('SQL_DK', 3306)
 COOKIES_PREFIX = os.getenv('COOKIES_PREFIX', "")
 AUTH_KEY = os.getenv('AUTH_KEY', str(time.time()))
+retries = int(os.getenv('RETRIES', 3))
 db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
 
 # 记录配置信息
@@ -61,6 +62,7 @@ logging.info(f"SQL_IP: {SQL_IP}")
 logging.info(f"SQL_DK: {SQL_DK}")
 logging.info(f"COOKIES_PREFIX: {COOKIES_PREFIX}")
 logging.info(f"AUTH_KEY: {AUTH_KEY}")
+logging.info(f"RETRIES: {retries}")
 logging.info("==========================================")
 
 
@@ -187,13 +189,20 @@ async def Delelet_Songid(songid):
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
                         continue_clip_id=None):
-    while True:
+    cookie = None
+    for attempt in range(retries):
         try:
-            await db_manager.create_pool()
             cookie = await db_manager.get_token()
+            if cookie is None:
+                raise RuntimeError("没有可用的cookie")
+            logging.info(f"本次请求获取到cookie:{cookie}")
             break
-        except:
-            await db_manager.create_database_and_table()
+        except Exception as e:
+            logging.error(f"第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
+            if attempt < retries - 1:
+                continue
+            else:
+                raise RuntimeError(f"获取cookie失败cookie发生异常: {e}")
 
     try:
         _return_ids = False
