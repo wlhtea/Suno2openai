@@ -91,9 +91,9 @@ def get_clips_ids(response: json):
         raise ValueError("Invalid JSON response")
 
 
-async def get_token():
-    cookieSelected = await db_manager.get_token()
-    return cookieSelected
+# async def get_token():
+#     cookieSelected = await db_manager.get_token()
+#     return cookieSelected
 
 
 async def Delelet_Songid(songid):
@@ -163,6 +163,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             # attempts = 2
             while True:
                 # if attempts // 2 == 0:
+                cookie = await db_manager.get_cookie_by_songid(clip_id)
                 token, sid = SongsGen(cookie)._get_auth_token(w=1)
                 now_data = await get_feed(ids=clip_id, token=token)
                 try:
@@ -261,7 +262,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     content_wait = "🎵"
                     yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": content_wait}, "finish_reason": None}]})}\n\n"""
                     await asyncio.sleep(2)
-                attempts += 1
+                # attempts += 1
 
         yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
     except Exception as e:
