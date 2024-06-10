@@ -2,12 +2,13 @@ import aiomysql
 from fastapi import HTTPException
 
 class DatabaseManager:
-    def __init__(self, host, port, user, password, db_name):
+    def __init__(self, host, port, user, password, db_name, table_name):
         self.host = host
         self.port = port
         self.user = user
         self.password = password
         self.db_name = db_name
+        self.table_name = table_name
         self.pool = None
 
     async def create_pool(self):
@@ -29,8 +30,8 @@ class DatabaseManager:
                 try:
                     await cursor.execute(f"CREATE DATABASE IF NOT EXISTS {self.db_name}")
                     await cursor.execute(f"USE {self.db_name}")
-                    await cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS suno2openai (
+                    await cursor.execute(f"""
+                        CREATE TABLE IF NOT EXISTS {self.table_name} (
                             id INT AUTO_INCREMENT PRIMARY KEY,
                             cookie TEXT NOT NULL,
                             songID VARCHAR(255),
@@ -46,8 +47,8 @@ class DatabaseManager:
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
-                await cursor.execute('''
-                    SELECT cookie FROM suno2openai
+                await cursor.execute(f'''
+                    SELECT cookie FROM {self.table_name}
                     WHERE songID IS NULL AND songID2 IS NULL AND count > 0
                     ORDER BY time DESC LIMIT 1
                 ''')
@@ -62,8 +63,8 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 # 查找是否存在相同的cookie
-                await cur.execute('''
-                    SELECT id FROM suno2openai WHERE cookie = %s
+                await cur.execute(f'''
+                    SELECT id FROM {self.table_name} WHERE cookie = %s
                 ''', (cookie,))
                 result = await cur.fetchone()
 
@@ -75,15 +76,15 @@ class DatabaseManager:
                     await self.insert_data(cur, cookie, songID, songID2, count)
 
     async def update_count(self, cur, record_id, count, songID=None, songID2=None):
-        await cur.execute('''
-            UPDATE suno2openai
+        await cur.execute(f'''
+            UPDATE {self.table_name}
             SET count = %s, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
             WHERE id = %s
         ''', (count, songID, songID2, record_id))
 
     async def insert_data(self, cur, cookie, songID=None, songID2=None, count=0):
-        await cur.execute('''
-            INSERT INTO suno2openai (cookie, songID, songID2, count)
+        await cur.execute(f'''
+            INSERT INTO {self.table_name} (cookie, songID, songID2, count)
             VALUES (%s, %s, %s, %s)
         ''', (cookie, songID, songID2, count))
 
@@ -91,8 +92,8 @@ class DatabaseManager:
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute('''
-                    SELECT cookie FROM suno2openai WHERE songID = %s OR songID2 = %s
+                await cur.execute(f'''
+                    SELECT cookie FROM {self.table_name} WHERE songID = %s OR songID2 = %s
                 ''', (songid, songid))
                 row = await cur.fetchone()
         if row:
@@ -104,8 +105,8 @@ class DatabaseManager:
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute('''
-                    UPDATE suno2openai
+                await cur.execute(f'''
+                    UPDATE {self.table_name}
                     SET songID = NULL, songID2 = NULL
                     WHERE songID = %s OR songID2 = %s
                 ''', (songid, songid))
@@ -115,14 +116,14 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
                 if update is not None:
-                    await cur.execute('''
-                        UPDATE suno2openai
+                    await cur.execute(f'''
+                        UPDATE {self.table_name}
                         SET count = %s
                         WHERE cookie = %s
                     ''', (count_increment, cookie))
                 else:
-                    await cur.execute('''
-                        UPDATE suno2openai
+                    await cur.execute(f'''
+                        UPDATE {self.table_name}
                         SET count = count + %s
                         WHERE cookie = %s
                     ''', (count_increment, cookie))
@@ -131,8 +132,8 @@ class DatabaseManager:
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute('''
-                    UPDATE suno2openai
+                await cur.execute(f'''
+                    UPDATE {self.table_name}
                     SET count = count - 1
                     WHERE cookie = %s AND count > 0
                 ''', (cookie,))
@@ -141,16 +142,15 @@ class DatabaseManager:
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute('SELECT * FROM suno2openai')
+                await cur.execute(f'SELECT * FROM {self.table_name}')
                 return await cur.fetchall()
-
 
     async def update_song_ids_by_cookie(self, cookie, songID1, songID2):
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute('''
-                    UPDATE suno2openai
+                await cur.execute(f'''
+                    UPDATE {self.table_name}
                     SET songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
                     WHERE cookie = %s
                 ''', (songID1, songID2, cookie))
