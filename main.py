@@ -37,7 +37,7 @@ from sql_uilts import DatabaseManager
 load_dotenv()
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
-username_name = os.getenv('USER_Name','')
+username_name = os.getenv('USER_name','')
 SQL_name = os.getenv('SQL_name', '')
 SQL_password = os.getenv('SQL_password', '')
 SQL_IP = os.getenv('SQL_IP', '')
