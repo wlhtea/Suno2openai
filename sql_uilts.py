@@ -29,16 +29,15 @@ class DatabaseManager:
                     async with connection.cursor() as cursor:
                         await cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(self.db_name))
                     await connection.close()
-                else:
-                    self.pool = await aiomysql.create_pool(
-                        host=self.host,
-                        port=self.port,
-                        user=self.user,
-                        password=self.password,
-                        db=self.db_name,
-                        autocommit=True,
-                        maxsize=20,
-                    )
+                self.pool = await aiomysql.create_pool(
+                    host=self.host,
+                    port=self.port,
+                    user=self.user,
+                    password=self.password,
+                    db=self.db_name,
+                    autocommit=True,
+                    maxsize=20,
+                )
         except Exception as e:
             logging.error(f"An error occurred: {e}")
 

@@ -328,7 +328,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                 if not _return_image_url:
                     if now_data[0].get('image_url') is not None:
                         image_url_small_data = f"## ✨ 歌曲图片\n"
-                        image_url_lager_data = f"**🖼️ 图片链接** ![封面图片_大]({now_data[0]['image_large_url']}) \n"
+                        image_url_lager_data = f"![封面图片_大]({now_data[0]['image_large_url']}) \n"
                         yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
                         yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                         _return_image_url = True
@@ -341,7 +341,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             audio_url_2 = f'https://audiopipe.suno.ai/?item_id={song_id_2}'
 
                             audio_url_data_1 = f"\n **📌 音乐链接(实时)**：{audio_url_1}"
-                            audio_url_data_2 = f"\n **📌 音乐链接(实时)**：{audio_url_2}\n"
+                            audio_url_data_2 = f"\n **📌 音乐链接(实时)**：{audio_url_2}\n## 🚀正在火速生成CDN链接(预计2-3分钟~)\n"
                             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
                             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
                             _return_audio_url = True
