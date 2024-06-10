@@ -91,6 +91,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         await create_database_and_table()  # 确保表存在
         logging.info("初始化 SQL 成功！")
     except Exception as e:
+        logging.info("==========================================")
+        logging.info(f"BASE_URL: {BASE_URL}")
+        logging.info(f"SESSION_ID: {SESSION_ID}")
+        logging.info(f"USER_Name: {username_name}")
+        logging.info(f"SQL_name: {SQL_name}")
+        logging.info(f"SQL_password: {SQL_password}")
+        logging.info(f"SQL_IP: {SQL_IP}")
+        logging.info(f"SQL_dk: {SQL_dk}")
+        logging.info(f"COOKIES_PREFIX: {cookies_prefix}")
+        logging.info(f"AUTH_KEY: {auth_key}")
+        logging.info("==========================================")
         logging.error(f"初始化 SQL 失败: {str(e)}")
         raise
 
