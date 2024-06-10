@@ -10,7 +10,10 @@ from init_sql import create_database_and_table
 from starlette.responses import StreamingResponse
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 app = FastAPI()
 
 app.add_middleware(
