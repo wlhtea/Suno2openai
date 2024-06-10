@@ -2,8 +2,7 @@
 
 from datetime import datetime
 from typing import Any, Union, List, Optional
-from pydantic import BaseModel
-
+from pydantic import BaseModel, Field
 
 class Response(BaseModel):
     code: Optional[int] = 0
@@ -34,5 +33,13 @@ class Data(BaseModel):
     model: str
     messages: List[Message]
     stream: Optional[bool] = None
+    title: str = Field(None, description="song title")
+    tags: str = Field(None, description="style of music")
+    continue_at: Optional[int] = Field(
+        default=None,
+        description="continue a new clip from a previous song, format number",
+        examples=[120],
+    )
+    continue_clip_id: Optional[str] = None
 
 

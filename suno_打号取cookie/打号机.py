@@ -155,17 +155,9 @@ if __name__ == '__main__':
     main()
 
 
-
-# u79cjxvt8yblyu9p@outlook.com,lmagm56hvsi5mp7j
-# j4fs0hjq5mhbt32l@outlook.com,n73ejvl8hb4w4en7
-# zm05szdjcmktsxqr@outlook.com,bgfj0sl8g95tyerq
-# lxs1akylcg408wp3@outlook.com,5qudqgbh4zyc8yz8
-# n7phu921x1dnox37@outlook.com,srn8gxunpwg1txmc
-# fxzi2v4jy56wx5xm@outlook.com,omz3wxgeea5my009
-# keg8vnsulecxisqy@outlook.com,bdz90hxnpz54rbv9
-# kclmib7141jzjq5k@outlook.com,1kphmruz7dxvuifi
-
-# rp97r61z4r0fainq@outlook.com,kg8c4nb2cwb7d76p
-# yjqtnt57y94b61h9@outlook.com,6bk0scqvruszntof
-
-
+# wlhwlh120@outlook.com,wlh666666
+# wlhwlh121@outlook.com,wlh666666
+# pdboeu9eyn2x5t1m@outlook.com,vqgqiai0w7hgcj97
+# qiea6zmaenmtsee7@outlook.com,yv5upo1irrtyd1sk
+# xl5v63154mqkbo0r@outlook.com,97u2ljf3x411uvrg
+# n7tzrcn9uqufwycz@outlook.com,5o19xhne22z0kb7h

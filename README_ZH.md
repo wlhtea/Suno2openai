@@ -4,6 +4,12 @@
 > 基于 [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) 和 [Suno-API](https://github.com/SunoAI-API/Suno-API) 项目整合，提供符合OpenAI格式的接口标准化服务。
 
 ## 更新日志
+- ### 2024.6.10 大更新
+  - 重构数据库【原版本需要删除数据库重新部署】
+  - 避免一个cookie重复调用导致冲突
+  - 支持使用http对歌曲进行续写，后期准备加入工作流完善即用户只需在前端对话即可完成续写工作
+  - 增加了输出内容：歌曲id、风格、标题、歌词、实时链接、永久免翻链接和视频链接
+  - ...
 - 2024.6.05 将数据库名称和用户名称分开
 - 2024.6.03 新增suno-v3.5模型调用和cdn链接获取
 - 2024.4.14 支持非流式输出，参数设置`stream=False` docker版本为latest 如无需该功能不必更新

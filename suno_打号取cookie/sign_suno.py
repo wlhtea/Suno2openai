@@ -23,7 +23,11 @@ def register(i,j):
     driver.implicitly_wait(20)
     driver.get('https://suno.com/')
     driver.find_element(By.XPATH,'/html/body/div[1]/div[1]/nav/div[3]/div[2]/div/div/a').click()
-    driver.find_element(By.XPATH,'/html/body/div[5]/div/div/div/div/div[3]/div[1]/button[4]').click()
+    sleep(2)
+    try:
+        driver.find_element(By.XPATH,'/html/body/div[5]/div/div/div/div/div[3]/div[1]/button[4]').click()
+    except:
+        driver.find_element(By.XPATH, '/html/body/div[5]/div/div/div/div/div[3]/div[1]/button[3]').click()
     driver.find_element(By.XPATH,'/html/body/div/form[1]/div/div/div[2]/div[1]/div/div/div/div/div[1]/div[3]/div/div/div/div[2]/div[2]/div/input[1]').send_keys(i)
     driver.find_element(By.XPATH,'/html/body/div/form[1]/div/div/div[2]/div[1]/div/div/div/div/div[1]/div[3]/div/div/div/div[4]/div/div/div/div[2]/input').click()
     driver.find_element(By.XPATH,'/html/body/div[1]/div/div/div/div[2]/div[1]/div/div/div/div/div[2]/div[2]/div/form/div[3]/div/div/input').send_keys(j)
