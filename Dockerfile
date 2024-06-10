@@ -19,9 +19,9 @@ ENV BASE_URL=${BASE_URL} \
     SQL_name=${SQL_name} \
     SQL_password=${SQL_password} \
     SQL_IP=${SQL_IP} \
-    SQL_dk=${SQL_dk}
-    COOKIES_PREFIX =${COOKIES_PREFIX}
-    AUTH_KEY =${AUTH_KEY}
+    SQL_dk=${SQL_dk} \
+    COOKIES_PREFIX=${COOKIES_PREFIX} \
+    AUTH_KEY=${AUTH_KEY}
 
 WORKDIR /app
 
