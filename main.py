@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import datetime
 import json
+import logging
 import os
 import schemas
 from cookie import suno_auth
@@ -190,7 +191,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                                 f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                             _return_Forever_url = True
                             break
-                    except:
+                    except Exception as e:
+                        logging.info('CDN音乐链接出错',e)
                         await Delelet_Songid(clip_id)
                         Aideo_Markdown_Conetent = (f""
                                                    f"\n## 🎷 永久音乐链接\n"
