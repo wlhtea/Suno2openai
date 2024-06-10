@@ -187,12 +187,15 @@ class DatabaseManager:
 
     # 获取所有cookies的count
     async def get_cookies_count(self):
-        async with self.pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute("SELECT SUM(count) FROM suno2openai")
-                result = await cur.fetchone()
-                total_count = result[0] if result else 0
-                return total_count
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cur:
+                    await cur.execute("SELECT SUM(count) AS total_count FROM suno2openai")
+                    result = await cur.fetchone()
+                    return result['total_count'] if result else 0
+        except aiomysql.Error as e:
+            logging.error(f"Database error: {e}")
+            return 0
 
     async def get_cookies(self):
         async with self.pool.acquire() as conn:

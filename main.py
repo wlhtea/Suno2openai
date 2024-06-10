@@ -256,6 +256,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
 
         for clip_id in clip_ids:
             # attempts = 2
+            count = 0
             while True:
                 # if attempts // 2 == 0:
                 cookie = await db_manager.get_cookie_by_songid(clip_id)
@@ -350,12 +351,15 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             audio_url_2 = f'https://audiopipe.suno.ai/?item_id={song_id_2}'
 
                             audio_url_data_1 = f"\n **📌 音乐链接(实时)**：{audio_url_1}"
-                            audio_url_data_2 = f"\n **📌 音乐链接(实时)**：{audio_url_2}\n## 🚀正在火速生成CDN链接(预计2-3分钟~)\n"
+                            audio_url_data_2 = f"\n **📌 音乐链接(实时)**：{audio_url_2}\n## 🚀正在火速生成CDN链接（预计2-3分钟~）\n"
                             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
                             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
                             _return_audio_url = True
                 if _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
-                    content_wait = "🎵"
+                    count += 1
+                    if count % 34 == 0:
+                        content_wait = "🎵\n"
+                    else:content_wait = "🎵"
                     yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": content_wait}, "finish_reason": None}]})}\n\n"""
                     await asyncio.sleep(2)
                 # attempts += 1
