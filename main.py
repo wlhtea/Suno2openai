@@ -359,7 +359,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     count += 1
                     if count % 34 == 0:
                         content_wait = "🎵\n"
-                    else:content_wait = "🎵"
+                    else:
+                        content_wait = "🎵"
                     yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": content_wait}, "finish_reason": None}]})}\n\n"""
                     await asyncio.sleep(2)
                 # attempts += 1
