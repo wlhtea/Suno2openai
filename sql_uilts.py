@@ -17,40 +17,30 @@ class DatabaseManager:
     async def create_pool(self):
         try:
             if not self.pool:
-                self.pool = await aiomysql.create_pool(
-                    host=self.host,
-                    port=self.port,
-                    user=self.user,
-                    password=self.password,
-                    db=self.db_name,
-                    autocommit=True,
-                    maxsize=20,
-                )
-        except Exception as e:
-            if self.user == 'root':
-                connection = await aiomysql.connect(
-                    host=self.host,
-                    port=self.port,
-                    user=self.user,
-                    password=self.password,
-                    autocommit=True
-                )
                 # 用于root账户密码新建数据库
-                async with connection.cursor() as cursor:
-                    await cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(self.db_name))
-                await connection.close()
-
-                self.pool = await aiomysql.create_pool(
-                    host=self.host,
-                    port=self.port,
-                    user=self.user,
-                    password=self.password,
-                    db=self.db_name,
-                    autocommit=True,
-                    maxsize=20,
-                )
-            else:
-                logging.error(f"An error occurred: {e}")
+                if self.user == 'root':
+                    connection = await aiomysql.connect(
+                        host=self.host,
+                        port=self.port,
+                        user=self.user,
+                        password=self.password,
+                        autocommit=True
+                    )
+                    async with connection.cursor() as cursor:
+                        await cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(self.db_name))
+                    await connection.close()
+                else:
+                    self.pool = await aiomysql.create_pool(
+                        host=self.host,
+                        port=self.port,
+                        user=self.user,
+                        password=self.password,
+                        db=self.db_name,
+                        autocommit=True,
+                        maxsize=20,
+                    )
+        except Exception as e:
+            logging.error(f"An error occurred: {e}")
 
     # 创建数据库和表
     async def create_database_and_table(self):
@@ -174,7 +164,7 @@ class DatabaseManager:
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute("SELECT id, cookie, songID, songID2, count, time FROM suno2openai")
+                await cur.execute("SELECT cookie FROM suno2openai")
                 return await cur.fetchall()
 
     # 删除相应的cookies
