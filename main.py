@@ -193,24 +193,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             break
                     except Exception as e:
                         logging.info('CDN音乐链接出错',e)
-                        # 这一块是为了鉴权失效的问题 但是不知道为什么会发生这样的问题
-                        # 感觉就是生成jwt（token）的时候刚好碰到suno更新了token就会失效，但是我每次请求都是用最新的token不明白为什么 我再琢磨琢磨
-                        # 最好应该是重新再请求这里先这么处理
-                        await Delelet_Songid(clip_id)
-                        Aideo_Markdown_Conetent = (f""
-                                                   f"\n## 🎷 永久音乐链接\n"
-                                                   f"- 🎵 歌曲1️⃣：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
-                                                   f"- 🎵 歌曲2️⃣：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
-                        Video_Markdown_Conetent = (f""
-                                                   f"\n## 📺 永久视频链接\n"
-                                                   f"- 🎵 视频1️⃣：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
-                                                   f"- 🎵 视频2️⃣：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n")
-                        yield str(
-                            f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
-                        yield str(
-                            f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
-                        _return_Forever_url = True
-                        break
+                        pass
 
                 if not _return_ids:
                     try:
