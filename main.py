@@ -10,9 +10,6 @@ from init_sql import create_database_and_table
 from starlette.responses import StreamingResponse
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
-from dotenv import load_dotenv
-import os
-
 
 app = FastAPI()
 
@@ -34,7 +31,7 @@ import random
 import string
 import time
 from sql_uilts import DatabaseManager
-load_dotenv()
+
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
 username_name = os.getenv('USER_name','')
@@ -43,12 +40,11 @@ SQL_password = os.getenv('SQL_password', '')
 SQL_IP = os.getenv('SQL_IP', '')
 SQL_dk = os.getenv('SQL_dk', 3306)
 
-print(BASE_URL,SESSION_ID,username_name,SQL_name,SQL_password,SQL_IP,SQL_dk)
+db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
+
 @app.on_event("startup")
 async def on_startup():
-    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
     await db_manager.create_database_and_table()
-
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
@@ -95,18 +91,16 @@ def get_clips_ids(response: json):
         raise ValueError("Invalid JSON response")
 
 
-async def get_token(db_manager):
+async def get_token():
     cookieSelected = await db_manager.get_token()
     return cookieSelected
 
 
-async def Delelet_Songid(songid,db_manager):
+async def Delelet_Songid(songid):
     return await db_manager.delete_song_ids(songid)
 
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None, continue_clip_id=None):
-    db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
-    print(SQL_IP,username_name)
     while True:
         try:
             await db_manager.create_pool()
