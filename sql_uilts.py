@@ -27,29 +27,38 @@ class DatabaseManager:
                     maxsize=20,
                 )
         except Exception as e:
-            await self.create_database_and_table()
-            if not self.pool:
-                self.pool = await aiomysql.create_pool(
-                    host=self.host,
-                    port=self.port,
-                    user=self.user,
-                    password=self.password,
-                    db=self.db_name,
-                    autocommit=True,
-                    maxsize=20,
-                )
-                return
-            logging.error(f"An error occurred: {e}")
+            print(f"An error occurred: {e}")
+            connection = await aiomysql.connect(
+                host=self.host,
+                port=self.port,
+                user=self.user,
+                password=self.password,
+                autocommit=True
+            )
 
-    # 创建数据库和表 
+            async with connection.cursor() as cursor:
+                await cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(self.db_name))
+            await connection.close()
+
+            self.pool = await aiomysql.create_pool(
+                host=self.host,
+                port=self.port,
+                user=self.user,
+                password=self.password,
+                db=self.db_name,
+                autocommit=True,
+                maxsize=20,
+            )
+
+    # 创建数据库和表
     async def create_database_and_table(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 try:
-                    await cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{self.db_name}`")
-                    logging.info(f"Database `{self.db_name}` created or already exists.")
-                    await cursor.execute(f"USE `{self.user}`")
+                    # await cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{self.db_name}`")
+                    # logging.info(f"Database `{self.db_name}` created or already exists.")
+                    # await cursor.execute(f"USE `{self.user}`")
                     await cursor.execute(f"""
                         CREATE TABLE IF NOT EXISTS suno2openai (
                             id INT AUTO_INCREMENT PRIMARY KEY,
