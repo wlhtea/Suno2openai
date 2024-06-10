@@ -40,7 +40,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            wlhtea/suno2openai:${{ steps.tag_name.outputs.tag }}
-            wlhtea/suno2openai:latest
+            yangclivia/suno2openai:${{ steps.tag_name.outputs.tag }}
+            yangclivia/suno2openai:latest
           platforms: linux/amd64,linux/arm64
           build-args: TARGETPLATFORM=${{ matrix.platform }}
