@@ -87,8 +87,6 @@ async def refresh_cookies():
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     global db_manager
     try:
-        # 初始化数据库管理器并创建连接池
-        db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
         await db_manager.create_pool()
         await create_database_and_table()  # 确保表存在
         logging.info("初始化 SQL 成功！")
