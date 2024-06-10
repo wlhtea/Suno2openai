@@ -6,17 +6,18 @@ import logging
 import os
 import random
 import string
-import tiktoken
 import time
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+import tiktoken
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
-from typing import AsyncGenerator
 
 import schemas
 from cookie import suno_auth
@@ -25,6 +26,7 @@ from sql_uilts import DatabaseManager
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
 
+# 从环境变量中获取配置
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
 username_name = os.getenv('USER_name', '')
@@ -36,7 +38,8 @@ cookies_prefix = os.getenv('COOKIES_PREFIX', "")
 auth_key = os.getenv('AUTH_KEY', str(time.time()))
 db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
 
-logging.info(f"==========================================")
+# 记录配置信息
+logging.info("==========================================")
 logging.info(f"BASE_URL: {BASE_URL}")
 logging.info(f"SESSION_ID: {SESSION_ID}")
 logging.info(f"USER_Name: {username_name}")
@@ -46,13 +49,13 @@ logging.info(f"SQL_IP: {SQL_IP}")
 logging.info(f"SQL_dk: {SQL_dk}")
 logging.info(f"COOKIES_PREFIX: {cookies_prefix}")
 logging.info(f"AUTH_KEY: {auth_key}")
-logging.info(f"==========================================")
+logging.info("==========================================")
 
 
-# 刷新cookies
+# 刷新cookies函数
 async def refresh_cookies():
     try:
-        logging.info(f"==========================================")
+        logging.info("==========================================")
         logging.info("开始更新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
         semaphore = asyncio.Semaphore(10)
@@ -62,7 +65,7 @@ async def refresh_cookies():
             async with semaphore:
                 return await fetch_limit_left(simple_cookie)
 
-        # 使用 asyncio.create_task 而不是直接 await
+        # 创建并运行任务
         for cookie in cookies:
             add_tasks.append(add_cookie(cookie))
 
@@ -75,20 +78,22 @@ async def refresh_cookies():
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        raise {"error": e}
+        logging.error(f"刷新 cookies 时发生错误: {str(e)}")
+        raise e
 
 
+# 生命周期管理
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
-    # 创建数据库
     global db_manager
     try:
+        # 初始化数据库管理器并创建连接池
         db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
         await db_manager.create_pool()
-        await create_database_and_table()
-        logging.info(f"初始化sql成功！")
+        await create_database_and_table()  # 确保表存在
+        logging.info("初始化 SQL 成功！")
     except Exception as e:
-        logging.error(f"初始化sql失败: {str(e)}")
+        logging.error(f"初始化 SQL 失败: {str(e)}")
         raise
 
     # 初始化并启动 APScheduler
@@ -101,6 +106,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     scheduler.shutdown()
 
 
+# FastAPI 应用初始化
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
