@@ -189,9 +189,10 @@ class DatabaseManager:
     async def get_cookies_count(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute("SELECT COUNT(count) as cookie_count FROM suno2openai")
+                await cur.execute("SELECT SUM(count) FROM suno2openai")
                 result = await cur.fetchone()
-                return result['cookie_count']
+                total_count = result[0] if result else 0
+                return total_count
 
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
