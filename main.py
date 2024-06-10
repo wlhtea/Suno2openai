@@ -193,6 +193,9 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             break
                     except Exception as e:
                         logging.info('CDN音乐链接出错',e)
+                        # 这一块是为了鉴权失效的问题 但是不知道为什么会发生这样的问题
+                        # 感觉就是生成jwt（token）的时候刚好碰到suno更新了token就会失效，但是我每次请求都是用最新的token不明白为什么 我再琢磨琢磨
+                        # 最好应该是重新再请求这里先这么处理
                         await Delelet_Songid(clip_id)
                         Aideo_Markdown_Conetent = (f""
                                                    f"\n## 🎷 永久音乐链接\n"
