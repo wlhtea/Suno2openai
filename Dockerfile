@@ -4,22 +4,22 @@ FROM python:3.10-slim-buster
 # 声明构建参数
 ARG BASE_URL
 ARG SESSION_ID
-ARG SQL_name
-ARG USER_name
-ARG SQL_password
+ARG SQL_NAME
+ARG USER_NAME
+ARG SQL_PASSWORD
 ARG SQL_IP
-ARG SQL_dk
+ARG SQL_DK
 ARG COOKIES_PREFIX
 ARG AUTH_KEY
 
 # 将构建参数转换为环境变量，以便运行时使用
 ENV BASE_URL=${BASE_URL} \
     SESSION_ID=${SESSION_ID} \
-    USER_name=${USER_name} \
-    SQL_name=${SQL_name} \
-    SQL_password=${SQL_password} \
+    USER_NAME=${USER_NAME} \
+    SQL_NAME=${SQL_NAME} \
+    SQL_PASSWORD=${SQL_PASSWORD} \
     SQL_IP=${SQL_IP} \
-    SQL_dk=${SQL_dk} \
+    SQL_DK=${SQL_DK} \
     COOKIES_PREFIX=${COOKIES_PREFIX} \
     AUTH_KEY=${AUTH_KEY}
 

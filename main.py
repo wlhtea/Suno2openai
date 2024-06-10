@@ -21,7 +21,6 @@ from starlette.responses import StreamingResponse
 
 import schemas
 from cookie import suno_auth
-from init_sql import create_database_and_table
 from sql_uilts import DatabaseManager
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
@@ -42,26 +41,26 @@ logging.basicConfig(level=logging.INFO,
 # 从环境变量中获取配置
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
-username_name = os.getenv('USER_Name', '')
-SQL_name = os.getenv('SQL_name', '')
-SQL_password = os.getenv('SQL_password', '')
+USER_NAME = os.getenv('USER_NAME', '')
+SQL_NAME = os.getenv('SQL_NAME', '')
+SQL_PASSWORD = os.getenv('SQL_PASSWORD', '')
 SQL_IP = os.getenv('SQL_IP', '')
-SQL_dk = os.getenv('SQL_dk', 3306)
-cookies_prefix = os.getenv('COOKIES_PREFIX', "")
-auth_key = os.getenv('AUTH_KEY', str(time.time()))
-db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
+SQL_DK = os.getenv('SQL_DK', 3306)
+COOKIES_PREFIX = os.getenv('COOKIES_PREFIX', "")
+AUTH_KEY = os.getenv('AUTH_KEY', str(time.time()))
+db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
 
 # 记录配置信息
 logging.info("==========================================")
 logging.info(f"BASE_URL: {BASE_URL}")
 logging.info(f"SESSION_ID: {SESSION_ID}")
-logging.info(f"USER_Name: {username_name}")
-logging.info(f"SQL_name: {SQL_name}")
-logging.info(f"SQL_password: {SQL_password}")
+logging.info(f"USER_NAME: {USER_NAME}")
+logging.info(f"SQL_NAME: {SQL_NAME}")
+logging.info(f"SQL_PASSWORD: {SQL_PASSWORD}")
 logging.info(f"SQL_IP: {SQL_IP}")
-logging.info(f"SQL_dk: {SQL_dk}")
-logging.info(f"COOKIES_PREFIX: {cookies_prefix}")
-logging.info(f"AUTH_KEY: {auth_key}")
+logging.info(f"SQL_DK: {SQL_DK}")
+logging.info(f"COOKIES_PREFIX: {COOKIES_PREFIX}")
+logging.info(f"AUTH_KEY: {AUTH_KEY}")
 logging.info("==========================================")
 
 
@@ -101,7 +100,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     global db_manager
     try:
         await db_manager.create_pool()
-        await create_database_and_table()  # 确保表存在
+        await db_manager.create_database_and_table()
         logging.info("初始化 SQL 成功！")
     except Exception as e:
         logging.error(f"初始化 SQL 失败: {str(e)}")
@@ -194,7 +193,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             cookie = await db_manager.get_token()
             break
         except:
-            await create_database_and_table()
+            await db_manager.create_database_and_table()
 
     try:
         _return_ids = False
@@ -361,7 +360,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data, authorization: str = Header(...)):
     content_all = ''
-    if SQL_IP == '' or SQL_password == '' or SQL_name == '':
+    if SQL_IP == '' or SQL_PASSWORD == '' or SQL_NAME == '':
         raise ValueError("BASE_URL is not set")
 
     try:
@@ -447,12 +446,12 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
 async def verify_auth_header(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
-    if authorization.strip() != f"Bearer {auth_key}":
+    if authorization.strip() != f"Bearer {AUTH_KEY}":
         raise HTTPException(status_code=403, detail="Invalid authorization key")
 
 
 # 获取cookie
-@app.post(f"{cookies_prefix}/cookies")
+@app.post(f"{COOKIES_PREFIX}/cookies")
 async def get_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -465,7 +464,7 @@ async def get_cookies(authorization: str = Header(...)):
 
 
 # 添加cookies
-@app.put(f"{cookies_prefix}/cookies")
+@app.put(f"{COOKIES_PREFIX}/cookies")
 async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -498,7 +497,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
 
 # 删除cookie
-@app.delete(f"{cookies_prefix}/cookies")
+@app.delete(f"{COOKIES_PREFIX}/cookies")
 async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -520,7 +519,7 @@ async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)
 
 
 # 请求刷新cookies
-@app.get(f"{cookies_prefix}/refresh/cookies")
+@app.get(f"{COOKIES_PREFIX}/refresh/cookies")
 async def refresh_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
