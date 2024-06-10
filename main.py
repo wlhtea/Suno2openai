@@ -160,10 +160,10 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
         await db_manager.decrement_cookie_count(cookie)
 
         for clip_id in clip_ids:
-            attempts = 2
+            # attempts = 2
             while True:
-                if attempts // 2 == 0:
-                    token, sid = SongsGen(cookie)._get_auth_token(w=1)
+                # if attempts // 2 == 0:
+                token, sid = SongsGen(cookie)._get_auth_token(w=1)
                 now_data = await get_feed(ids=clip_id, token=token)
                 try:
                     more_information_ = now_data[0]['metadata']
