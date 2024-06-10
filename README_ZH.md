@@ -64,11 +64,11 @@
        ```bash
        docker run -d --name wsunoapi \
        -p 8000:8000 \
-       -e USER_Name='<USER_Name>'
-       -e SQL_name='<SQL_NAME>' \
-       -e SQL_password='<SQL_PASSWORD>' \
+       -e USER_NAME='<USER_NAME>'
+       -e SQL_NAME='<SQL_NAME>' \
+       -e SQL_PASSWORD='<SQL_PASSWORD>' \
        -e SQL_IP='<SQL_IP>' \
-       -e SQL_dk=3306 \
+       -e SQL_DK=3306 \
        --restart=always \
        wlhtea/suno2openai:latest
        ```
@@ -76,11 +76,11 @@
        ```
        docker run -d --name wsunoapi \
           -p 8000:8000 \
-          -e USER_Name=suno2openaiUsername
-          -e SQL_name=suno2openaiSQLname \
-          -e SQL_password=12345678 \
+          -e USER_NAME=suno2openaiUsername
+          -e SQL_NAME=suno2openaiSQLname \
+          -e SQL_PASSWORD=12345678 \
           -e SQL_IP=100.101.102.103 \
-          -e SQL_dk=3306 \
+          -e SQL_DK=3306 \
           --restart=always \
           wlhtea/suno2openai:latest
        ```
@@ -155,11 +155,11 @@ git clone https://github.com/wlhtea/Suno2openai.git
 ```plaintext
 BASE_URL=https://studio-api.suno.ai
 SESSION_ID=cookie # 此项不需修改
-SQL_name=<数据库名称>
-SQL_password=<数据库密码>
+SQL_NAME=<数据库名称>
+SQL_PASSWORD=<数据库密码>
 SQL_IP=<数据库主机IP>
-SQL_dk=3306 # 数据库端口
-USER_name=<Database 用户名>
+SQL_DK=3306 # 数据库端口
+USER_NAME=<Database 用户名>
 ```
 
 ### 进入项目目录

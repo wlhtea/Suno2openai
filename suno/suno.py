@@ -297,3 +297,4 @@ class SongsGen:
                 encoding="utf-8",
         ) as lyric_file:
             lyric_file.write(f"{song_name}\n\n{lyric}")
+
