@@ -33,8 +33,8 @@ async def main():
         raise ValueError("BASE_URL is not set")
     else:
         db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
-        await db_manager.create_database_and_table()
         await db_manager.create_pool()
+        await db_manager.create_database_and_table()
         tasks = [fetch_limit_left(cookie, db_manager) for cookie in cookies if cookie]
         await asyncio.gather(*tasks)
 

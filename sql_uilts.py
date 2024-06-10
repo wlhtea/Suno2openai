@@ -16,7 +16,7 @@ class DatabaseManager:
     # 创建连接池 
     async def create_pool(self):
         try:
-            if not self.pool:
+            if self.pool is None:
                 # 用于root账户密码新建数据库
                 if self.user == 'root':
                     connection = await aiomysql.connect(
@@ -27,15 +27,21 @@ class DatabaseManager:
                         autocommit=True
                     )
                     async with connection.cursor() as cursor:
+                        # 检查数据库是否存在
                         await cursor.execute(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
                                              f"WHERE SCHEMA_NAME = '{self.db_name}'")
                         result = await cursor.fetchone()
+                        # 如果不存在则创建数据库
                         if not result:
                             await cursor.execute(f"CREATE DATABASE {self.db_name}")
-                            logging.info(f"Database {self.db_name} created.")
+                            logging.info(f"数据库 {self.db_name} 已创建.")
                         else:
-                            logging.info(f"Database {self.db_name} already exists.")
+                            logging.info(f"数据库 {self.db_name} 已存在.")
                     await connection.close()
+
+                logging.info("Creating connection pool with parameters: "
+                             f"host={self.host}, port={self.port}, user={self.user}, db={self.db_name}")
+                # 创建连接池
                 self.pool = await aiomysql.create_pool(
                     host=self.host,
                     port=self.port,
@@ -45,12 +51,18 @@ class DatabaseManager:
                     autocommit=True,
                     maxsize=20,
                 )
+                # 确认连接池已正确创建
+                if self.pool is not None:
+                    logging.info("连接池创建成功。")
+                else:
+                    logging.error("连接池创建失败，返回值为 None。")
+            else:
+                logging.info("连接池已存在。")
         except Exception as e:
-            logging.error(f"An error occurred while creating pool: {e}")
+            logging.error(f"创建连接池时发生错误: {e}")
 
     # 创建数据库和表
     async def create_database_and_table(self):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 try:
