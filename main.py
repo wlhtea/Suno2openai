@@ -42,6 +42,9 @@ SQL_dk = os.getenv('SQL_dk', 3306)
 
 db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
 
+@app.on_event("startup")
+async def on_startup():
+    await db_manager.create_database_and_table()
 
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
