@@ -19,25 +19,32 @@ class DatabaseManager:
             if self.pool is None:
                 # 用于root账户密码新建数据库
                 if self.user == 'root':
-                    connection = await aiomysql.connect(
-                        host=self.host,
-                        port=self.port,
-                        user=self.user,
-                        password=self.password,
-                        autocommit=True
-                    )
-                    async with connection.cursor() as cursor:
-                        # 检查数据库是否存在
-                        await cursor.execute(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
-                                             f"WHERE SCHEMA_NAME = '{self.db_name}'")
-                        result = await cursor.fetchone()
-                        # 如果不存在则创建数据库
-                        if not result:
-                            await cursor.execute(f"CREATE DATABASE {self.db_name}")
-                            logging.info(f"数据库 {self.db_name} 已创建.")
-                        else:
-                            logging.info(f"数据库 {self.db_name} 已存在.")
-                    await connection.close()
+                    connection = None
+                    try:
+                        connection = await aiomysql.connect(
+                            host=self.host,
+                            port=self.port,
+                            user=self.user,
+                            password=self.password,
+                            autocommit=True
+                        )
+                        async with connection.cursor() as cursor:
+                            # 检查数据库是否存在
+                            await cursor.execute(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
+                                                 f"WHERE SCHEMA_NAME = '{self.db_name}'")
+                            result = await cursor.fetchone()
+                            # 如果不存在则创建数据库
+                            if not result:
+                                await cursor.execute(f"CREATE DATABASE {self.db_name}")
+                                logging.info(f"数据库 {self.db_name} 已创建.")
+                            else:
+                                logging.info(f"数据库 {self.db_name} 已存在.")
+                    except Exception as e:
+                        logging.error(f"发生错误: {e}")
+                    finally:
+                        if connection:
+                            connection.close()
+                            logging.info("数据库连接已关闭.")
 
                 logging.info("Creating connection pool with parameters: "
                              f"host={self.host}, port={self.port}, user={self.user}, db={self.db_name}")
