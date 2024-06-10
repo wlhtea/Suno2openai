@@ -42,7 +42,7 @@ logging.basicConfig(level=logging.INFO,
 # 从环境变量中获取配置
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
-username_name = os.getenv('USER_name', '')
+username_name = os.getenv('USER_Name', '')
 SQL_name = os.getenv('SQL_name', '')
 SQL_password = os.getenv('SQL_password', '')
 SQL_IP = os.getenv('SQL_IP', '')
