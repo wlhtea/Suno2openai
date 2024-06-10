@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import asyncio
 import datetime
 import json
 import logging
@@ -12,17 +13,16 @@ from typing import AsyncGenerator
 import tiktoken
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException
+from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
 
 import schemas
 from cookie import suno_auth
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from init_sql import create_database_and_table
-from starlette.responses import StreamingResponse
+from sql_uilts import DatabaseManager
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
 
@@ -107,34 +107,25 @@ logging.basicConfig(level=logging.INFO,
 async def get_root():
     return schemas.Response()
 
-import asyncio
-import random
-import string
-import time
-from sql_uilts import DatabaseManager
 
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
-username_name = os.getenv('USER_name','')
+username_name = os.getenv('USER_name', '')
 SQL_name = os.getenv('SQL_name', '')
 SQL_password = os.getenv('SQL_password', '')
 SQL_IP = os.getenv('SQL_IP', '')
 SQL_dk = os.getenv('SQL_dk', 3306)
-
+cookies_prefix = os.getenv('COOKIES_PREFIX', "")
+auth_key = os.getenv('AUTH_KEY', str(time.time()))
 db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
 
-@app.on_event("startup")
-async def on_startup():
-    await db_manager.create_database_and_table()
+
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
 def generate_timestamp_async():
     return int(time.time())
-
-
-import tiktoken
 
 
 def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str) -> (int, int):
@@ -181,7 +172,8 @@ async def Delelet_Songid(songid):
     return await db_manager.delete_song_ids(songid)
 
 
-async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None, continue_clip_id=None):
+async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
+                        continue_clip_id=None):
     while True:
         try:
             await db_manager.create_pool()
@@ -250,7 +242,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                 try:
                     more_information_ = now_data[0]['metadata']
                 except Exception as e:
-                    print('more_information_',e)
+                    logging.info('more_information_', e)
+                    continue
                 if _return_Forever_url and _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
                     break
                 if not _return_Forever_url:
@@ -272,7 +265,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             _return_Forever_url = True
                             break
                     except Exception as e:
-                        logging.info('CDN音乐链接出错',e)
+                        logging.info('CDN音乐链接出错', e)
                         # 这一块是为了鉴权失效的问题 但是不知道为什么会发生这样的问题
                         # 感觉就是生成jwt（token）的时候刚好碰到suno更新了token就会失效，但是我每次请求都是用最新的token不明白为什么 我再琢磨琢磨
                         # 最好应该是重新再请求这里先这么处理
@@ -369,70 +362,88 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
 
 
 @app.post("/v1/chat/completions")
-async def get_last_user_message(data: schemas.Data):
+async def get_last_user_message(data: schemas.Data, authorization: str = Header(...)):
     content_all = ''
     if SQL_IP == '' or SQL_password == '' or SQL_name == '':
         raise ValueError("BASE_URL is not set")
-    else:
+
+    try:
+        await verify_auth_header(authorization)
+    except HTTPException as http_exc:
+        raise http_exc
+
+    try:
         chat_id = generate_random_string_async(29)
         timeStamp = generate_timestamp_async()
-        last_user_content = None
-        for message in reversed(data.messages):
-            if message.role == "user":
-                last_user_content = message.content
-                break
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"生成聊天 ID 或时间戳时出错: {str(e)}")
 
-        if last_user_content is None:
-            raise HTTPException(status_code=400, detail="No user message found")
+    last_user_content = None
+    for message in reversed(data.messages):
+        if message.role == "user":
+            last_user_content = message.content
+            break
 
-        headers = {
-            'Cache-Control': 'no-cache',
-            'Content-Type': 'text/event-stream',
-            'Date': datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'),
-            'Server': 'uvicorn',
-            'X-Accel-Buffering': 'no',
-            'Transfer-Encoding': 'chunked'
-        }
+    if last_user_content is None:
+        raise HTTPException(status_code=400, detail="No user message found")
 
-        if not data.stream:
+    headers = {
+        'Cache-Control': 'no-cache',
+        'Content-Type': 'text/event-stream',
+        'Date': datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'),
+        'Server': 'uvicorn',
+        'X-Accel-Buffering': 'no',
+        'Transfer-Encoding': 'chunked'
+    }
+
+    if not data.stream:
+        try:
             async for data_string in generate_data(last_user_content, chat_id, timeStamp, data.model):
                 try:
                     json_data = data_string.split('data: ')[1].strip()
+
                     parsed_data = json.loads(json_data)
                     content = parsed_data['choices'][0]['delta']['content']
                     content_all += content
                 except:
                     pass
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"生成数据时出错: {str(e)}")
 
+        try:
             input_tokens, output_tokens = calculate_token_costs(last_user_content, content_all, 'gpt-3.5-turbo')
-            json_string = {
-                "id": f"chatcmpl-{chat_id}",
-                "object": "chat.completion",
-                "created": timeStamp,
-                "model": "suno-v3",
-                "choices": [
-                    {
-                        "index": 0,
-                        "message": {
-                            "role": "assistant",
-                            "content": content_all
-                        },
-                        "finish_reason": "stop"
-                    }
-                ],
-                "usage": {
-                    "prompt_tokens": input_tokens,
-                    "completion_tokens": output_tokens,
-                    "total_tokens": input_tokens + output_tokens
-                }
-            }
-            return json_string
-        else:
-            try:
-                return StreamingResponse(generate_data(last_user_content, chat_id, timeStamp, data.model), headers=headers, media_type="text/event-stream")
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"生成流式响应时出错: {str(e)}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"计算 token 成本时出错: {str(e)}")
 
+        json_string = {
+            "id": f"chatcmpl-{chat_id}",
+            "object": "chat.completion",
+            "created": timeStamp,
+            "model": "suno-v3",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": content_all
+                    },
+                    "finish_reason": "stop"
+                }
+            ],
+            "usage": {
+                "prompt_tokens": input_tokens,
+                "completion_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens
+            }
+        }
+
+        return json_string
+    else:
+        try:
+            return StreamingResponse(generate_data(last_user_content, chat_id, timeStamp, data.model),
+                                     headers=headers, media_type="text/event-stream")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"生成流式响应时出错: {str(e)}")
 
 
 # 授权检查
@@ -445,7 +456,7 @@ async def verify_auth_header(authorization: str = Header(...)):
 
 # 获取cookie
 @app.post(f"{cookies_prefix}/cookies")
-async def get_last_user_message(authorization: str = Header(...)):
+async def get_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         cookies = await db_manager.get_cookies()
@@ -491,7 +502,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
 # 删除cookie
 @app.delete(f"{cookies_prefix}/cookies")
-async def get_last_user_message(data: schemas.Cookies, authorization: str = Header(...)):
+async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         cookies = data.cookies
@@ -513,7 +524,7 @@ async def get_last_user_message(data: schemas.Cookies, authorization: str = Head
 
 # 请求刷新cookies
 @app.get(f"{cookies_prefix}/refresh/cookies")
-async def get_refresh_cookies(authorization: str = Header(...)):
+async def refresh_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         logging.info(f"==========================================")
@@ -552,7 +563,7 @@ async def fetch_limit_left(cookie):
     try:
         remaining_count = song_gen.get_limit_left()
         logging.info(f"该账号剩余次数: {remaining_count}")
-        await db_manager.insert_cookie(cookie, remaining_count, False)
+        await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
         return True
     except Exception as e:
         logging.error(cookie + f"，添加失败：{e}")

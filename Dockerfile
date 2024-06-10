@@ -9,6 +9,8 @@ ARG USER_name
 ARG SQL_password
 ARG SQL_IP
 ARG SQL_dk
+ARG COOKIES_PREFIX
+ARG AUTH_KEY
 
 # 将构建参数转换为环境变量，以便运行时使用
 ENV BASE_URL=${BASE_URL} \
@@ -18,6 +20,8 @@ ENV BASE_URL=${BASE_URL} \
     SQL_password=${SQL_password} \
     SQL_IP=${SQL_IP} \
     SQL_dk=${SQL_dk}
+    COOKIES_PREFIX =${COOKIES_PREFIX}
+    AUTH_KEY =${AUTH_KEY}
 
 WORKDIR /app
 

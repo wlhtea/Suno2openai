@@ -10,14 +10,13 @@ Export: outlook.csv
 """
 
 import csv
+import random
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.support.ui import Select
-import random
-
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 
@@ -139,21 +138,20 @@ def main():
                 elif confirm.lower() == 'n':
                     break
                 else:
-                    print("Invalid input. Please enter 'y' or 'n'.")
+                    logging.info("Invalid input. Please enter 'y' or 'n'.")
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             continue
         finally:
             if driver is not None:
                 try:
                     driver.quit()
                 except Exception as ex:
-                    print("Error occurred while quitting: ", ex)
+                    logging.info("Error occurred while quitting: ", ex)
 
 
 if __name__ == '__main__':
     main()
-
 
 # wlhwlh120@outlook.com,wlh666666
 # wlhwlh121@outlook.com,wlh666666

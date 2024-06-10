@@ -1,5 +1,8 @@
+import logging
+
 import aiomysql
 from fastapi import HTTPException
+
 
 class DatabaseManager:
     def __init__(self, host, port, user, password, db_name):
@@ -31,19 +34,19 @@ class DatabaseManager:
                 try:
                     await cursor.execute(f"CREATE DATABASE IF NOT EXISTS {self.db_name}")
                     await cursor.execute(f"USE {self.db_name}")
-                    await cursor.execute("""
+                    await cursor.execute(f"""
                         CREATE TABLE IF NOT EXISTS suno2openai (
                             id INT AUTO_INCREMENT PRIMARY KEY,
                             cookie TEXT NOT NULL,
                             songID VARCHAR(255),
                             songID2 VARCHAR(255),
                             count INT,
-                            time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             UNIQUE(cookie(255))
                         )
                     """)
                 except Exception as e:
-                    print(f"An error occurred: {e}")
+                    logging.error(f"An error occurred: {e}")
 
     async def get_token(self):
         await self.create_pool()
@@ -67,7 +70,8 @@ class DatabaseManager:
                 sql = """
                     INSERT INTO suno2openai (cookie, songID, songID2, count)
                     VALUES (%s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE count = VALUES(count), songID = VALUES(songID), songID2 = VALUES(songID2), time = CURRENT_TIMESTAMP
+                    ON DUPLICATE KEY UPDATE count = VALUES(count), songID = VALUES(songID), songID2 = VALUES(songID2), 
+                    time = CURRENT_TIMESTAMP
                 """
                 await cur.execute(sql, (cookie, songID, songID2, count))
 
@@ -94,7 +98,6 @@ class DatabaseManager:
                     WHERE songID = %s OR songID2 = %s
                 ''', (songid, songid))
 
-    # 更新cookie的count，如果update为True，则更新为count_increment，否则更新为count - count_increment 
     async def update_cookie_count(self, cookie, count_increment, update=None):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -122,14 +125,12 @@ class DatabaseManager:
                     WHERE cookie = %s AND count > 0
                 ''', (cookie,))
 
-    # 获取工作状态的cookies   
     async def query_cookies(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute('SELECT * FROM suno2openai')
                 return await cur.fetchall()
-
 
     async def update_song_ids_by_cookie(self, cookie, songID1, songID2):
         await self.create_pool()
@@ -141,34 +142,18 @@ class DatabaseManager:
                     WHERE cookie = %s
                 ''', (songID1, songID2, cookie))
 
-    # 获取非工作状态且有空次数的cookies    
-    async def get_non_working_cookie(self):
-        await self.create_pool()  # 确保连接池已创建
-        async with self.pool.acquire() as conn:
-            async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute("SELECT cookie FROM cookies WHERE working = FALSE AND count > 0")
-                cookies = await cur.fetchall()
-                # 如果有符合条件的记录，则随机选择一个
-                if cookies:
-                    selected_cookie = random.choice(cookies)['cookie']
-                    return selected_cookie
-                else:
-                    selected_cookie = None
-                    print(f"出现了异常，可能是因为没有合适的cookies了......")
-                    return None
-
     # 获取所有cookies
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute("SELECT cookie, count, working FROM cookies")
+                await cur.execute("SELECT id, cookie, songID, songID2, count, time FROM suno2openai")
                 return await cur.fetchall()
 
     # 删除相应的cookies
     async def delete_cookies(self, cookie: str):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
-                await cur.execute("DELETE FROM cookies WHERE cookie = %s", cookie)
+                await cur.execute("DELETE FROM suno2openai WHERE cookie = %s", cookie)
                 return True
 
 # async def main():
