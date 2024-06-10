@@ -6,18 +6,17 @@ import logging
 import os
 import random
 import string
-import time
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
-
 import tiktoken
+import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
+from typing import AsyncGenerator
 
 import schemas
 from cookie import suno_auth
@@ -25,6 +24,29 @@ from init_sql import create_database_and_table
 from sql_uilts import DatabaseManager
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
+
+BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
+SESSION_ID = os.getenv('SESSION_ID')
+username_name = os.getenv('USER_name', '')
+SQL_name = os.getenv('SQL_name', '')
+SQL_password = os.getenv('SQL_password', '')
+SQL_IP = os.getenv('SQL_IP', '')
+SQL_dk = os.getenv('SQL_dk', 3306)
+cookies_prefix = os.getenv('COOKIES_PREFIX', "")
+auth_key = os.getenv('AUTH_KEY', str(time.time()))
+db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
+
+logging.info(f"==========================================")
+logging.info(f"BASE_URL: {BASE_URL}")
+logging.info(f"SESSION_ID: {SESSION_ID}")
+logging.info(f"USER_Name: {username_name}")
+logging.info(f"SQL_name: {SQL_name}")
+logging.info(f"SQL_password: {SQL_password}")
+logging.info(f"SQL_IP: {SQL_IP}")
+logging.info(f"SQL_dk: {SQL_dk}")
+logging.info(f"COOKIES_PREFIX: {cookies_prefix}")
+logging.info(f"AUTH_KEY: {auth_key}")
+logging.info(f"==========================================")
 
 
 # 刷新cookies
@@ -106,18 +128,6 @@ logging.basicConfig(level=logging.INFO,
 @app.get("/")
 async def get_root():
     return schemas.Response()
-
-
-BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
-SESSION_ID = os.getenv('SESSION_ID')
-username_name = os.getenv('USER_name', '')
-SQL_name = os.getenv('SQL_name', '')
-SQL_password = os.getenv('SQL_password', '')
-SQL_IP = os.getenv('SQL_IP', '')
-SQL_dk = os.getenv('SQL_dk', 3306)
-cookies_prefix = os.getenv('COOKIES_PREFIX', "")
-auth_key = os.getenv('AUTH_KEY', str(time.time()))
-db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
 
 
 def generate_random_string_async(length):
@@ -265,7 +275,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             _return_Forever_url = True
                             break
                     except Exception as e:
-                        logging.info('CDN音乐链接出错',e)
+                        logging.info('CDN音乐链接出错', e)
                         pass
 
                 if not _return_ids:
