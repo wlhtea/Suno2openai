@@ -191,8 +191,21 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             _return_Forever_url = True
                             break
                     except:
-                        print(now_data)
+                        await Delelet_Songid(clip_id)
+                        Aideo_Markdown_Conetent = (f""
+                                                   f"\n## 🎷 永久音乐链接\n"
+                                                   f"- 🎵 歌曲1️⃣：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
+                                                   f"- 🎵 歌曲2️⃣：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
+                        Video_Markdown_Conetent = (f""
+                                                   f"\n## 📺 永久视频链接\n"
+                                                   f"- 🎵 视频1️⃣：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
+                                                   f"- 🎵 视频2️⃣：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n")
+                        yield str(
+                            f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
+                        yield str(
+                            f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                         _return_Forever_url = True
+                        break
 
                 if not _return_ids:
                     try:
