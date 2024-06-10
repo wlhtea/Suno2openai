@@ -15,16 +15,31 @@ class DatabaseManager:
 
     # 创建连接池 
     async def create_pool(self):
-        if not self.pool:
-            self.pool = await aiomysql.create_pool(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                db=self.db_name,
-                autocommit=True,
-                maxsize=20,
-            )
+        try:
+            if not self.pool:
+                self.pool = await aiomysql.create_pool(
+                    host=self.host,
+                    port=self.port,
+                    user=self.user,
+                    password=self.password,
+                    db=self.db_name,
+                    autocommit=True,
+                    maxsize=20,
+                )
+        except Exception as e:
+            await self.create_database_and_table()
+            if not self.pool:
+                self.pool = await aiomysql.create_pool(
+                    host=self.host,
+                    port=self.port,
+                    user=self.user,
+                    password=self.password,
+                    db=self.db_name,
+                    autocommit=True,
+                    maxsize=20,
+                )
+                return
+            logging.error(f"An error occurred: {e}")
 
     # 创建数据库和表 
     async def create_database_and_table(self):
