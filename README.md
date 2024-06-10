@@ -3,7 +3,8 @@
 # Suno2openai
 
 > Integrated based on [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator)
-> and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant with
+> and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant
+> with
 > OpenAI formats.
 
 ## Changelog
@@ -67,11 +68,11 @@ replaced with placeholders.
    ```bash
       docker run -d --name wsunoapi \
       -p 8000:8000 \
-      -e USER_Name='<USER_Name>'
-      -e SQL_name='<SQL_NAME>' \
-      -e SQL_password='<SQL_PASSWORD>' \
+      -e USER_NAME='<USER_NAME>'
+      -e SQL_NAME='<SQL_NAME>' \
+      -e SQL_PASSWORD='<SQL_PASSWORD>' \
       -e SQL_IP='<SQL_IP>' \
-      -e SQL_dk=3306 \
+      -e SQL_DK=3306 \
       --restart=always \
       wlhtea/suno2openai:latest
    ```
@@ -80,11 +81,11 @@ replaced with placeholders.
    ```         
    docker run -d --name wsunoapi \
          -p 8000:8000 \
-         -e USER_Name=suno2openaiUsername
-         -e SQL_name=suno2openaiSQLname \
-         -e SQL_password=12345678 \
+         -e USER_NAME=suno2openaiUsername
+         -e SQL_NAME=suno2openaiSQLname \
+         -e SQL_PASSWORD=12345678 \
          -e SQL_IP=100.101.102.103 \
-         -e SQL_dk=3306 \
+         -e SQL_DK=3306 \
          --restart=always \
          wlhtea/suno2openai:latest
    ```
@@ -140,11 +141,11 @@ correctly (allow connections from all IPs or only from Docker container IPs).
 **Rename the `env.example` file to `.env` and fill in the corresponding details:**
 
 ```plaintext
-SQL_name=<Database Name>
-SQL_password=<Database Password>
+SQL_NAME=<Database Name>
+SQL_PASSWORD=<Database Password>
 SQL_IP=<Database Host IP>
-SQL_dk=3306 # Database port
-USER_name=<Database Username>
+SQL_DK=3306 # Database port
+USER_NAME=<Database Username>
 ```
 
 ### Enter the Project Directory

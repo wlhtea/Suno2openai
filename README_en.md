@@ -1,7 +1,8 @@
 # Suno2openai
 
 > Based on the [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator)
-> and [Suno-API](https://github.com/SunoAI-API/Suno-API) project integrations, provides interface standardization services
+> and [Suno-API](https://github.com/SunoAI-API/Suno-API) project integrations, provides interface standardization
+> services
 > conforming to the OpenAI format interface standardization service.
 
 Chinese | [English](https://github.com/wlhtea/Suno2openai/blob/main/README_en.md)
@@ -57,10 +58,10 @@ will be replaced with placeholders.
    -p 8000:8000 \
    -e BASE_URL='https://studio-api.suno.ai' \
    -e SESSION_ID='<your-session-id could care less>' \
-   -e SQL_name='<SQL_NAME>' \\
-   -e SQL_password='<SQL_PASSWORD>' \\
+   -e SQL_NAME='<SQL_NAME>' \\
+   -e SQL_PASSWORD='<SQL_PASSWORD>' \\
    -e SQL_IP='<SQL_IP>' \
-   -e SQL_dk=3306 \
+   -e SQL_DK=3306 \
    --restart=always \
    wlhtea/suno2openai:latest
    \ --restart=always
@@ -119,10 +120,10 @@ correctly (Allow all IPs to connect or Docker container IPs only).
 ```plaintext
 BASE_URL=https://studio-api.suno.ai
 SESSION_ID=cookie # This does not need to be changed.
-SQL_name=<database name
-SQL_password=<Password for database
+SQL_NAME=<database name
+SQL_PASSWORD=<Password for database
 SQL_IP=<database host IP>
-SQL_dk=3306 # database port
+SQL_DK=3306 # database port
 ```
 
 ### Enter the project directory
