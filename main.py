@@ -110,7 +110,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(cron_refresh_cookies, CronTrigger(hour=11, minute=50), id='updateRefresh_run')
+    scheduler.add_job(cron_refresh_cookies, CronTrigger(hour=3, minute=0), id='updateRefresh_run')
     scheduler.start()
     yield
 
