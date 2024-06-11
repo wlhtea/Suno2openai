@@ -67,7 +67,7 @@ logging.info("==========================================")
 
 
 # 刷新cookies函数
-async def refresh_cookies():
+async def cron_refresh_cookies():
     try:
         logging.info(f"==========================================")
         logging.info("开始更新数据库里的 cookies.........")
@@ -110,7 +110,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(refresh_cookies, CronTrigger(hour=3, minute=0), id='updateRefresh_run')
+    scheduler.add_job(cron_refresh_cookies, CronTrigger(hour=3, minute=0), id='updateRefresh_run')
     scheduler.start()
     yield
 
