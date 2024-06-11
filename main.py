@@ -69,7 +69,7 @@ logging.info("==========================================")
 # 刷新cookies函数
 async def refresh_cookies():
     try:
-        logging.info("==========================================")
+        logging.info(f"==========================================")
         logging.info("开始更新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
         semaphore = asyncio.Semaphore(10)
@@ -79,7 +79,7 @@ async def refresh_cookies():
             async with semaphore:
                 return await fetch_limit_left(simple_cookie)
 
-        # 创建并运行任务
+        # 使用 asyncio.create_task 而不是直接 await
         for cookie in cookies:
             add_tasks.append(add_cookie(cookie))
 
@@ -471,6 +471,8 @@ async def get_cookies(authorization: str = Header(...)):
         await verify_auth_header(authorization)
         cookies = await db_manager.get_all_cookies()
         remaining_count = int(await db_manager.get_cookies_count())
+        if remaining_count is None:
+            remaining_count = 0
         cookies_json = json.loads(cookies)
         logging.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
         logging.info("剩余数量:" + str(remaining_count))
