@@ -275,12 +275,12 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             await Delelet_Songid(clip_id)
                             Aideo_Markdown_Conetent = (f""
                                                        f"\n## 🎷 永久音乐链接\n"
-                                                       f"- 🎵 歌曲1️⃣：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
-                                                       f"- 🎵 歌曲2️⃣：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
+                                                       f"- **🎵 歌曲1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
+                                                       f"- **🎵 歌曲2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
                             Video_Markdown_Conetent = (f""
                                                        f"\n## 📺 永久视频链接\n"
-                                                       f"- 🎵 视频1️⃣：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
-                                                       f"- 🎵 视频2️⃣：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n")
+                                                       f"- **🎵 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
+                                                       f"- **🎵 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n")
                             yield str(
                                 f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                             yield str(
@@ -338,7 +338,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                 if not _return_image_url:
                     if now_data[0].get('image_url') is not None:
                         image_url_small_data = f"## ✨ 歌曲图片\n"
-                        image_url_lager_data = f"![封面图片_大]({now_data[0]['image_large_url']}) \n"
+                        image_url_lager_data = f"![封面图片_大]({now_data[0]['image_large_url']}) \n## 🤩即刻享受"
                         yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
                         yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                         _return_image_url = True
@@ -350,8 +350,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             audio_url_1 = f'https://audiopipe.suno.ai/?item_id={song_id_1}'
                             audio_url_2 = f'https://audiopipe.suno.ai/?item_id={song_id_2}'
 
-                            audio_url_data_1 = f"\n **📌 音乐链接(实时)**：{audio_url_1}"
-                            audio_url_data_2 = f"\n **📌 音乐链接(实时)**：{audio_url_2}\n## 🚀正在火速生成CDN链接（预计2-3分钟~）\n"
+                            audio_url_data_1 = f"\n- **📌 音乐链接1️⃣(实时)**：{audio_url_1}"
+                            audio_url_data_2 = f"\n- **📌 音乐链接2️⃣(实时)**：{audio_url_2}\n## 🚀正在火速生成CDN链接（预计2-3分钟~）\n"
                             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
                             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
                             _return_audio_url = True
