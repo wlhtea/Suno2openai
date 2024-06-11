@@ -64,8 +64,6 @@ class DatabaseManager:
                     logging.info("连接池创建成功。")
                 else:
                     logging.error("连接池创建失败，返回值为 None。")
-            else:
-                logging.info("连接池已存在。")
         except Exception as e:
             logging.error(f"创建连接池时发生错误: {e}")
 
@@ -193,7 +191,7 @@ class DatabaseManager:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
                     await cur.execute("SELECT SUM(count) AS total_count FROM suno2openai")
                     result = await cur.fetchone()
-                    return result['total_count'] if result else 0
+                    return result['total_count'] if result['total_count'] is not None else 0
         except aiomysql.Error as e:
             logging.error(f"Database error: {e}")
             return 0
