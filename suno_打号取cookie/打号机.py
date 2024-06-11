@@ -152,10 +152,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# wlhwlh120@outlook.com,wlh666666
-# wlhwlh121@outlook.com,wlh666666
-# pdboeu9eyn2x5t1m@outlook.com,vqgqiai0w7hgcj97
-# qiea6zmaenmtsee7@outlook.com,yv5upo1irrtyd1sk
-# xl5v63154mqkbo0r@outlook.com,97u2ljf3x411uvrg
-# n7tzrcn9uqufwycz@outlook.com,5o19xhne22z0kb7h
