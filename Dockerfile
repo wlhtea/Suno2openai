@@ -23,7 +23,10 @@ ENV BASE_URL=${BASE_URL} \
     SQL_DK=${SQL_DK} \
     COOKIES_PREFIX=${COOKIES_PREFIX} \
     AUTH_KEY=${AUTH_KEY} \
-    RETRIES=${RETRIES}
+    RETRIES=${RETRIES} \
+    TZ=Asia/Shanghai
+
+RUN apt-get update && apt-get install -y tzdata
 
 WORKDIR /app
 
