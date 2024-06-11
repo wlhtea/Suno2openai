@@ -201,7 +201,7 @@ class DatabaseManager:
         try:
             async with self.pool.acquire() as conn:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
-                    await cur.execute("SELECT COUNT(cookie) AS total_count FROM suno2openai WHERE count > 0")
+                    await cur.execute("SELECT COUNT(cookie) AS total_count FROM suno2openai WHERE count >= 0")
                     result = await cur.fetchone()
                     return result['total_count'] if result['total_count'] is not None else 0
         except Exception as e:
