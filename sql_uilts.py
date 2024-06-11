@@ -215,6 +215,13 @@ class DatabaseManager:
                 await cur.execute("SELECT cookie FROM suno2openai")
                 return await cur.fetchall()
 
+    # 获取 invalid_cookies
+    async def get_invalid_cookies(self):
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("SELECT cookie FROM suno2openai WHERE count > 0")
+                return await cur.fetchall()
+
     # 获取 cookies 和 count
     async def get_all_cookies(self):
         async with self.pool.acquire() as conn:

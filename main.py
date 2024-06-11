@@ -88,6 +88,7 @@ async def cron_refresh_cookies():
         fail_count = len(cookies) - success_count
 
         logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(f"==========================================")
 
     except HTTPException as http_exc:
         raise http_exc
@@ -579,6 +580,7 @@ async def refresh_cookies(authorization: str = Header(...)):
         fail_count = len(cookies) - success_count
 
         logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(f"==========================================")
 
         return JSONResponse(
             content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
@@ -588,6 +590,33 @@ async def refresh_cookies(authorization: str = Header(...)):
     except Exception as e:
         logging.error({"error": str(e)})
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# 删除cookie
+@app.delete(f"{COOKIES_PREFIX}/refresh/cookies")
+async def delete_invalid_cookies(authorization: str = Header(...)):
+    try:
+        await verify_auth_header(authorization)
+        logging.info(f"==========================================")
+        logging.info("开始删除数据库里的 cookies.........")
+        cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
+        delete_tasks = []
+        for cookie in cookies:
+            delete_tasks.append(db_manager.delete_cookies(cookie))
+
+        results = await asyncio.gather(*delete_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        logging.info({"message": "Invalid cookies 删除成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(f"==========================================")
+        return JSONResponse(
+            content={"message": "Invalid cookies deleted successfully.", "success_count": success_count,
+                     "fail_count": fail_count})
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": e})
 
 
 # 添加cookie的函数
