@@ -12,7 +12,7 @@ from typing import AsyncGenerator
 
 import tiktoken
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, HTTPException
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -110,7 +110,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(cron_refresh_cookies, CronTrigger(hour=3, minute=0), id='updateRefresh_run')
+    scheduler.add_job(cron_refresh_cookies, IntervalTrigger(minutes=30), id='updateRefresh_run')
     scheduler.start()
     yield
 
@@ -579,7 +579,7 @@ async def fetch_limit_left(cookie):
     song_gen = SongsGen(cookie)
     try:
         remaining_count = song_gen.get_limit_left()
-        logging.info(f"该账号剩余次数: {remaining_count}")
+        # logging.info(f"该账号剩余次数: {remaining_count}")
         await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
         return True
     except Exception as e:
