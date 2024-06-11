@@ -1,3 +1,4 @@
+import json
 import logging
 
 import aiomysql
@@ -185,7 +186,7 @@ class DatabaseManager:
                     WHERE cookie = %s
                 ''', (songID1, songID2, cookie))
 
-    # 获取所有cookies的count
+    # 获取所有 cookies 的count总和
     async def get_cookies_count(self):
         try:
             async with self.pool.acquire() as conn:
@@ -197,11 +198,20 @@ class DatabaseManager:
             logging.error(f"Database error: {e}")
             return 0
 
+    # 获取 cookies
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute("SELECT cookie FROM suno2openai")
                 return await cur.fetchall()
+
+    # 获取 cookies 和 count
+    async def get_all_cookies(self):
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("SELECT cookie, count FROM suno2openai")
+                result = await cur.fetchall()
+                return json.dumps(result)
 
     # 删除相应的cookies
     async def delete_cookies(self, cookie: str):

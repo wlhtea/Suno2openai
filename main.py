@@ -469,12 +469,13 @@ async def verify_auth_header(authorization: str = Header(...)):
 async def get_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
-        cookies = await db_manager.get_cookies()
+        cookies = await db_manager.get_all_cookies()
         remaining_count = int(await db_manager.get_cookies_count())
-        logging.info({"message": "Cookies 获取成功。", "数量": len(cookies)})
+        cookies_json = json.loads(cookies)
+        logging.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
         logging.info("剩余数量:" + str(remaining_count))
         return JSONResponse(
-            content={"cookie_count": len(cookies), "remaining_count": remaining_count, "cookies": cookies})
+            content={"cookie_count": len(cookies_json), "remaining_count": remaining_count, "cookies": cookies_json})
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
