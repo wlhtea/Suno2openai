@@ -483,7 +483,7 @@ async def get_cookies(authorization: str = Header(...)):
         logging.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
         logging.info("有效数量: " + str(valid_cookie_count))
         logging.info("无效数量: " + str(invalid_cookie_count))
-        logging.info("剩余数量: " + str(remaining_count))
+        logging.info("剩余创作音乐次数: " + str(remaining_count))
 
         return JSONResponse(
             content={
