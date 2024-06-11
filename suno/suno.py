@@ -125,11 +125,15 @@ class SongsGen:
         return result
 
     def get_limit_left(self) -> int:
-        r = self.session.get(
-            "https://studio-api.suno.ai/api/billing/info/",
-            headers={"Impersonate": "browser_version"}
-        )
-        return int(r.json()["total_credits_left"] / 10)
+        try:
+            r = self.session.get(
+                "https://studio-api.suno.ai/api/billing/info/",
+                headers={"Impersonate": "browser_version"}
+            )
+            return int(r.json()["total_credits_left"] / 10)
+        except Exception as e:
+            logging.error(e)
+            return -1
 
     def _parse_lyrics(self, data: dict) -> Tuple[str, str]:
         song_name = data.get("title", "")
