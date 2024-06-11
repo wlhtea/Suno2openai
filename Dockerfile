@@ -13,7 +13,7 @@ ARG COOKIES_PREFIX
 ARG AUTH_KEY
 ARG RETRIES=3
 
-# 将构建参数转换为环境变量，以便运行时使用
+# 将构建参数转换为环境变量，以便运行时使用.
 ENV BASE_URL=${BASE_URL} \
     SESSION_ID=${SESSION_ID} \
     USER_NAME=${USER_NAME} \
