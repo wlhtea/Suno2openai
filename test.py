@@ -25,10 +25,10 @@
 #     r = requests.post("http://127.0.0.1:8000/generate",headers=headers, data=json.dumps(data))
 #     # r = await generate_music(data,token)
 #     try:
-#         print("json",r.json())
+#         logging.info("json",r.json())
 #         return r.json()
 #     except:
-#         print("text",r.text)
+#         logging.info("text",r.text)
 #         return r.text
 #
 #
@@ -70,40 +70,41 @@
 # while 1:
 #     if id_1 is not None:
 #         now_data = get_feed(aid=id_1)
-#         print(now_data)
+#         logging.info(now_data)
 #         sleep(5)
 #         try:
 #             link_audio = now_data[0]['audio_url']
 #         except:
 #             pass
 #         if link_audio:
-#             print(link_audio)
+#             logging.info(link_audio)
 #             now_data_id2 = get_feed(id_2)
-#             print(now_data_id2[0]['audio_url'])
+#             logging.info(now_data_id2[0]['audio_url'])
 #             break
-#     print("wait.....")
+#     logging.info("wait.....")
 # import requests
 #
 # r = requests.post("http://127.0.0.1:8000/v1/chat/completions")
 # for i in r:
-#     print(i)
-import json
+#     logging.info(i)
 
 import requests
+
 
 def stream_response(url):
     data = {
         "model": "gpt-4",
-        "messages":[
+        "messages": [
             {"role": "user", "content": "rap"},
         ],
-        "stream":True
+        "stream": True
     }
-    with requests.post(url, stream=True,json=data) as response:
+    with requests.post(url, stream=True, json=data) as response:
         response.raise_for_status()  # 确保请求成功
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:  # 过滤掉“keep-alive”新的块
-                print(chunk)  # 处理每个块（例如打印或保存）
+                logging.info(chunk)  # 处理每个块（例如打印或保存）
+
 
 # 使用函数
 stream_response('https://suno.w-l-h.xyz/v1/chat/completions/')

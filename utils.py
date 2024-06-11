@@ -1,7 +1,6 @@
-import time
-
-import os
 import json
+import os
+
 import aiohttp
 from dotenv import load_dotenv
 
@@ -24,7 +23,7 @@ async def fetch(url, headers=None, data=None, method="POST"):
     if data is not None:
         data = json.dumps(data)
 
-    # print(data, method, headers, url)
+    # logging.info(data, method, headers, url)
 
     async with aiohttp.ClientSession() as session:
         try:

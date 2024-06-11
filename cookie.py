@@ -1,11 +1,12 @@
 # -*- coding:utf-8 -*-
-
-import os
+import logging
 import time
-import requests
 from http.cookies import SimpleCookie
-from utils import COMMON_HEADERS
 from threading import Thread
+
+import requests
+
+from utils import COMMON_HEADERS
 
 
 class SunoCookie:
@@ -33,9 +34,6 @@ class SunoCookie:
         self.token = token
 
 
-
-
-
 def update_token(suno_cookie):
     headers = {"cookie": suno_cookie.get_cookie()}
     headers.update(COMMON_HEADERS)
@@ -51,8 +49,8 @@ def update_token(suno_cookie):
     suno_cookie.load_cookie(set_cookie)
     token = resp.json().get("jwt")
     suno_cookie.set_token(token)
-    # print(set_cookie)
-    # print(f"*** token -> {token} ***")
+    # logging.info(set_cookie)
+    # logging.info(f"*** token -> {token} ***")
 
 
 def keep_alive(suno_cookie: SunoCookie):
@@ -60,7 +58,7 @@ def keep_alive(suno_cookie: SunoCookie):
         try:
             update_token(suno_cookie)
         except Exception as e:
-            print(e)
+            logging.info(e)
         finally:
             time.sleep(5)
 
@@ -68,7 +66,6 @@ def keep_alive(suno_cookie: SunoCookie):
 def start_keep_alive(suno_cookie: SunoCookie):
     t = Thread(target=keep_alive, args=(suno_cookie,))
     t.start()
-
 
 
 suno_auth = SunoCookie()
@@ -79,6 +76,4 @@ suno_auth = SunoCookie()
 #     start_keep_alive(suno_auth)
 #     first = False
 # else:
-#     print('cookie保活失败')
-
-
+#     logging.info('cookie保活失败')

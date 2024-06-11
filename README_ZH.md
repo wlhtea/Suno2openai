@@ -1,34 +1,40 @@
 中文 | [English](https://github.com/wlhtea/Suno2openai/blob/main/README.md)
 
 # Suno2openai
-> 基于 [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) 和 [Suno-API](https://github.com/SunoAI-API/Suno-API) 项目整合，提供符合OpenAI格式的接口标准化服务。
+
+> 基于 [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator)
+> 和 [Suno-API](https://github.com/SunoAI-API/Suno-API) 项目整合，提供符合OpenAI格式的接口标准化服务。
 
 ## 更新日志
+
 - ### 2024.6.10 大更新
-  - 重构数据库【原版本需要删除数据库重新部署】
-  - 避免一个cookie重复调用导致冲突
-  - 支持使用http对歌曲进行续写，后期准备加入工作流完善即用户只需在前端对话即可完成续写工作
-  - 增加了输出内容：歌曲id、风格、标题、歌词、实时链接、永久免翻链接和视频链接
-  - ...
+    - 重构数据库【原版本需要删除数据库重新部署】
+    - 避免一个cookie重复调用导致冲突
+    - 支持使用http对歌曲进行续写，后期准备加入工作流完善即用户只需在前端对话即可完成续写工作
+    - 增加了输出内容：歌曲id、风格、标题、歌词、实时链接、永久免翻链接和视频链接
+    - ...
 - 2024.6.05 将数据库名称和用户名称分开
 - 2024.6.03 新增suno-v3.5模型调用和cdn链接获取
 - 2024.4.14 支持非流式输出，参数设置`stream=False` docker版本为latest 如无需该功能不必更新
 - 2024.4.14 跟新一个脚本自动将注册的outlook邮箱获取cookie并将cookie写入数据库
 - 2024.4.12 **完成对new-api和one-api**接入，选择openai调用，并填入项目部署地址（不需要/v1/）密钥空着即可。
-- 2024.4.10 由于suno官方更新 部分项目功能无法使用 已经重新更改 在2024/4/10：15：04之前拉去的项目 请重新拉去即可 docker晚点更新(已更新，拉去时注意拉去版本号。)
+- 2024.4.10 由于suno官方更新 部分项目功能无法使用 已经重新更改 在2024/4/10：15：04之前拉去的项目 请重新拉去即可
+  docker晚点更新(已更新，拉去时注意拉去版本号。)
 
 ## ✨ 项目特点
+
 - **OpenAI格式调用**：支持流式输出内容。
 - **前端兼容性**：适配 `chat-next-web` 等前端项目。
 - **Docker部署**：简化部署流程，支持 `docker-compose`、`docker`。
 - **多Cookie管理**：实现多个Cookie轮询使用。
 
 ## 🚀 后续计划
+
 - 引入请求队列等待优化。
 - 支持自定义参数（如 `tags`、`prompt`、`style` 及对歌曲的续写）。
 - 探索开发类似官网的前端页面。
 - 欢迎提出宝贵建议！📧 **邮箱**: 1544007699@qq.com
-  
+
 ---
 
 ## 🫙 Docker部署
@@ -50,40 +56,41 @@
    docker pull wlhtea/suno2openai:latest
    ```
 
-   2. **运行Docker容器**
+    2. **运行Docker容器**
 
-      使用必要的环境变量和端口映射来运行Docker容器。将`<SQL_NAME>`、`<SQL_PASSWORD>`和`<SQL_IP>`替换为你的SQL数据库连接的实际值。这些值应当保密，不应公开分享。
+       使用必要的环境变量和端口映射来运行Docker容器。将`<SQL_NAME>`、`<SQL_PASSWORD>`和`<SQL_IP>`
+       替换为你的SQL数据库连接的实际值。这些值应当保密，不应公开分享。
 
-      ```bash
-      docker run -d --name wsunoapi \
-      -p 8000:8000 \
-      -e USER_Name='<USER_Name>'
-      -e SQL_name='<SQL_NAME>' \
-      -e SQL_password='<SQL_PASSWORD>' \
-      -e SQL_IP='<SQL_IP>' \
-      -e SQL_dk=3306 \
-      --restart=always \
-      wlhtea/suno2openai:latest
-      ```
-      例子
-      ```
-      docker run -d --name wsunoapi \
-         -p 8000:8000 \
-         -e USER_Name=suno2openaiUsername
-         -e SQL_name=suno2openaiSQLname \
-         -e SQL_password=12345678 \
-         -e SQL_IP=100.101.102.103 \
-         -e SQL_dk=3306 \
-         --restart=always \
-         wlhtea/suno2openai:latest
-      ```
+       ```bash
+       docker run -d --name wsunoapi \
+       -p 8000:8000 \
+       -e USER_NAME='<USER_NAME>'
+       -e SQL_NAME='<SQL_NAME>' \
+       -e SQL_PASSWORD='<SQL_PASSWORD>' \
+       -e SQL_IP='<SQL_IP>' \
+       -e SQL_DK=3306 \
+       --restart=always \
+       wlhtea/suno2openai:latest
+       ```
+       例子
+       ```
+       docker run -d --name wsunoapi \
+          -p 8000:8000 \
+          -e USER_NAME=suno2openaiUsername
+          -e SQL_NAME=suno2openaiSQLname \
+          -e SQL_PASSWORD=12345678 \
+          -e SQL_IP=100.101.102.103 \
+          -e SQL_DK=3306 \
+          --restart=always \
+          wlhtea/suno2openai:latest
+       ```
 
-      **参数说明:**
-      - `-d`: 以后台模式运行容器并打印容器ID。
-      - `--name wsunoapi`: 为你的容器命名为`wsunoapi`，以便于引用。
-      - `-p 8000:8000`: 将容器的8000端口映射到宿主机的8000端口。
-      - `-e`: 为你的容器设置环境变量。
-      - `--restart=always`: 确保容器始终重启，除非手动停止。
+       **参数说明:**
+        - `-d`: 以后台模式运行容器并打印容器ID。
+        - `--name wsunoapi`: 为你的容器命名为`wsunoapi`，以便于引用。
+        - `-p 8000:8000`: 将容器的8000端口映射到宿主机的8000端口。
+        - `-e`: 为你的容器设置环境变量。
+        - `--restart=always`: 确保容器始终重启，除非手动停止。
 
 
 4. **添加cookie进数据库**
@@ -97,7 +104,8 @@
    `count` 为账号剩余次数
    `working` 为是否正在工作，1为工作中，0为等待指令
 
-  ### 用python批量填入数据库
+### 用python批量填入数据库
+
     1. 首先拉取我的项目：
       ```bash
       git clone https://github.com/wlhtea/Suno2openai.git
@@ -113,7 +121,8 @@
         python update_cookie_to_sql.py
         ```
 
-数据库可能报错：'NoneType' object has no attribute 'items' ，[此处检查是否正确](https://github.com/wlhtea/Suno2openai/issues/10)
+数据库可能报错：'NoneType' object has no attribute '
+items' ，[此处检查是否正确](https://github.com/wlhtea/Suno2openai/issues/10)
 
 5. **访问应用程序**
 
@@ -126,68 +135,85 @@
 ---
 
 ## 📦 docker-compose 部署
+
 _更新时间：2024/4/7 18:18_
 
 ### 克隆项目到服务器
+
 ```bash
 git clone https://github.com/wlhtea/Suno2openai.git
 ```
 
 ### 创建数据库
+
 创建一个数据库（名称随意），记得保存密码，并确保数据库权限正确设置（允许所有IP连接或仅限Docker容器IP）。
 
 ### 配置环境变量
+
 **将 `env.example` 文件重命名为 `.env` 并填写相应内容：**
+
 ```plaintext
 BASE_URL=https://studio-api.suno.ai
 SESSION_ID=cookie # 此项不需修改
-SQL_name=<数据库名称>
-SQL_password=<数据库密码>
+SQL_NAME=<数据库名称>
+SQL_PASSWORD=<数据库密码>
 SQL_IP=<数据库主机IP>
-SQL_dk=3306 # 数据库端口
-USER_name=<Database 用户名>
+SQL_DK=3306 # 数据库端口
+USER_NAME=<Database 用户名>
 ```
 
 ### 进入项目目录
+
 ```bash
 cd Suno2openai
 ```
 
 ### 更新Cookie
 
-
 ### 启动Docker
+
 ```bash
 docker compose build && docker compose up
 ```
+
 **注意事项**：
+
 - **安全组配置**：确保8000端口已开放。
 - **HTTPS支持**：若前端项目使用HTTPS，本项目的反代网址也应使用HTTPS。
 
 ## 🍪 获取cookie
+
 ### 个人使用
+
 编辑 `update_cookie_to_sql.py` 文件，将你的cookies填入下方数组中：
+
 ```python
 cookies = ['cookie1', 'cookie2']
 ```
+
 ![cookie位置示例](https://cdn.linux.do/uploads/default/original/3X/5/1/518adc3a227e60dc759a69da2335778e9dcd3854.png)
 
 ### 团队使用
+
 - 通过[文件种程序](https://github.com/wlhtea/Suno2openai/tree/main/suno_%E6%89%93%E5%8F%B7%E5%8F%96cookie)批量获取账号
 - 获取后将生成的`outlook.csv`放在`sign_suno.py`同级目录下获取cookie
 - 并将得到的cookie粘贴到`update_cookie_to_sql.py` 文件中`cookies = [直接粘贴在这]`
 - 运行`update_cookie_to_sql.py`，前提是已经正确配置好环境，无论你是在docker还是在本地中部署
 
 ## 🔌 接入 new-api(one-api)
+
 在渠道的代理设置中填写本项目地址，格式为：`http://<服务器IP>:8000`。建议使用HTTPS和域名。
 
 ## 🎉 效果展示
+
 ![效果图](https://github.com/wlhtea/Suno2openai/assets/115779315/3bcf2cee-770f-46a9-8438-b8bbfced0143)
 
 ## 提供[Openai(claude)中转/直连服务](https://claude.wlh.lol)
 
 ## 💌 实习机会征集
+
 若有意向接纳一名拥有数据分析和前后端开发经验的大三学生实习，请联系：
+
 - 📧 **邮箱**: 1544007699@qq.com
 
 **给予支持**：如果这个项目对你有帮助，请不吝赐予星标⭐！欢迎任何形式的支持和建议，让我们一起进步！

@@ -1,18 +1,125 @@
 # -*- coding:utf-8 -*-
+import asyncio
 import datetime
 import json
 import logging
 import os
+import random
+import string
+import time
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+import tiktoken
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from fastapi import FastAPI, HTTPException
+from fastapi import Header
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.responses import StreamingResponse
+
 import schemas
 from cookie import suno_auth
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from init_sql import create_database_and_table
-from starlette.responses import StreamingResponse
+from sql_uilts import DatabaseManager
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
 
-app = FastAPI()
+log_level_dict = {
+    'DEBUG': logging.DEBUG,
+    'INFO': logging.INFO,
+    'WARNING': logging.WARNING,
+    'ERROR': logging.ERROR,
+    'CRITICAL': logging.CRITICAL
+}
+
+# 配置日志记录器
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(levelname)-8s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+# 从环境变量中获取配置
+BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
+SESSION_ID = os.getenv('SESSION_ID')
+USER_NAME = os.getenv('USER_NAME', '')
+SQL_NAME = os.getenv('SQL_NAME', '')
+SQL_PASSWORD = os.getenv('SQL_PASSWORD', '')
+SQL_IP = os.getenv('SQL_IP', '')
+SQL_DK = os.getenv('SQL_DK', 3306)
+COOKIES_PREFIX = os.getenv('COOKIES_PREFIX', "")
+AUTH_KEY = os.getenv('AUTH_KEY', str(time.time()))
+retries = int(os.getenv('RETRIES', 3))
+db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
+
+# 记录配置信息
+logging.info("==========================================")
+logging.info(f"BASE_URL: {BASE_URL}")
+logging.info(f"SESSION_ID: {SESSION_ID}")
+logging.info(f"USER_NAME: {USER_NAME}")
+logging.info(f"SQL_NAME: {SQL_NAME}")
+logging.info(f"SQL_PASSWORD: {SQL_PASSWORD}")
+logging.info(f"SQL_IP: {SQL_IP}")
+logging.info(f"SQL_DK: {SQL_DK}")
+logging.info(f"COOKIES_PREFIX: {COOKIES_PREFIX}")
+logging.info(f"AUTH_KEY: {AUTH_KEY}")
+logging.info(f"RETRIES: {retries}")
+logging.info("==========================================")
+
+
+# 刷新cookies函数
+async def cron_refresh_cookies():
+    try:
+        logging.info(f"==========================================")
+        logging.info("开始更新数据库里的 cookies.........")
+        cookies = [item['cookie'] for item in await db_manager.get_cookies()]
+        semaphore = asyncio.Semaphore(10)
+        add_tasks = []
+
+        async def add_cookie(simple_cookie):
+            async with semaphore:
+                return await fetch_limit_left(simple_cookie)
+
+        # 使用 asyncio.create_task 而不是直接 await
+        for cookie in cookies:
+            add_tasks.append(add_cookie(cookie))
+
+        results = await asyncio.gather(*add_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logging.error(f"刷新 cookies 时发生错误: {str(e)}")
+        raise e
+
+
+# 生命周期管理
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator:
+    global db_manager
+    try:
+        await db_manager.create_pool()
+        await db_manager.create_database_and_table()
+        logging.info("初始化 SQL 成功！")
+    except Exception as e:
+        logging.error(f"初始化 SQL 失败: {str(e)}")
+        raise
+
+    # 初始化并启动 APScheduler
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(cron_refresh_cookies, CronTrigger(hour=3, minute=0), id='updateRefresh_run')
+    scheduler.start()
+    yield
+
+    # 停止调度器
+    scheduler.shutdown()
+
+
+# FastAPI 应用初始化
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,34 +134,13 @@ app.add_middleware(
 async def get_root():
     return schemas.Response()
 
-import asyncio
-import random
-import string
-import time
-from sql_uilts import DatabaseManager
 
-BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
-SESSION_ID = os.getenv('SESSION_ID')
-username_name = os.getenv('USER_name','')
-SQL_name = os.getenv('SQL_name', '')
-SQL_password = os.getenv('SQL_password', '')
-SQL_IP = os.getenv('SQL_IP', '')
-SQL_dk = os.getenv('SQL_dk', 3306)
-
-db_manager = DatabaseManager(SQL_IP, int(SQL_dk), username_name, SQL_password, SQL_name)
-
-@app.on_event("startup")
-async def on_startup():
-    await db_manager.create_database_and_table()
 def generate_random_string_async(length):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
 def generate_timestamp_async():
     return int(time.time())
-
-
-import tiktoken
 
 
 def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str) -> (int, int):
@@ -101,14 +187,22 @@ async def Delelet_Songid(songid):
     return await db_manager.delete_song_ids(songid)
 
 
-async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None, continue_clip_id=None):
-    while True:
+async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
+                        continue_clip_id=None):
+    cookie = None
+    for attempt in range(retries):
         try:
-            await db_manager.create_pool()
             cookie = await db_manager.get_token()
+            if cookie is None:
+                raise RuntimeError("没有可用的cookie")
+            logging.info(f"本次请求获取到cookie:{cookie}")
             break
-        except:
-            await create_database_and_table()
+        except Exception as e:
+            logging.error(f"第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
+            if attempt < retries - 1:
+                continue
+            else:
+                raise RuntimeError(f"获取cookie失败cookie发生异常: {e}")
 
     try:
         _return_ids = False
@@ -162,6 +256,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
 
         for clip_id in clip_ids:
             # attempts = 2
+            count = 0
             while True:
                 # if attempts // 2 == 0:
                 cookie = await db_manager.get_cookie_by_songid(clip_id)
@@ -170,7 +265,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                 try:
                     more_information_ = now_data[0]['metadata']
                 except Exception as e:
-                    print('more_information_',e)
+                    logging.info('more_information_', e)
+                    continue
                 if _return_Forever_url and _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
                     break
                 if not _return_Forever_url:
@@ -179,12 +275,12 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             await Delelet_Songid(clip_id)
                             Aideo_Markdown_Conetent = (f""
                                                        f"\n## 🎷 永久音乐链接\n"
-                                                       f"- 🎵 歌曲1️⃣：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
-                                                       f"- 🎵 歌曲2️⃣：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
+                                                       f"- **🎵 歌曲1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
+                                                       f"- **🎵 歌曲2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
                             Video_Markdown_Conetent = (f""
                                                        f"\n## 📺 永久视频链接\n"
-                                                       f"- 🎵 视频1️⃣：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
-                                                       f"- 🎵 视频2️⃣：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n")
+                                                       f"- **🎵 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
+                                                       f"- **🎵 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n")
                             yield str(
                                 f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                             yield str(
@@ -192,7 +288,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             _return_Forever_url = True
                             break
                     except Exception as e:
-                        logging.info('CDN音乐链接出错',e)
+                        logging.info('CDN音乐链接出错', e)
                         pass
 
                 if not _return_ids:
@@ -242,7 +338,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                 if not _return_image_url:
                     if now_data[0].get('image_url') is not None:
                         image_url_small_data = f"## ✨ 歌曲图片\n"
-                        image_url_lager_data = f"**🖼️ 图片链接** ![封面图片_大]({now_data[0]['image_large_url']}) \n"
+                        image_url_lager_data = f"![封面图片_大]({now_data[0]['image_large_url']}) \n## 🤩即刻享受"
                         yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
                         yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                         _return_image_url = True
@@ -254,13 +350,17 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             audio_url_1 = f'https://audiopipe.suno.ai/?item_id={song_id_1}'
                             audio_url_2 = f'https://audiopipe.suno.ai/?item_id={song_id_2}'
 
-                            audio_url_data_1 = f"\n **📌 音乐链接(实时)**：{audio_url_1}"
-                            audio_url_data_2 = f"\n **📌 音乐链接(实时)**：{audio_url_2}\n"
+                            audio_url_data_1 = f"\n- **📌 音乐链接1️⃣(实时)**：{audio_url_1}"
+                            audio_url_data_2 = f"\n- **📌 音乐链接2️⃣(实时)**：{audio_url_2}\n## 🚀正在火速生成CDN链接（预计2-3分钟~）\n"
                             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
                             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
                             _return_audio_url = True
                 if _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
-                    content_wait = "🎵"
+                    count += 1
+                    if count % 34 == 0:
+                        content_wait = "🎵\n"
+                    else:
+                        content_wait = "🎵"
                     yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": content_wait}, "finish_reason": None}]})}\n\n"""
                     await asyncio.sleep(2)
                 # attempts += 1
@@ -272,63 +372,216 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
 
 
 @app.post("/v1/chat/completions")
-async def get_last_user_message(data: schemas.Data):
+async def get_last_user_message(data: schemas.Data, authorization: str = Header(...)):
     content_all = ''
-    if SQL_IP == '' or SQL_password == '' or SQL_name == '':
+    if SQL_IP == '' or SQL_PASSWORD == '' or SQL_NAME == '':
         raise ValueError("BASE_URL is not set")
-    else:
+
+    try:
+        await verify_auth_header(authorization)
+    except HTTPException as http_exc:
+        raise http_exc
+
+    try:
         chat_id = generate_random_string_async(29)
         timeStamp = generate_timestamp_async()
-        last_user_content = None
-        for message in reversed(data.messages):
-            if message.role == "user":
-                last_user_content = message.content
-                break
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"生成聊天 ID 或时间戳时出错: {str(e)}")
 
-        if last_user_content is None:
-            raise HTTPException(status_code=400, detail="No user message found")
+    last_user_content = None
+    for message in reversed(data.messages):
+        if message.role == "user":
+            last_user_content = message.content
+            break
 
-        headers = {
-            'Cache-Control': 'no-cache',
-            'Content-Type': 'text/event-stream',
-            'Date': datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'),
-            'Server': 'uvicorn',
-            'X-Accel-Buffering': 'no',
-            'Transfer-Encoding': 'chunked'
-        }
+    if last_user_content is None:
+        raise HTTPException(status_code=400, detail="No user message found")
 
-        if not data.stream:
+    headers = {
+        'Cache-Control': 'no-cache',
+        'Content-Type': 'text/event-stream',
+        'Date': datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'),
+        'Server': 'uvicorn',
+        'X-Accel-Buffering': 'no',
+        'Transfer-Encoding': 'chunked'
+    }
+
+    if not data.stream:
+        try:
             async for data_string in generate_data(last_user_content, chat_id, timeStamp, data.model):
                 try:
                     json_data = data_string.split('data: ')[1].strip()
+
                     parsed_data = json.loads(json_data)
                     content = parsed_data['choices'][0]['delta']['content']
                     content_all += content
                 except:
                     pass
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"生成数据时出错: {str(e)}")
 
+        try:
             input_tokens, output_tokens = calculate_token_costs(last_user_content, content_all, 'gpt-3.5-turbo')
-            json_string = {
-                "id": f"chatcmpl-{chat_id}",
-                "object": "chat.completion",
-                "created": timeStamp,
-                "model": "suno-v3",
-                "choices": [
-                    {
-                        "index": 0,
-                        "message": {
-                            "role": "assistant",
-                            "content": content_all
-                        },
-                        "finish_reason": "stop"
-                    }
-                ],
-                "usage": {
-                    "prompt_tokens": input_tokens,
-                    "completion_tokens": output_tokens,
-                    "total_tokens": input_tokens + output_tokens
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"计算 token 成本时出错: {str(e)}")
+
+        json_string = {
+            "id": f"chatcmpl-{chat_id}",
+            "object": "chat.completion",
+            "created": timeStamp,
+            "model": "suno-v3",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": content_all
+                    },
+                    "finish_reason": "stop"
                 }
+            ],
+            "usage": {
+                "prompt_tokens": input_tokens,
+                "completion_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens
             }
-            return json_string
-        else:
-            return StreamingResponse(generate_data(last_user_content, chat_id, timeStamp, data.model), headers=headers, media_type="text/event-stream")
+        }
+
+        return json_string
+    else:
+        try:
+            return StreamingResponse(generate_data(last_user_content, chat_id, timeStamp, data.model),
+                                     headers=headers, media_type="text/event-stream")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"生成流式响应时出错: {str(e)}")
+
+
+# 授权检查
+async def verify_auth_header(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
+    if authorization.strip() != f"Bearer {AUTH_KEY}":
+        raise HTTPException(status_code=403, detail="Invalid authorization key")
+
+
+# 获取cookie
+@app.post(f"{COOKIES_PREFIX}/cookies")
+async def get_cookies(authorization: str = Header(...)):
+    try:
+        await verify_auth_header(authorization)
+        cookies = await db_manager.get_all_cookies()
+        remaining_count = int(await db_manager.get_cookies_count())
+        if remaining_count is None:
+            remaining_count = 0
+        cookies_json = json.loads(cookies)
+        logging.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
+        logging.info("剩余数量:" + str(remaining_count))
+        return JSONResponse(
+            content={"cookie_count": len(cookies_json), "remaining_count": remaining_count, "cookies": cookies_json})
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": e})
+
+
+# 添加cookies
+@app.put(f"{COOKIES_PREFIX}/cookies")
+async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
+    try:
+        await verify_auth_header(authorization)
+        cookies = data.cookies
+        semaphore = asyncio.Semaphore(10)
+        add_tasks = []
+
+        async def add_cookie(simple_cookie):
+            async with semaphore:
+                return await fetch_limit_left(simple_cookie)
+
+        # 使用 asyncio.create_task 而不是直接 await
+        for cookie in cookies:
+            add_tasks.append(add_cookie(cookie))
+
+        results = await asyncio.gather(*add_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+
+        return JSONResponse(
+            content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logging.error({"error": str(e)})
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# 删除cookie
+@app.delete(f"{COOKIES_PREFIX}/cookies")
+async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)):
+    try:
+        await verify_auth_header(authorization)
+        cookies = data.cookies
+        delete_tasks = []
+        for cookie in cookies:
+            delete_tasks.append(db_manager.delete_cookies(cookie))
+
+        results = await asyncio.gather(*delete_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        return JSONResponse(
+            content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": e})
+
+
+# 请求刷新cookies
+@app.get(f"{COOKIES_PREFIX}/refresh/cookies")
+async def refresh_cookies(authorization: str = Header(...)):
+    try:
+        await verify_auth_header(authorization)
+        logging.info(f"==========================================")
+        logging.info("开始更新数据库里的 cookies.........")
+        cookies = [item['cookie'] for item in await db_manager.get_cookies()]
+        semaphore = asyncio.Semaphore(10)
+        add_tasks = []
+
+        async def add_cookie(simple_cookie):
+            async with semaphore:
+                return await fetch_limit_left(simple_cookie)
+
+        # 使用 asyncio.create_task 而不是直接 await
+        for cookie in cookies:
+            add_tasks.append(add_cookie(cookie))
+
+        results = await asyncio.gather(*add_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+
+        return JSONResponse(
+            content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logging.error({"error": str(e)})
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# 添加cookie的函数
+async def fetch_limit_left(cookie):
+    song_gen = SongsGen(cookie)
+    try:
+        remaining_count = song_gen.get_limit_left()
+        logging.info(f"该账号剩余次数: {remaining_count}")
+        await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
+        return True
+    except Exception as e:
+        logging.error(cookie + f"，添加失败：{e}")
+        return False
