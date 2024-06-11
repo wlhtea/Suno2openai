@@ -10,6 +10,7 @@ Export: outlook.csv
 """
 
 import csv
+import logging
 import random
 
 from selenium import webdriver
