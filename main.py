@@ -579,7 +579,7 @@ async def fetch_limit_left(cookie):
     song_gen = SongsGen(cookie)
     try:
         remaining_count = song_gen.get_limit_left()
-        logging.info(f"该账号剩余次数: {remaining_count}")
+        # logging.info(f"该账号剩余次数: {remaining_count}")
         await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
         return True
     except Exception as e:
