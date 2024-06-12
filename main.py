@@ -503,12 +503,13 @@ async def get_cookies(authorization: str = Header(...)):
 
 # 添加cookies
 @app.put(f"{COOKIES_PREFIX}/cookies")
-async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
+async def add_cookies(data, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         cookies = data.cookies
         success_count = 0
 
+        logging.info(len(cookies))
         for cookie in cookies:
             results = await fetch_limit_left(cookie, True)
             if results:
