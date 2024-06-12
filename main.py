@@ -510,15 +510,22 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
         if not cookies:
             raise HTTPException(status_code=400, detail="Cookies 列表为空")
+        
+        semaphore = asyncio.Semaphore(5)
+        add_tasks = []
 
-        success_count = 0
+        async def add_cookie(simple_cookie):
+            async with semaphore:
+                return await fetch_limit_left(simple_cookie, True)
 
-        for index, cookie in enumerate(cookies):
-            results = await fetch_limit_left(cookie, True)
-            if results:
-                success_count += 1
+        # 使用 asyncio.create_task 而不是直接 await
+        for cookie in cookies:
+            add_tasks.append(add_cookie(cookie))
 
+        results = await asyncio.gather(*add_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
+        
         logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
 
         return JSONResponse(
