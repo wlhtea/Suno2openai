@@ -2,8 +2,9 @@ import asyncio
 import logging
 import os
 
+from main import db_manager
 from sql_uilts import DatabaseManager
-from suno.suno import SongsGen
+from suno import SongsGen
 
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID', '')
@@ -16,16 +17,20 @@ cookies = \
     ['cookie①', 'coookie②', '...']
 
 
-async def fetch_limit_left(cookie, db_manager):
+# 添加cookie的函数
+async def fetch_limit_left(cookie, is_insert: bool = False):
+    song_gen = SongsGen(cookie)
     try:
-        song_gen = SongsGen(cookie)
         remaining_count = song_gen.get_limit_left()
-        logging.info(f"Remaining count: {remaining_count}")
-
+        if remaining_count == -1 and is_insert:
+            logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
+            return False
         await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
+        logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新成功！")
+        return True
     except Exception as e:
-        logging.error(cookie)
-        logging.error(e)
+        logging.error(cookie + f"，添加失败：{e}")
+        return False
 
 
 async def main():
