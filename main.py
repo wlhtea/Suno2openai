@@ -507,11 +507,10 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         cookies = data.cookies
-        add_tasks = []
         success_count = 0
-        # 使用 asyncio.create_task 而不是直接 await
+
         for cookie in cookies:
-            results = fetch_limit_left(cookie, True)
+            results = await fetch_limit_left(cookie, True)
             if results:
                 success_count += 1
 
