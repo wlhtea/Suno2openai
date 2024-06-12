@@ -511,7 +511,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
         for cookie in cookies:
             results = await fetch_limit_left(cookie, True)
-            if results:
+            if results is True:
                 success_count += 1
 
         fail_count = len(cookies) - success_count
