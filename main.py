@@ -507,11 +507,15 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         cookies = data.cookies
+
+        if not cookies:
+            raise HTTPException(status_code=400, detail="Cookies 列表为空")
+
         success_count = 0
 
-        for cookie in cookies:
+        for index, cookie in enumerate(cookies):
             results = await fetch_limit_left(cookie, True)
-            if results is True:
+            if results:
                 success_count += 1
 
         fail_count = len(cookies) - success_count
@@ -614,8 +618,8 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
 
 # 添加cookie的函数
 async def fetch_limit_left(cookie, is_insert: bool = False):
-    song_gen = SongsGen(cookie)
     try:
+        song_gen = SongsGen(cookie)
         remaining_count = song_gen.get_limit_left()
         if remaining_count == -1 and is_insert:
             logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
@@ -626,3 +630,4 @@ async def fetch_limit_left(cookie, is_insert: bool = False):
     except Exception as e:
         logging.error(cookie + f"，添加失败：{e}")
         return False
+

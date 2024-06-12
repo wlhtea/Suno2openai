@@ -56,37 +56,51 @@ MUSIC_GENRE_LIST = [
 
 class SongsGen:
     def __init__(self, cookie: str) -> None:
-        self.session: requests.Session = requests.Session()
-        HEADERS["user-agent"] = ua.random
-        self.cookie = cookie
-        self.session.cookies = self.parse_cookie_string(self.cookie)
-        auth_token = self._get_auth_token()
-        HEADERS["Authorization"] = f"Bearer {auth_token}"
-        self.session.headers = HEADERS
-        self.sid = None
-        self.retry_time = 0
-        # make the song_info_dict global since we can get the lyrics and song name first
-        self.song_info_dict = {}
-        # now data
-        self.now_data = {}
+        try:
+            self.session: requests.Session = requests.Session()
+            HEADERS["user-agent"] = ua.random
+            self.cookie = cookie
+            self.session.cookies = self.parse_cookie_string(self.cookie)
+            auth_token = self._get_auth_token()
+            HEADERS["Authorization"] = f"Bearer {auth_token}"
+            self.session.headers = HEADERS
+            self.sid = None
+            self.retry_time = 0
+            self.song_info_dict = {}
+            self.now_data = {}
+        except Exception as e:
+            raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
 
     def _get_auth_token(self, w=None):
-        response = self.session.get(get_session_url, impersonate=browser_version)
-        data = response.json()
-        r = data.get("response")
-        sid = None
-        if r:
-            sid = r.get('sessions')[0].get('id')
-        if not sid:
-            raise Exception("Failed to get session id")
-        self.sid = sid
-        response = self.session.post(
-            exchange_token_url.format(sid=sid), impersonate=browser_version
-        )
-        data = response.json()
-        if w is not None:
-            return data.get('jwt'), sid
-        return data.get("jwt")
+        try:
+            response = self.session.get(get_session_url, impersonate=browser_version)
+            data = response.json()
+
+            r = data.get("response")
+            if not r or not r.get('sessions'):
+                raise Exception("No session data in response")
+
+            sid = r['sessions'][0].get('id')
+            if not sid:
+                raise Exception("Failed to get session id")
+
+            self.sid = sid
+
+            response = self.session.post(
+                exchange_token_url.format(sid=sid), impersonate=browser_version
+            )
+            data = response.json()
+            jwt_token = data.get('jwt')
+            if not jwt_token:
+                raise Exception("Failed to get JWT token")
+
+            if w is not None:
+                return jwt_token, sid
+            return jwt_token
+
+        except Exception as e:
+            logging.error(f"获取auth token失败: {e}")
+            return ""
 
     def _renew_auth_token(self):
         auth_token = self._get_auth_token()
@@ -94,12 +108,15 @@ class SongsGen:
         self.session.headers = HEADERS
 
     @staticmethod
-    def parse_cookie_string(cookie_string):
+    def parse_cookie_string(cookie_string: str) -> Cookies:
         cookie = SimpleCookie()
         cookie.load(cookie_string)
         cookies_dict = {}
-        for key, morsel in cookie.items():
-            cookies_dict[key] = morsel.value
+        try:
+            for key, morsel in cookie.items():
+                cookies_dict[key] = morsel.value
+        except (IndexError, AttributeError) as e:
+            logging.error(f"解析cookie时出错: {e}")
         return Cookies(cookies_dict)
 
     def get_song_library(self):
@@ -125,14 +142,15 @@ class SongsGen:
         return result
 
     def get_limit_left(self) -> int:
+        r = self.session.get(
+            "https://studio-api.suno.ai/api/billing/info/",
+            headers={"Impersonate": "browser_version"}
+        )
         try:
-            r = self.session.get(
-                "https://studio-api.suno.ai/api/billing/info/",
-                headers={"Impersonate": "browser_version"}
-            )
+            r.raise_for_status()
             return int(r.json()["total_credits_left"] / 10)
         except Exception as e:
-            logging.error(e)
+            logging.error(f"获取剩余次数失败: {e}")
             return -1
 
     def _parse_lyrics(self, data: dict) -> Tuple[str, str]:
@@ -142,7 +160,7 @@ class SongsGen:
                 not mt
         ):  # Remove checking for title because custom songs have no title if not specified
             return "", ""
-        lyrics = re.sub(r"\[.*?\]", "", mt.get("prompt"))
+        lyrics = re.sub(r"\[.*?]", "", mt.get("prompt"))
         return song_name, lyrics
 
     def _fetch_songs_metadata(self, ids):
