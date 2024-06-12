@@ -192,8 +192,20 @@ class DatabaseManager:
                     await cur.execute("SELECT SUM(count) AS total_count FROM suno2openai")
                     result = await cur.fetchone()
                     return result['total_count'] if result['total_count'] is not None else 0
-        except aiomysql.Error as e:
-            logging.error(f"Database error: {e}")
+        except Exception as e:
+            logging.error(f"Unexpected error: {e}")
+            return 0
+
+    # 获取有效的 cookies 的count总和
+    async def get_valid_cookies_count(self):
+        try:
+            async with self.pool.acquire() as conn:
+                async with conn.cursor(aiomysql.DictCursor) as cur:
+                    await cur.execute("SELECT COUNT(cookie) AS total_count FROM suno2openai WHERE count >= 0")
+                    result = await cur.fetchone()
+                    return result['total_count'] if result['total_count'] is not None else 0
+        except Exception as e:
+            logging.error(f"Unexpected error: {e}")
             return 0
 
     # 获取 cookies
@@ -201,6 +213,13 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute("SELECT cookie FROM suno2openai")
+                return await cur.fetchall()
+
+    # 获取无效的cookies
+    async def get_invalid_cookies(self):
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute("SELECT cookie FROM suno2openai WHERE count < 0")
                 return await cur.fetchall()
 
     # 获取 cookies 和 count

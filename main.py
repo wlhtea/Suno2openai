@@ -72,22 +72,23 @@ async def cron_refresh_cookies():
         logging.info(f"==========================================")
         logging.info("开始更新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
-        semaphore = asyncio.Semaphore(10)
+        semaphore = asyncio.Semaphore(5)
         add_tasks = []
 
-        async def add_cookie(simple_cookie):
+        async def refresh_cookie(simple_cookie):
             async with semaphore:
-                return await fetch_limit_left(simple_cookie)
+                return await fetch_limit_left(simple_cookie, False)
 
         # 使用 asyncio.create_task 而不是直接 await
         for cookie in cookies:
-            add_tasks.append(add_cookie(cookie))
+            add_tasks.append(refresh_cookie(cookie))
 
         results = await asyncio.gather(*add_tasks, return_exceptions=True)
         success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
 
         logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(f"==========================================")
 
     except HTTPException as http_exc:
         raise http_exc
@@ -464,24 +465,40 @@ async def verify_auth_header(authorization: str = Header(...)):
         raise HTTPException(status_code=403, detail="Invalid authorization key")
 
 
-# 获取cookie
+# 获取cookies的详细详细
 @app.post(f"{COOKIES_PREFIX}/cookies")
 async def get_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
+
         cookies = await db_manager.get_all_cookies()
+        cookies_json = json.loads(cookies)
+        valid_cookie_count = int(await db_manager.get_valid_cookies_count())
+        invalid_cookie_count = len(cookies_json) - valid_cookie_count
         remaining_count = int(await db_manager.get_cookies_count())
+
         if remaining_count is None:
             remaining_count = 0
-        cookies_json = json.loads(cookies)
+
         logging.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
-        logging.info("剩余数量:" + str(remaining_count))
+        logging.info("有效数量: " + str(valid_cookie_count))
+        logging.info("无效数量: " + str(invalid_cookie_count))
+        logging.info("剩余创作音乐次数: " + str(remaining_count))
+
         return JSONResponse(
-            content={"cookie_count": len(cookies_json), "remaining_count": remaining_count, "cookies": cookies_json})
+            content={
+                "cookie_count": len(cookies_json),
+                "valid_cookie_count": valid_cookie_count,
+                "invalid_cookie_count": invalid_cookie_count,
+                "remaining_count": remaining_count,
+                "cookies": cookies_json
+            }
+        )
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": e})
+        logging.error(f"Unexpected error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # 添加cookies
@@ -490,12 +507,12 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         cookies = data.cookies
-        semaphore = asyncio.Semaphore(10)
+        semaphore = asyncio.Semaphore(5)
         add_tasks = []
 
         async def add_cookie(simple_cookie):
             async with semaphore:
-                return await fetch_limit_left(simple_cookie)
+                return await fetch_limit_left(simple_cookie, True)
 
         # 使用 asyncio.create_task 而不是直接 await
         for cookie in cookies:
@@ -547,22 +564,23 @@ async def refresh_cookies(authorization: str = Header(...)):
         logging.info(f"==========================================")
         logging.info("开始更新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
-        semaphore = asyncio.Semaphore(10)
+        semaphore = asyncio.Semaphore(5)
         add_tasks = []
 
-        async def add_cookie(simple_cookie):
+        async def refresh_cookie(simple_cookie):
             async with semaphore:
-                return await fetch_limit_left(simple_cookie)
+                return await fetch_limit_left(simple_cookie, False)
 
         # 使用 asyncio.create_task 而不是直接 await
         for cookie in cookies:
-            add_tasks.append(add_cookie(cookie))
+            add_tasks.append(refresh_cookie(cookie))
 
         results = await asyncio.gather(*add_tasks, return_exceptions=True)
         success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
 
         logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(f"==========================================")
 
         return JSONResponse(
             content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
@@ -574,12 +592,41 @@ async def refresh_cookies(authorization: str = Header(...)):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
+# 删除cookie
+@app.delete(f"{COOKIES_PREFIX}/refresh/cookies")
+async def delete_invalid_cookies(authorization: str = Header(...)):
+    try:
+        await verify_auth_header(authorization)
+        logging.info(f"==========================================")
+        logging.info("开始删除数据库里的 cookies.........")
+        cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
+        delete_tasks = []
+        for cookie in cookies:
+            delete_tasks.append(db_manager.delete_cookies(cookie))
+
+        results = await asyncio.gather(*delete_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        logging.info({"message": "Invalid cookies 删除成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(f"==========================================")
+        return JSONResponse(
+            content={"message": "Invalid cookies deleted successfully.", "success_count": success_count,
+                     "fail_count": fail_count})
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": e})
+
+
 # 添加cookie的函数
-async def fetch_limit_left(cookie):
+async def fetch_limit_left(cookie, is_insert: bool = False):
     song_gen = SongsGen(cookie)
     try:
         remaining_count = song_gen.get_limit_left()
-        # logging.info(f"该账号剩余次数: {remaining_count}")
+        logging.info(f"该账号剩余次数: {remaining_count}")
+        if remaining_count == -1 and is_insert:
+            return False
         await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
         return True
     except Exception as e:
