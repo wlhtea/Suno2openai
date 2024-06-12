@@ -507,21 +507,15 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         cookies = data.cookies
-        semaphore = asyncio.Semaphore(5)
         add_tasks = []
-
-        async def add_cookie(simple_cookie):
-            async with semaphore:
-                return await fetch_limit_left(simple_cookie, True)
-
+        success_count = 0
         # 使用 asyncio.create_task 而不是直接 await
         for cookie in cookies:
-            add_tasks.append(add_cookie(cookie))
+            results = fetch_limit_left(cookie, True)
+            if results:
+                success_count += 1
 
-        results = await asyncio.gather(*add_tasks, return_exceptions=True)
-        success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
-
         logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
 
         return JSONResponse(
@@ -624,10 +618,11 @@ async def fetch_limit_left(cookie, is_insert: bool = False):
     song_gen = SongsGen(cookie)
     try:
         remaining_count = song_gen.get_limit_left()
-        logging.info(f"该账号剩余次数: {remaining_count}")
         if remaining_count == -1 and is_insert:
+            logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
             return False
         await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
+        logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新成功！")
         return True
     except Exception as e:
         logging.error(cookie + f"，添加失败：{e}")
