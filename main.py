@@ -192,21 +192,21 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                         continue_clip_id=None):
     for try_count in range(retries):
         cookie = None
-        for attempt in range(retries):
-            try:
-                cookie = await db_manager.get_token()
-                if cookie is None:
-                    raise RuntimeError("没有可用的cookie")
-                logging.info(f"本次请求获取到cookie:{cookie}")
-                break
-            except Exception as e:
-                logging.error(f"第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
-                if attempt < retries - 1:
-                    continue
-                else:
-                    raise RuntimeError(f"获取cookie失败cookie发生异常: {e}")
-
         try:
+            for attempt in range(retries):
+                try:
+                    cookie = await db_manager.get_token()
+                    if cookie is None:
+                        raise RuntimeError("没有可用的cookie")
+                    logging.info(f"本次请求获取到cookie:{cookie}")
+                    break
+                except Exception as e:
+                    logging.error(f"第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
+                    if attempt < retries - 1:
+                        continue
+                    else:
+                        raise RuntimeError(f"获取cookie失败cookie发生异常: {e}")
+
             _return_ids = False
             _return_tags = False
             _return_title = False
@@ -365,6 +365,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                         await asyncio.sleep(2)
 
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            break
         except Exception as e:
             logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
             if try_count < retries - 1:
