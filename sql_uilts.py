@@ -97,7 +97,7 @@ class DatabaseManager:
                 await cursor.execute('''
                     SELECT cookie FROM suno2openai
                     WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                    ORDER BY time DESC LIMIT 1
+                    ORDER BY RAND() LIMIT 1
                 ''')
                 row = await cursor.fetchone()
         if row:
@@ -112,8 +112,7 @@ class DatabaseManager:
                 sql = """
                     INSERT INTO suno2openai (cookie, songID, songID2, count)
                     VALUES (%s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE count = VALUES(count), songID = VALUES(songID), songID2 = VALUES(songID2), 
-                    time = CURRENT_TIMESTAMP
+                    ON DUPLICATE KEY UPDATE count = VALUES(count)
                 """
                 await cur.execute(sql, (cookie, songID, songID2, count))
 
@@ -157,16 +156,6 @@ class DatabaseManager:
                         WHERE cookie = %s
                     ''', (count_increment, cookie))
 
-    async def decrement_cookie_count(self, cookie):
-        await self.create_pool()
-        async with self.pool.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute('''
-                    UPDATE suno2openai
-                    SET count = count - 1
-                    WHERE cookie = %s AND count > 0
-                ''', (cookie,))
-
     async def query_cookies(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -180,7 +169,7 @@ class DatabaseManager:
             async with conn.cursor() as cur:
                 await cur.execute('''
                     UPDATE suno2openai
-                    SET songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
+                    SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
                     WHERE cookie = %s
                 ''', (songID1, songID2, cookie))
 
