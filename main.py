@@ -553,7 +553,7 @@ async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)
         fail_count = len(cookies) - success_count
 
         return JSONResponse(
-            content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
+            content={"message": "Cookies delete successfully.", "success_count": success_count, "fail_count": fail_count})
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
@@ -587,7 +587,7 @@ async def refresh_cookies(authorization: str = Header(...)):
         logging.info(f"==========================================")
 
         return JSONResponse(
-            content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
+            content={"message": "Cookies refresh successfully.", "success_count": success_count, "fail_count": fail_count})
 
     except HTTPException as http_exc:
         raise http_exc
