@@ -112,8 +112,7 @@ class DatabaseManager:
                 sql = """
                     INSERT INTO suno2openai (cookie, songID, songID2, count)
                     VALUES (%s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE count = VALUES(count), songID = VALUES(songID), songID2 = VALUES(songID2), 
-                    time = CURRENT_TIMESTAMP
+                    ON DUPLICATE KEY UPDATE count = VALUES(count)
                 """
                 await cur.execute(sql, (cookie, songID, songID2, count))
 
