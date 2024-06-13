@@ -142,7 +142,7 @@ class DatabaseManager:
     async def update_cookie_count(self, cookie, count_increment, update=None):
         await self.create_pool()
         async with self.pool.acquire() as conn:
-            async with conn.cursor() as cur:
+                async with conn.cursor() as cur:
                 if update is not None:
                     await cur.execute('''
                         UPDATE suno2openai
