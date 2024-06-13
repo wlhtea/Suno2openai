@@ -61,7 +61,7 @@ class SongsGen:
             HEADERS["user-agent"] = ua.random
             self.cookie = cookie
             self.session.cookies = self.parse_cookie_string(self.cookie)
-            auth_token = self._get_auth_token()
+            auth_token = self.get_auth_token()
             HEADERS["Authorization"] = f"Bearer {auth_token}"
             self.session.headers = HEADERS
             self.sid = None
@@ -71,7 +71,7 @@ class SongsGen:
         except Exception as e:
             raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
 
-    def _get_auth_token(self, w=None):
+    def get_auth_token(self, w=None):
         try:
             response = self.session.get(get_session_url, impersonate=browser_version)
             data = response.json()
