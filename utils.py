@@ -26,11 +26,8 @@ async def fetch(url, headers=None, data=None, method="POST"):
     # logging.info(data, method, headers, url)
 
     async with aiohttp.ClientSession() as session:
-        try:
-            async with session.request(method=method, url=url, data=data, headers=headers) as resp:
-                return await resp.json()
-        except Exception as e:
-            return f"An error occurred: {e}"
+        async with session.request(method=method, url=url, data=data, headers=headers) as resp:
+            return await resp.json()
 
 
 async def get_feed(ids, token):
