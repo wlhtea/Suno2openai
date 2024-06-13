@@ -156,16 +156,6 @@ class DatabaseManager:
                         WHERE cookie = %s
                     ''', (count_increment, cookie))
 
-    async def decrement_cookie_count(self, cookie):
-        await self.create_pool()
-        async with self.pool.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute('''
-                    UPDATE suno2openai
-                    SET count = count - 1
-                    WHERE cookie = %s AND count > 0
-                ''', (cookie,))
-
     async def query_cookies(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -179,7 +169,7 @@ class DatabaseManager:
             async with conn.cursor() as cur:
                 await cur.execute('''
                     UPDATE suno2openai
-                    SET songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
+                    SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
                     WHERE cookie = %s
                 ''', (songID1, songID2, cookie))
 
