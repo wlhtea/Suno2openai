@@ -254,12 +254,10 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             song_id_1 = clip_ids[0]
             song_id_2 = clip_ids[1]
             await db_manager.update_song_ids_by_cookie(cookie, song_id_1, song_id_2)
-            await db_manager.decrement_cookie_count(cookie)
 
             for clip_id in clip_ids:
                 count = 0
                 while True:
-                    cookie = await db_manager.get_cookie_by_songid(clip_id)
                     token, sid = SongsGen(cookie).get_auth_token(w=1)
                     now_data = await get_feed(ids=clip_id, token=token)
                     try:
