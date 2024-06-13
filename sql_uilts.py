@@ -97,7 +97,7 @@ class DatabaseManager:
                 await cursor.execute('''
                     SELECT cookie FROM suno2openai
                     WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                    ORDER BY time DESC LIMIT 1
+                    ORDER BY RAND() LIMIT 1
                 ''')
                 row = await cursor.fetchone()
         if row:
