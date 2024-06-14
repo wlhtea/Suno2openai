@@ -367,6 +367,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             break
         except Exception as e:
             logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
+            if cookie is not None:
+                await Delelet_Songid(cookie)
             if try_count < retries - 1:
                 continue
             else:
@@ -512,7 +514,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
         if not cookies:
             raise HTTPException(status_code=400, detail="Cookies 列表为空")
-        
+
         semaphore = asyncio.Semaphore(20)
         add_tasks = []
 
@@ -625,6 +627,22 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
         raise http_exc
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": e})
+
+
+# 获取cookies的详细详细
+@app.delete(f"{COOKIES_PREFIX}/songID/cookies")
+async def get_cookies(authorization: str = Header(...)):
+    try:
+        await verify_auth_header(authorization)
+        rows_updated = await db_manager.delete_songIDS()
+        return JSONResponse(
+            content={"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated}
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # 添加cookie的函数
