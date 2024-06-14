@@ -184,8 +184,8 @@ def get_clips_ids(response: json):
 #     return cookieSelected
 
 
-async def Delelet_Songid(songid):
-    return await db_manager.delete_song_ids(songid)
+async def Delelet_Songid(cookie):
+    return await db_manager.delete_song_ids(cookie)
 
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
@@ -249,11 +249,11 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "finish_reason": None}]})}\n\n"""
 
             response = await generate_music(data=data, token=token)
-            await asyncio.sleep(3)
+            # await asyncio.sleep(3)
             clip_ids = get_clips_ids(response)
             song_id_1 = clip_ids[0]
             song_id_2 = clip_ids[1]
-            await db_manager.update_song_ids_by_cookie(cookie, song_id_1, song_id_2)
+            # await db_manager.update_song_ids_by_cookie(cookie, song_id_1, song_id_2)
 
             for clip_id in clip_ids:
                 count = 0
@@ -271,7 +271,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     if not _return_Forever_url:
                         try:
                             if check_status_complete(now_data):
-                                await Delelet_Songid(clip_id)
+                                await Delelet_Songid(cookie)
                                 Aideo_Markdown_Conetent = (f""
                                                            f"\n## 🎷 永久音乐链接\n"
                                                            f"- **🎵 歌曲1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
@@ -367,6 +367,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             break
         except Exception as e:
             logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
+            if cookie is not None:
+                await Delelet_Songid(cookie)
             if try_count < retries - 1:
                 continue
             else:
@@ -513,7 +515,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
         if not cookies:
             raise HTTPException(status_code=400, detail="Cookies 列表为空")
 
-        semaphore = asyncio.Semaphore(5)
+        semaphore = asyncio.Semaphore(20)
         add_tasks = []
 
         async def add_cookie(simple_cookie):
@@ -625,6 +627,22 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
         raise http_exc
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": e})
+
+
+# 获取cookies的详细详细
+@app.delete(f"{COOKIES_PREFIX}/songID/cookies")
+async def get_cookies(authorization: str = Header(...)):
+    try:
+        await verify_auth_header(authorization)
+        rows_updated = await db_manager.delete_songIDS()
+        return JSONResponse(
+            content={"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated}
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # 添加cookie的函数
