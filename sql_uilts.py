@@ -113,10 +113,10 @@ class DatabaseManager:
                         await transaction.commit()
                         return row[0]
                     else:
-                        await transaction.rollback()
+                        transaction.rollback()
                         raise HTTPException(status_code=404, detail="Token not found")
             except Exception as e:
-                await transaction.rollback()
+                transaction.rollback()  
                 raise HTTPException(status_code=404, detail=f"{str(e)}")
 
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
