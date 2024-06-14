@@ -166,6 +166,23 @@ class DatabaseManager:
                 await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
+    # 删除所有的songID
+    async def delete_songIDS(self):
+        await self.create_pool()
+        async with self.pool.acquire() as conn:
+            try:
+                async with conn.cursor() as cur:
+                    await cur.execute('''
+                        UPDATE suno2openai
+                        SET songID = NULL, songID2 = NULL;
+                    ''')
+                    await conn.commit()
+                    rows_updated = cur.rowcount
+                    return rows_updated
+            except Exception as e:
+                await conn.rollback()
+                raise HTTPException(status_code=500, detail=f"{str(e)}")
+
     async def update_cookie_count(self, cookie, count_increment, update=None):
         await self.create_pool()
         async with self.pool.acquire() as conn:
