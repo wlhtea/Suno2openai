@@ -97,6 +97,30 @@ async def cron_refresh_cookies():
         raise e
 
 
+async def cron_delete_cookies():
+    try:
+        logging.info(f"==========================================")
+        logging.info("开始删除数据库里的无效cookies.........")
+        cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
+        delete_tasks = []
+        for cookie in cookies:
+            delete_tasks.append(db_manager.delete_cookies(cookie))
+
+        results = await asyncio.gather(*delete_tasks, return_exceptions=True)
+        success_count = sum(1 for result in results if result is True)
+        fail_count = len(cookies) - success_count
+
+        logging.info({"message": "Invalid cookies 删除成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(f"==========================================")
+        return JSONResponse(
+            content={"message": "Invalid cookies deleted successfully.", "success_count": success_count,
+                     "fail_count": fail_count})
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": e})
+
+
 # 生命周期管理
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
@@ -111,7 +135,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(cron_refresh_cookies, IntervalTrigger(minutes=30), id='updateRefresh_run')
+    scheduler.add_job(cron_refresh_cookies, IntervalTrigger(minutes=60), id='updateRefresh_run')
+    scheduler.add_job(cron_delete_cookies, IntervalTrigger(minutes=30), id='updateDelete_run')
     scheduler.start()
     yield
 
@@ -614,7 +639,7 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         logging.info(f"==========================================")
-        logging.info("开始删除数据库里的 cookies.........")
+        logging.info("开始删除数据库里的无效cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
         delete_tasks = []
         for cookie in cookies:
