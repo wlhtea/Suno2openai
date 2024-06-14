@@ -93,8 +93,9 @@ class DatabaseManager:
     async def get_token(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
-            transaction = await conn.begin()
+            transaction = None
             try:
+                transaction = await conn.begin()
                 async with conn.cursor() as cursor:
                     await cursor.execute('''
                         SELECT cookie FROM suno2openai
@@ -113,10 +114,12 @@ class DatabaseManager:
                         await transaction.commit()
                         return row[0]
                     else:
-                        transaction.rollback()
+                        if transaction:
+                            await transaction.commit()
                         raise HTTPException(status_code=404, detail="Token not found")
             except Exception as e:
-                transaction.rollback()  
+                if transaction:
+                    await transaction.commit()
                 raise HTTPException(status_code=404, detail=f"{str(e)}")
 
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
