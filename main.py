@@ -280,7 +280,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "finish_reason": None}]})}\n\n"""
 
             response = await generate_music(data=data, token=token)
-            await asyncio.sleep(3)
+            # await asyncio.sleep(3)
             clip_ids = get_clips_ids(response)
             song_id_1 = clip_ids[0]
             song_id_2 = clip_ids[1]
