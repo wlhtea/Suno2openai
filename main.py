@@ -184,8 +184,8 @@ def get_clips_ids(response: json):
 #     return cookieSelected
 
 
-async def Delelet_Songid(songid):
-    return await db_manager.delete_song_ids(songid)
+async def Delelet_Songid(cookie):
+    return await db_manager.delete_song_ids(cookie)
 
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
@@ -271,7 +271,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     if not _return_Forever_url:
                         try:
                             if check_status_complete(now_data):
-                                await Delelet_Songid(clip_id)
+                                await Delelet_Songid(cookie)
                                 Aideo_Markdown_Conetent = (f""
                                                            f"\n## 🎷 永久音乐链接\n"
                                                            f"- **🎵 歌曲1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"

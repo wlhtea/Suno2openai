@@ -151,7 +151,7 @@ class DatabaseManager:
         else:
             return await self.get_token()
 
-    async def delete_song_ids(self, songid):
+    async def delete_song_ids(self, cookie):
         await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
@@ -159,8 +159,8 @@ class DatabaseManager:
                     await cur.execute('''
                         UPDATE suno2openai
                         SET songID = NULL, songID2 = NULL
-                        WHERE songID = %s OR songID2 = %s
-                    ''', (songid, songid))
+                        WHERE cookie = %s
+                    ''', cookie)
                     await conn.commit()
             except Exception as e:
                 await conn.rollback()
