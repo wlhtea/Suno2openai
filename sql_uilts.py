@@ -97,16 +97,16 @@ class DatabaseManager:
             async with conn.cursor() as cursor:
                 try:
                     await cursor.execute('''
-                        SELECT cookie FROM suno2openai
+                        SELECT cookie FROM suno2openai 
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        ORDER BY RAND() LIMIT 1
-                        FOR UPDATE
+                        ORDER BY MD5(CONCAT(cookie, NOW()))
+                        LIMIT 1 FOR UPDATE;
                     ''')
                     row = await cursor.fetchone()
                     if row:
                         await cursor.execute('''
                             UPDATE suno2openai
-                            SET songID = %s, songID2 = %s
+                            SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
                             WHERE cookie = %s
                         ''', ("tmp", "tmp", row[0]))
                         await conn.commit()
