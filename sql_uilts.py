@@ -93,17 +93,31 @@ class DatabaseManager:
     async def get_token(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute('''
-                    SELECT cookie FROM suno2openai
-                    WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                    ORDER BY RAND() LIMIT 1
-                ''')
-                row = await cursor.fetchone()
-        if row:
-            return row[0]
-        else:
-            raise HTTPException(status_code=404, detail="Token not found")
+            transaction = await conn.begin()
+            try:
+                async with conn.cursor() as cursor:
+                    await cursor.execute('''
+                        SELECT cookie FROM suno2openai
+                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0
+                        ORDER BY RAND() LIMIT 1
+                        FOR UPDATE
+                    ''')
+                    row = await cursor.fetchone()
+
+                    if row:
+                        await cursor.execute('''
+                            UPDATE suno2openai
+                            SET songID = %s, songID2 = %s
+                            WHERE cookie = %s
+                        ''', ("tmp", "tmp", row[0]))
+                        await transaction.commit()
+                        return row[0]
+                    else:
+                        await transaction.rollback()
+                        raise HTTPException(status_code=404, detail="Token not found")
+            except Exception as e:
+                await transaction.rollback()
+                raise HTTPException(status_code=404, detail=f"{str(e)}")
 
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         await self.create_pool()
