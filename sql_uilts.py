@@ -49,7 +49,7 @@ class DatabaseManager:
 
                 logging.info("Creating connection pool with parameters: "
                              f"host={self.host}, port={self.port}, user={self.user}, db={self.db_name}")
-                # 创建连接池
+
                 self.pool = await aiomysql.create_pool(
                     host=self.host,
                     port=self.port,
@@ -57,8 +57,10 @@ class DatabaseManager:
                     password=self.password,
                     db=self.db_name,
                     maxsize=20,
+                    init_command='SET SESSION innodb_lock_wait_timeout=20, '
+                                 'SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED'
                 )
-                # 确认连接池已正确创建
+
                 if self.pool is not None:
                     logging.info("连接池创建成功。")
                 else:
@@ -99,6 +101,7 @@ class DatabaseManager:
                     await cursor.execute('''
                         SELECT cookie FROM suno2openai 
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
+                        ORDER BY time DESC
                         LIMIT 1 FOR UPDATE;
                     ''')
                     row = await cursor.fetchone()
@@ -115,7 +118,11 @@ class DatabaseManager:
                         raise HTTPException(status_code=404, detail="Token not found")
                 except Exception as e:
                     await conn.rollback()
-                    raise HTTPException(status_code=404, detail=f"{str(e)}")
+                    if 'Lock wait timeout exceeded' in str(e):
+                        raise HTTPException(status_code=504,
+                                            detail="Database lock wait timeout exceeded, please try again later")
+                    else:
+                        raise HTTPException(status_code=404, detail=f"{str(e)}")
 
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         await self.create_pool()
