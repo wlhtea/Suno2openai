@@ -92,7 +92,6 @@ class DatabaseManager:
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def get_token(self):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 try:
@@ -123,7 +122,6 @@ class DatabaseManager:
                         raise HTTPException(status_code=404, detail=f"{str(e)}")
 
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -139,7 +137,6 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def get_cookie_by_songid(self, songid):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -157,7 +154,6 @@ class DatabaseManager:
             return await self.get_token()
 
     async def delete_song_ids(self, cookie):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -173,7 +169,6 @@ class DatabaseManager:
 
     # 删除所有的songID
     async def delete_songIDS(self):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -189,7 +184,6 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def update_cookie_count(self, cookie, count_increment, update=None):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -211,7 +205,6 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def query_cookies(self):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -223,7 +216,6 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def update_song_ids_by_cookie(self, cookie, songID1, songID2):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
