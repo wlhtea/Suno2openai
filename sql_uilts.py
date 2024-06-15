@@ -57,8 +57,7 @@ class DatabaseManager:
                     password=self.password,
                     db=self.db_name,
                     maxsize=20,
-                    init_command='SET SESSION innodb_lock_wait_timeout=20, '
-                                 'SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED'
+                    init_command='SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED'
                 )
 
                 if self.pool is not None:
