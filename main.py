@@ -229,7 +229,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                         if remaining_count == -1:
                             await db_manager.delete_cookies(cookie)
                             raise RuntimeError("该账号剩余次数为 -1，无法使用")
-                        logging.info(f"本次请求获取到cookie:{cookie}")
+                        logging.info(f"请求第 {attempt + 1} 次请求获取到cookie:{cookie}")
                         break
                 except Exception as e:
                     logging.error(f"第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
