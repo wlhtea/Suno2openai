@@ -57,7 +57,6 @@ class DatabaseManager:
                     password=self.password,
                     db=self.db_name,
                     maxsize=20,
-                    init_command='SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED'
                 )
 
                 if self.pool is not None:
