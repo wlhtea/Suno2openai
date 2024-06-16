@@ -209,7 +209,13 @@ def get_clips_ids(response: json):
 
 
 async def Delelet_Songid(cookie):
-    return await db_manager.delete_song_ids(cookie)
+    for attempt in range(retries):
+        try:
+            await db_manager.delete_song_ids(cookie)
+            return
+        except Exception as e:
+            if attempt > max_retries - 1:
+                logging.info(f"删除音乐songID失败: {e}")
 
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
