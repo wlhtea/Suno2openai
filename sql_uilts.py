@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 
 import aiomysql
 from fastapi import HTTPException
@@ -49,7 +50,7 @@ class DatabaseManager:
 
                 logging.info("Creating connection pool with parameters: "
                              f"host={self.host}, port={self.port}, user={self.user}, db={self.db_name}")
-                # 创建连接池
+
                 self.pool = await aiomysql.create_pool(
                     host=self.host,
                     port=self.port,
@@ -58,7 +59,7 @@ class DatabaseManager:
                     db=self.db_name,
                     maxsize=20,
                 )
-                # 确认连接池已正确创建
+
                 if self.pool is not None:
                     logging.info("连接池创建成功。")
                 else:
@@ -92,33 +93,53 @@ class DatabaseManager:
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def get_token(self):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
-            async with conn.cursor() as cursor:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
+                    # 开始事务
+                    await conn.begin()
                     await cursor.execute('''
-                        SELECT cookie FROM suno2openai 
-                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        LIMIT 1 FOR UPDATE;
+                        SELECT COUNT(*) AS total 
+                        FROM suno2openai
+                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0;
                     ''')
+                    result = await cursor.fetchone()
+                    total_rows = result['total']
+
+                    if total_rows == 0:
+                        raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+
+                    random_row_number = random.randint(0, total_rows - 1)
+                    await cursor.execute('''
+                        SELECT cookie
+                        FROM suno2openai
+                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0
+                        LIMIT 1 OFFSET %s;
+                    ''', (random_row_number,))
                     row = await cursor.fetchone()
+
                     if row:
                         await cursor.execute('''
                             UPDATE suno2openai
                             SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-                            WHERE cookie = %s
-                        ''', ("tmp", "tmp", row[0]))
+                            WHERE cookie = %s;
+                        ''', ("tmp", "tmp", row['cookie']))
+
                         await conn.commit()
-                        return row[0]
+                        return row['cookie']
                     else:
                         await conn.rollback()
-                        raise HTTPException(status_code=404, detail="Token not found")
+                        raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+
                 except Exception as e:
                     await conn.rollback()
-                    raise HTTPException(status_code=404, detail=f"{str(e)}")
+                    logging.error(f"发生错误：{str(e)}")
+                    if '锁等待超时' in str(e):
+                        raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
+                    else:
+                        raise HTTPException(status_code=500, detail="内部服务器错误")
 
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -134,7 +155,6 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def get_cookie_by_songid(self, songid):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -152,7 +172,6 @@ class DatabaseManager:
             return await self.get_token()
 
     async def delete_song_ids(self, cookie):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -168,7 +187,6 @@ class DatabaseManager:
 
     # 删除所有的songID
     async def delete_songIDS(self):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -184,7 +202,6 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def update_cookie_count(self, cookie, count_increment, update=None):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -206,7 +223,6 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def query_cookies(self):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -218,7 +234,6 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def update_song_ids_by_cookie(self, cookie, songID1, songID2):
-        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
