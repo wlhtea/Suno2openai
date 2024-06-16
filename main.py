@@ -405,10 +405,10 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
             break
         except Exception as e:
-            logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
             if cookie is not None:
                 await Delelet_Songid(cookie)
             if try_count < retries - 1:
+                logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
                 continue
             else:
                 raise RuntimeError(f"生成歌曲失败: 请打开日志或数据库查看报错信息......")
