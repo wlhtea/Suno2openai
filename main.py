@@ -284,7 +284,24 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             song_id_2 = clip_ids[1]
             # await db_manager.update_song_ids_by_cookie(cookie, song_id_1, song_id_2)
 
-            yield f"""data: """ + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": f"""```text\\n{{{{prompt:{chat_user_message}}}}}\\n```"""}, "finish_reason": None}]})}\n\n"""
+            data = {
+                "id": f"chatcmpl-{chat_id}",
+                "object": "chat.completion.chunk",
+                "model": ModelVersion,
+                "created": timeStamp,
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "role": "assistant",
+                            "content": f"```text\n{{{{prompt:{chat_user_message}}}}}\n```"
+                        },
+                        "finish_reason": None
+                    }
+                ]
+            }
+
+            yield f"data: + {json.dumps(data)}\n\n"
             for clip_id in clip_ids:
                 count = 0
                 while True:
@@ -464,7 +481,7 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
             "id": f"chatcmpl-{chat_id}",
             "object": "chat.completion",
             "created": timeStamp,
-            "model": ModelVersion,
+            "model": data.model,
             "choices": [
                 {
                     "index": 0,
