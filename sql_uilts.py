@@ -133,11 +133,10 @@ class DatabaseManager:
 
                 except Exception as e:
                     await conn.rollback()
-                    logging.error(f"发生错误：{str(e)}")
                     if '锁等待超时' in str(e):
                         raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
                     else:
-                        raise HTTPException(status_code=500, detail="内部服务器错误")
+                        raise HTTPException(status_code=500, detail=f"发生错误：{str(e)}")
 
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         async with self.pool.acquire() as conn:
