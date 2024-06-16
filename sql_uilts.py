@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 
 import aiomysql
 from fastapi import HTTPException
@@ -95,31 +96,45 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 try:
+                    await conn.begin()
                     await cursor.execute('''
-                        SELECT cookie FROM suno2openai 
-                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        ORDER BY time DESC
-                        LIMIT 1 FOR UPDATE;
+                        SELECT COUNT(*) AS total 
+                        FROM suno2openai
+                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0;
                     ''')
+                    result = await cursor.fetchone()
+                    total_rows = result['total']
+                    if total_rows == 0:
+                        raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+                    await cursor.execute('''
+                        SELECT cookie
+                        FROM (
+                            SELECT cookie, ROW_NUMBER() OVER (ORDER BY cookie) as rn
+                            FROM suno2openai
+                            WHERE songID IS NULL AND songID2 IS NULL AND count > 0
+                        ) sub
+                        WHERE rn = %s FOR UPDATE;
+                    ''', (random.randint(0, total_rows - 1),))
                     row = await cursor.fetchone()
                     if row:
                         await cursor.execute('''
                             UPDATE suno2openai
                             SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-                            WHERE cookie = %s
-                        ''', ("tmp", "tmp", row[0]))
+                            WHERE cookie = %s;
+                        ''', ("tmp", "tmp", row['cookie']))
                         await conn.commit()
-                        return row[0]
+                        return row['cookie']
                     else:
                         await conn.rollback()
-                        raise HTTPException(status_code=404, detail="Token not found")
+                        raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+
                 except Exception as e:
                     await conn.rollback()
+                    logging.error(f"发生错误：{str(e)}")
                     if 'Lock wait timeout exceeded' in str(e):
-                        raise HTTPException(status_code=504,
-                                            detail="Database lock wait timeout exceeded, please try again later")
+                        raise HTTPException(status_code=504, detail="数据库锁超时")
                     else:
-                        raise HTTPException(status_code=404, detail=f"{str(e)}")
+                        raise HTTPException(status_code=500, detail="内部服务器错误")
 
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         async with self.pool.acquire() as conn:
