@@ -94,7 +94,7 @@ class DatabaseManager:
 
     async def get_token(self):
         async with self.pool.acquire() as conn:
-            async with conn.cursor() as cursor:
+            async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
                     await conn.begin()
                     await cursor.execute('''
@@ -104,8 +104,11 @@ class DatabaseManager:
                     ''')
                     result = await cursor.fetchone()
                     total_rows = result['total']
+
                     if total_rows == 0:
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+                    random_row_number = random.randint(0, total_rows - 1)
+
                     await cursor.execute('''
                         SELECT cookie
                         FROM (
@@ -114,8 +117,9 @@ class DatabaseManager:
                             WHERE songID IS NULL AND songID2 IS NULL AND count > 0
                         ) sub
                         WHERE rn = %s FOR UPDATE;
-                    ''', (random.randint(0, total_rows - 1),))
+                    ''', (random_row_number,))
                     row = await cursor.fetchone()
+
                     if row:
                         await cursor.execute('''
                             UPDATE suno2openai
@@ -131,8 +135,8 @@ class DatabaseManager:
                 except Exception as e:
                     await conn.rollback()
                     logging.error(f"发生错误：{str(e)}")
-                    if 'Lock wait timeout exceeded' in str(e):
-                        raise HTTPException(status_code=504, detail="数据库锁超时")
+                    if '锁等待超时' in str(e):
+                        raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
                     else:
                         raise HTTPException(status_code=500, detail="内部服务器错误")
 
