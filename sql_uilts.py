@@ -156,6 +156,8 @@ class DatabaseManager:
     async def delete_song_ids(self, cookie):
         async with self.pool.acquire() as conn:
             try:
+                # 开始事务
+                await conn.begin()
                 async with conn.cursor() as cur:
                     # 锁定目标行以防止其他事务修改
                     await cur.execute('''
@@ -175,6 +177,8 @@ class DatabaseManager:
     async def delete_songIDS(self):
         async with self.pool.acquire() as conn:
             try:
+                # 开始事务
+                await conn.begin()
                 async with conn.cursor() as cur:
                     # 锁定目标行以防止其他事务修改
                     await cur.execute('''
@@ -195,6 +199,8 @@ class DatabaseManager:
     async def update_cookie_count(self, cookie, count_increment, update=None):
         async with self.pool.acquire() as conn:
             try:
+                # 开始事务
+                await conn.begin()
                 async with conn.cursor() as cur:
                     # 锁定目标行以防止其他事务修改
                     await cur.execute('''
@@ -317,6 +323,8 @@ class DatabaseManager:
     async def delete_cookies(self, cookie: str):
         async with self.pool.acquire() as conn:
             try:
+                # 开始事务
+                await conn.begin()
                 async with conn.cursor(aiomysql.DictCursor) as cur:
                     # 锁定目标行以防止其他事务修改
                     await cur.execute('''
