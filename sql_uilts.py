@@ -1,8 +1,7 @@
+import aiomysql
 import json
 import logging
 import random
-
-import aiomysql
 from fastapi import HTTPException
 
 
@@ -153,27 +152,15 @@ class DatabaseManager:
                 await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-    async def get_cookie_by_songid(self, songid):
-        async with self.pool.acquire() as conn:
-            try:
-                async with conn.cursor() as cur:
-                    await cur.execute('''
-                        SELECT cookie FROM suno2openai WHERE songID = %s OR songID2 = %s
-                    ''', (songid, songid))
-                    row = await cur.fetchone()
-                    await conn.commit()
-            except Exception as e:
-                await conn.rollback()
-                raise HTTPException(status_code=500, detail=f"{str(e)}")
-        if row:
-            return row[0]
-        else:
-            return await self.get_token()
-
+    # 删除单个cookie的songID
     async def delete_song_ids(self, cookie):
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
+                    # 锁定目标行以防止其他事务修改
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
+                    ''', (cookie,))
                     await cur.execute('''
                         UPDATE suno2openai
                         SET songID = NULL, songID2 = NULL
@@ -189,6 +176,10 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
+                    # 锁定目标行以防止其他事务修改
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai FOR UPDATE;
+                    ''')
                     await cur.execute('''
                         UPDATE suno2openai
                         SET songID = NULL, songID2 = NULL;
@@ -200,10 +191,15 @@ class DatabaseManager:
                 await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
+    # 更新cookie的count
     async def update_cookie_count(self, cookie, count_increment, update=None):
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
+                    # 锁定目标行以防止其他事务修改
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
+                    ''', (cookie,))
                     if update is not None:
                         await cur.execute('''
                             UPDATE suno2openai
@@ -322,6 +318,10 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
+                    # 锁定目标行以防止其他事务修改
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
+                    ''', (cookie,))
                     await cur.execute("DELETE FROM suno2openai WHERE cookie = %s", cookie)
                     await conn.commit()
                     return True
