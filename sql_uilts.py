@@ -96,6 +96,7 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
+                    # 开始事务
                     await conn.begin()
                     await cursor.execute('''
                         SELECT COUNT(*) AS total 
@@ -107,16 +108,13 @@ class DatabaseManager:
 
                     if total_rows == 0:
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
-                    random_row_number = random.randint(0, total_rows - 1)
 
+                    random_row_number = random.randint(0, total_rows - 1)
                     await cursor.execute('''
                         SELECT cookie
-                        FROM (
-                            SELECT cookie, ROW_NUMBER() OVER (ORDER BY cookie) as rn
-                            FROM suno2openai
-                            WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        ) sub
-                        WHERE rn = %s FOR UPDATE;
+                        FROM suno2openai
+                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0
+                        LIMIT 1 OFFSET %s;
                     ''', (random_row_number,))
                     row = await cursor.fetchone()
 
@@ -126,6 +124,7 @@ class DatabaseManager:
                             SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
                             WHERE cookie = %s;
                         ''', ("tmp", "tmp", row['cookie']))
+
                         await conn.commit()
                         return row['cookie']
                     else:
