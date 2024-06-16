@@ -6,18 +6,17 @@ import logging
 import os
 import random
 import string
-import time
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
-
 import tiktoken
+import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
+from typing import AsyncGenerator
 
 import schemas
 from cookie import suno_auth
@@ -217,6 +216,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                         continue_clip_id=None):
     for try_count in range(retries):
         cookie = None
+        song_gen = None
         try:
             for attempt in range(retries):
                 try:
@@ -246,7 +246,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             _return_video_url = False
             _return_audio_url = False
             _return_Forever_url = False
-            token, sid = SongsGen(cookie).get_auth_token(w=1)
+            token, sid = song_gen.get_auth_token(w=1)
 
             suno_auth.set_session_id(sid)
             suno_auth.load_cookie(cookie)
@@ -256,7 +256,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             elif ModelVersion == "suno-v3.5":
                 Model = "chirp-v3-5"
             else:
-                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("请选择suno-v3 或者 suno-v3.5其中一个")}, "finish_reason": None}]})}\n\n"""
+                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("请选择suno-v3 或者 suno-v3.5其中一个")}, "finish_reason": None}]})}\n\n"""
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
             data = {
@@ -284,7 +284,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             song_id_2 = clip_ids[1]
             # await db_manager.update_song_ids_by_cookie(cookie, song_id_1, song_id_2)
 
-            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "finish_reason": None}]})}\n\n"""
+            tem_text = "\n### 🤯 Creating\n```suno\n{prompt:" + f"{chat_user_message}" + "}\n```\n"
+            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": tem_text}, "finish_reason": None}]})}\n\n"""
             for clip_id in clip_ids:
                 count = 0
                 while True:
@@ -303,17 +304,19 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             if check_status_complete(now_data):
                                 await Delelet_Songid(cookie)
                                 Aideo_Markdown_Conetent = (f""
-                                                           f"\n## 🎷 永久音乐链接\n"
-                                                           f"- **🎵 歌曲1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
-                                                           f"- **🎵 歌曲2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
+                                                           f"\n### 🎷 CDN音乐链接\n"
+                                                           f"- **🎧 音乐1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
+                                                           f"- **🎧 音乐2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
                                 Video_Markdown_Conetent = (f""
-                                                           f"\n## 📺 永久视频链接\n"
-                                                           f"- **🎵 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
-                                                           f"- **🎵 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n")
+                                                           f"\n### 📺 CDN视频链接\n"
+                                                           f"- **📽️ 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
+                                                           f"- **📽️ 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n"
+                                                           f"\n### 👀 更多\n"
+                                                           f"**🤗还想听更多歌吗，快来告诉我**🎶✨\n")
                                 yield str(
-                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
+                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                                 yield str(
-                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
+                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                                 _return_Forever_url = True
                                 break
                         except Exception as e:
@@ -323,11 +326,11 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     if not _return_ids:
                         try:
                             song_id_text = (f""
-                                            f"## ⭐ 歌曲ID\n"
-                                            f"- **🎵 歌曲id1️⃣**：{song_id_1}\n"
-                                            f"- **🎵 歌曲id2️⃣**：{song_id_2}\n")
+                                            f"### ⭐ 歌曲信息\n"
+                                            f"- **🧩 ID1️⃣**：{song_id_1}\n"
+                                            f"- **🧩 ID2️⃣**：{song_id_2}\n")
                             yield str(
-                                f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": song_id_text}, "finish_reason": None}]})}\n\n""")
+                                f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": song_id_text}, "finish_reason": None}]})}\n\n""")
                             _return_ids = True
                         except:
                             pass
@@ -336,8 +339,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                         try:
                             title = now_data[0]["title"]
                             if title != '':
-                                title_data = f"## 🧩 歌曲信息\n- **🔎 歌名**：{title} \n"
-                                yield """data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
+                                title_data = f"- **🤖 歌名**：{title} \n"
+                                yield """data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
                                 _return_title = True
                         except:
                             pass
@@ -345,10 +348,10 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     if not _return_tags:
                         try:
                             tags = more_information_["tags"]
-                            if tags is not None:
+                            if tags is not None and tags != "":
                                 tags_data = f"- **💄 类型**：{tags} \n"
                                 yield str(
-                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
+                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
                                 _return_tags = True
                         except:
                             pass
@@ -357,19 +360,19 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                         try:
                             prompt = more_information_["prompt"]
                             if prompt is not None and prompt != '':
-                                prompt_data = f"## 🎼 完整歌词\n```\n{prompt}\n```\n"
+                                prompt_data = f"### 📖 完整歌词\n```\n{prompt}\n```\n"
                                 yield str(
-                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
+                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
                                 _return_prompt = True
                         except:
                             pass
 
                     if not _return_image_url:
                         if now_data[0].get('image_url') is not None:
-                            image_url_small_data = f"## ✨ 歌曲图片\n"
-                            image_url_lager_data = f"![封面图片_大]({now_data[0]['image_large_url']}) \n## 🤩即刻享受"
-                            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
-                            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
+                            image_url_small_data = f"### 🖼️ 歌曲图片\n"
+                            image_url_lager_data = f"![image_large_url]({now_data[0]['image_large_url']}) \n### 🤩 即刻享受"
+                            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
+                            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                             _return_image_url = True
 
                     if not _return_audio_url:
@@ -379,10 +382,10 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                                 audio_url_1 = f'https://audiopipe.suno.ai/?item_id={song_id_1}'
                                 audio_url_2 = f'https://audiopipe.suno.ai/?item_id={song_id_2}'
 
-                                audio_url_data_1 = f"\n- **📌 音乐链接1️⃣(实时)**：{audio_url_1}"
-                                audio_url_data_2 = f"\n- **📌 音乐链接2️⃣(实时)**：{audio_url_2}\n## 🚀正在火速生成CDN链接（预计2-3分钟~）\n"
-                                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
-                                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
+                                audio_url_data_1 = f"\n- **🔗 实时音乐1️⃣**：{audio_url_1}"
+                                audio_url_data_2 = f"\n- **🔗 实时音乐2️⃣**：{audio_url_2}\n### 🚀 生成CDN链接中（2min~）\n"
+                                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
+                                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
                                 _return_audio_url = True
                     if _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
                         count += 1
@@ -390,8 +393,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             content_wait = "🎵\n"
                         else:
                             content_wait = "🎵"
-                        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": content_wait}, "finish_reason": None}]})}\n\n"""
-                        await asyncio.sleep(2)
+                        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": content_wait}, "finish_reason": None}]})}\n\n"""
+                        await asyncio.sleep(3)
 
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
             break
@@ -402,7 +405,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             if try_count < retries - 1:
                 continue
             else:
-                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": "suno-v3", "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
+                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
 
@@ -464,7 +467,7 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
             "id": f"chatcmpl-{chat_id}",
             "object": "chat.completion",
             "created": timeStamp,
-            "model": "suno-v3",
+            "model": data.model,
             "choices": [
                 {
                     "index": 0,
