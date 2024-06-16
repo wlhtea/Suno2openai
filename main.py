@@ -71,7 +71,7 @@ async def cron_refresh_cookies():
         logging.info(f"==========================================")
         logging.info("开始更新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
-        semaphore = asyncio.Semaphore(20)
+        semaphore = asyncio.Semaphore(100)
         add_tasks = []
 
         async def refresh_cookie(simple_cookie):
@@ -553,7 +553,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
         if not cookies:
             raise HTTPException(status_code=400, detail="Cookies 列表为空")
 
-        semaphore = asyncio.Semaphore(20)
+        semaphore = asyncio.Semaphore(100)
         add_tasks = []
 
         async def add_cookie(simple_cookie):
@@ -611,7 +611,7 @@ async def refresh_cookies(authorization: str = Header(...)):
         logging.info(f"==========================================")
         logging.info("开始更新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
-        semaphore = asyncio.Semaphore(20)
+        semaphore = asyncio.Semaphore(100)
         add_tasks = []
 
         async def refresh_cookie(simple_cookie):
