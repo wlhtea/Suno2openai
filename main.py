@@ -312,7 +312,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                                                            f"- **📽️ 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
                                                            f"- **📽️ 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n"
                                                            f"\n### 👀 更多\n"
-                                                           f"**🤗还想听更多歌吗，快来告诉我！**🎶✨ \n")
+                                                           f"**🤗还想听更多歌吗，快来告诉我**🎶✨\n")
                                 yield str(
                                     f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                                 yield str(
