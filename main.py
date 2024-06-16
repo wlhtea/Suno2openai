@@ -348,7 +348,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     if not _return_tags:
                         try:
                             tags = more_information_["tags"]
-                            if tags is not None:
+                            if tags is not None and tags != "":
                                 tags_data = f"- **💄 类型**：{tags} \n"
                                 yield str(
                                     f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": tags_data}, "finish_reason": None}]})}\n\n""")
@@ -382,8 +382,8 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                                 audio_url_1 = f'https://audiopipe.suno.ai/?item_id={song_id_1}'
                                 audio_url_2 = f'https://audiopipe.suno.ai/?item_id={song_id_2}'
 
-                                audio_url_data_1 = f"\n- **🔗 实时链接1️⃣**：{audio_url_1}"
-                                audio_url_data_2 = f"\n- **🔗 实时链接2️⃣**：{audio_url_2}\n### 🚀 生成CDN链接中（2min~）\n"
+                                audio_url_data_1 = f"\n- **🔗 实时音乐1️⃣**：{audio_url_1}"
+                                audio_url_data_2 = f"\n- **🔗 实时音乐2️⃣**：{audio_url_2}\n### 🚀 生成CDN链接中（2min~）\n"
                                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
                                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
                                 _return_audio_url = True
