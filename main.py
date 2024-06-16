@@ -405,8 +405,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             if try_count < retries - 1:
                 continue
             else:
-                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
-                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+                raise RuntimeError(f"生成歌曲失败: 请打开日志或数据库查看报错信息......")
 
 
 @app.post("/v1/chat/completions")
