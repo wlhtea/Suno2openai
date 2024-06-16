@@ -114,7 +114,7 @@ class DatabaseManager:
                         SELECT cookie
                         FROM suno2openai
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        LIMIT 1 OFFSET %s;
+                        LIMIT 1 OFFSET %s FOR UPDATE;
                     ''', (random_row_number,))
                     row = await cursor.fetchone()
 

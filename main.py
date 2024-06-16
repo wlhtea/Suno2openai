@@ -295,7 +295,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     try:
                         more_information_ = now_data[0]['metadata']
                     except Exception as e:
-                        logging.info('more_information_', e)
+                        logging.info(f'more_information_: {e}')
                         continue
                     if _return_Forever_url and _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
                         break
