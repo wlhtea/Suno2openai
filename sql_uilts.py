@@ -114,46 +114,44 @@ class DatabaseManager:
                         LOCK IN SHARE MODE;
                     ''')
                     row = await cursor.fetchone()
-                    if row:
-                        cookie = row['cookie']
-                        # 开始事务
-                        await conn.begin()
-                        try:
-                            # 第二个查询，锁定获取的cookie
-                            await cursor.execute('''
-                                SELECT cookie FROM suno2openai 
-                                WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0
-                                LIMIT 1 FOR UPDATE;
-                            ''', (cookie,))
-                            row = await cursor.fetchone()
-                            if row:
-                                cookie = row['cookie']
-                                # 然后更新选中的cookie
-                                await cursor.execute('''
-                                    UPDATE suno2openai
-                                    SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-                                    WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0;
-                                ''', ("tmp", "tmp", cookie))
-                                await conn.commit()
-                                return cookie
-                            else:
-                                raise HTTPException(status_code=429, detail="并发更新cookie时发生并发冲突，重试中...")
-                        except Exception as update_error:
-                            await conn.rollback()
-                            raise aiomysql.MySQLError(str(update_error))
-                    else:
+                    if not row:
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+
+                    cookie = row['cookie']
+                    # 开始事务
+                    await conn.begin()
+                    try:
+                        # 第二个查询，锁定获取的cookie
+                        await cursor.execute('''
+                            SELECT cookie FROM suno2openai 
+                            WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0
+                            LIMIT 1 FOR UPDATE;
+                        ''', (cookie,))
+                        row = await cursor.fetchone()
+                        if not row:
+                            raise HTTPException(status_code=429, detail="并发更新cookie时发生并发冲突，重试中...")
+
+                        cookie = row['cookie']
+                        # 然后更新选中的cookie
+                        await cursor.execute('''
+                            UPDATE suno2openai
+                            SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
+                            WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0;
+                        ''', ("tmp", "tmp", cookie))
+                        await conn.commit()
+                        return cookie
+                    except Exception as update_error:
+                        raise update_error
 
                 except aiomysql.MySQLError as mysql_error:
                     await conn.rollback()
-                    logging.error(f"数据库错误: {str(mysql_error)}")
                     if '锁等待超时' in str(mysql_error):
                         raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
                     else:
-                        raise HTTPException(status_code=500, detail=f"数据库错误：{str(mysql_error)}")
+                        raise HTTPException(status_code=429, detail=f"数据库错误：{str(mysql_error)}")
 
                 except Exception as e:
-                    await conn.rollback()
+                    await conn.commit()
                     raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
