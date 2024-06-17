@@ -58,6 +58,8 @@ class DatabaseManager:
                     db=self.db_name,
                     maxsize=200,
                     minsize=5,
+                    connect_timeout=10,
+                    pool_recycle=1800
                 )
 
                 if self.pool is not None:
