@@ -510,10 +510,10 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
         return json_string
     else:
         try:
-            return StreamingResponse(generate_data(last_user_content, chat_id, timeStamp, data.model),
-                                     headers=headers, media_type="text/event-stream")
+            data_generator = generate_data(last_user_content, chat_id, timeStamp, data.model)
+            return StreamingResponse(data_generator, headers=headers, media_type="text/event-stream")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"生成流式响应时出错: {str(e)}")
+            return JSONResponse(status_code=500, content={"detail": f"生成流式响应时出错: {str(e)}"})
 
 
 # 授权检查
