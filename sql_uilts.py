@@ -112,12 +112,12 @@ class DatabaseManager:
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
                         LIMIT 1 FOR UPDATE LOCK IN SHARE MODE;
                     ''')
-                    # 开始事务
-                    await conn.begin()
                     # # 设置事务隔离级别为SERIALIZABLE
                     # await cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
                     row = await cursor.fetchone()
                     if row:
+                        # 开始事务
+                        await conn.begin()
                         cookie = row['cookie']
                         # 第二个查询，锁定获取的cookie
                         await cursor.execute('''
