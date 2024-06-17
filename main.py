@@ -6,17 +6,18 @@ import logging
 import os
 import random
 import string
-import tiktoken
 import time
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+import tiktoken
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
-from typing import AsyncGenerator
 
 import schemas
 from cookie import suno_auth
@@ -120,6 +121,20 @@ async def cron_delete_cookies():
         return JSONResponse(status_code=500, content={"error": e})
 
 
+# 初始化所有songID
+async def init_delete_songID():
+    try:
+        rows_updated = await db_manager.delete_songIDS()
+        return JSONResponse(
+            content={"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated}
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
 # 生命周期管理
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
@@ -127,9 +142,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     try:
         await db_manager.create_pool()
         await db_manager.create_database_and_table()
-        logging.info("初始化 SQL 成功！")
+        await init_delete_songID()
+        logging.info("初始化 SQL 和 songID 成功！")
     except Exception as e:
-        logging.error(f"初始化 SQL 失败: {str(e)}")
+        logging.error(f"初始化 SQL 或者 songID 失败: {str(e)}")
         raise
 
     # 初始化并启动 APScheduler
@@ -220,6 +236,7 @@ async def Delelet_Songid(cookie):
         except Exception as e:
             if attempt > retries - 1:
                 logging.info(f"删除音乐songID失败: {e}")
+
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
                         continue_clip_id=None):
@@ -672,7 +689,7 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
 
 # 获取cookies的详细详细
 @app.delete(f"{COOKIES_PREFIX}/songID/cookies")
-async def get_cookies(authorization: str = Header(...)):
+async def delete_songID(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         rows_updated = await db_manager.delete_songIDS()
