@@ -1,7 +1,7 @@
-import aiomysql
 import json
 import logging
-import random
+
+import aiomysql
 from fastapi import HTTPException
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -105,31 +105,22 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
-                    await cursor.execute('''
-                        SELECT COUNT(*) AS total 
-                        FROM suno2openai
-                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0;
-                    ''')
-                    result = await cursor.fetchone()
-                    total_rows = result['total']
-
-                    if total_rows == 0:
-                        raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
-
-                    random_row_number = random.randint(0, total_rows - 1)
                     # 开始事务
                     await conn.begin()
-                    # 设置事务隔离级别
+                    # 设置事务隔离级别为SERIALIZABLE
                     await cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
+
+                    # 查询一个可用的cookie
                     await cursor.execute('''
                         SELECT cookie
                         FROM suno2openai
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        LIMIT 1 OFFSET %s FOR UPDATE;
-                    ''', (random_row_number,))
+                        LIMIT 1 FOR UPDATE;
+                    ''')
                     row = await cursor.fetchone()
 
                     if row:
+                        # 更新选中的cookie
                         await cursor.execute('''
                             UPDATE suno2openai
                             SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
