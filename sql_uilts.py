@@ -92,10 +92,26 @@ class DatabaseManager:
                             songID2 VARCHAR(255),
                             count INT,
                             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             UNIQUE(cookie(191))
                         )
                     """)
-                    logging.info("Table `suno2openai` created or already exists.")
+                    # 查询表结构，检查是否存在 add_time 列
+                    await cursor.execute('''
+                        SHOW COLUMNS FROM suno2openai LIKE 'add_time';
+                    ''')
+                    column = await cursor.fetchone()
+
+                    if not column:
+                        # 如果 add_time 列不存在，添加该列
+                        await cursor.execute('''
+                            ALTER TABLE suno2openai
+                            ADD COLUMN add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                        ''')
+                        logging.info("成功添加 'add_time' 列。")
+                    else:
+                        logging.info("'add_time' 列已存在，跳过添加。")
+
                     await conn.commit()
                 except Exception as e:
                     await conn.rollback()
@@ -336,7 +352,7 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
-                    await cur.execute("SELECT cookie, count FROM suno2openai")
+                    await cur.execute("SELECT cookie, count, songID, songID2, time, add_time FROM suno2openai")
                     result = await cur.fetchall()
                     await conn.commit()
                     return json.dumps(result)
