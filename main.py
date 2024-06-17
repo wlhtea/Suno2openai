@@ -6,17 +6,18 @@ import logging
 import os
 import random
 import string
-import tiktoken
 import time
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+import tiktoken
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
-from typing import AsyncGenerator
 
 import schemas
 from cookie import suno_auth
@@ -71,7 +72,7 @@ async def cron_refresh_cookies():
         logging.info(f"==========================================")
         logging.info("开始更新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
-        semaphore = asyncio.Semaphore(5)
+        semaphore = asyncio.Semaphore(50)
         add_tasks = []
 
         async def refresh_cookie(simple_cookie):
@@ -120,6 +121,17 @@ async def cron_delete_cookies():
         return JSONResponse(status_code=500, content={"error": e})
 
 
+# 初始化所有songID
+async def init_delete_songID():
+    try:
+        rows_updated = await db_manager.delete_songIDS()
+        logging.info({"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated})
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+
+
 # 生命周期管理
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
@@ -127,9 +139,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     try:
         await db_manager.create_pool()
         await db_manager.create_database_and_table()
-        logging.info("初始化 SQL 成功！")
+        await init_delete_songID()
+        logging.info("初始化 SQL 和 songID 成功！")
     except Exception as e:
-        logging.error(f"初始化 SQL 失败: {str(e)}")
+        logging.error(f"初始化 SQL 或者 songID 失败: {str(e)}")
         raise
 
     # 初始化并启动 APScheduler
@@ -137,10 +150,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     scheduler.add_job(cron_refresh_cookies, IntervalTrigger(minutes=60), id='updateRefresh_run')
     scheduler.add_job(cron_delete_cookies, IntervalTrigger(minutes=30), id='updateDelete_run')
     scheduler.start()
-    yield
 
-    # 停止调度器
-    scheduler.shutdown()
+    try:
+        yield
+    finally:
+        # 停止调度器
+        scheduler.shutdown()
+        # 关闭数据库连接池
+        await db_manager.close_db_pool()
 
 
 # FastAPI 应用初始化
@@ -209,7 +226,13 @@ def get_clips_ids(response: json):
 
 
 async def Delelet_Songid(cookie):
-    return await db_manager.delete_song_ids(cookie)
+    for attempt in range(retries):
+        try:
+            await db_manager.delete_song_ids(cookie)
+            return
+        except Exception as e:
+            if attempt > retries - 1:
+                logging.info(f"删除音乐songID失败: {e}")
 
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
@@ -229,14 +252,11 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                         if remaining_count == -1:
                             await db_manager.delete_cookies(cookie)
                             raise RuntimeError("该账号剩余次数为 -1，无法使用")
-                        logging.info(f"请求第 {attempt + 1} 次获取到cookie:{cookie}")
                         break
                 except Exception as e:
-                    logging.error(f"第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
-                    if attempt < retries - 1:
-                        continue
-                    else:
-                        raise RuntimeError(f"获取cookie失败cookie发生异常: {e}")
+                    logging.error(f"在请求重试 {try_count} 次中，第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
+                    if attempt > retries - 1:
+                        raise RuntimeError(f"在请求重试 {try_count} 次中，获取cookie全部失败，cookie发生异常: {e}")
 
             _return_ids = False
             _return_tags = False
@@ -295,7 +315,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     try:
                         more_information_ = now_data[0]['metadata']
                     except Exception as e:
-                        logging.info('more_information_', e)
+                        logging.info(f'more_information_: {e}')
                         continue
                     if _return_Forever_url and _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
                         break
@@ -399,10 +419,10 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
             break
         except Exception as e:
-            logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
             if cookie is not None:
                 await Delelet_Songid(cookie)
             if try_count < retries - 1:
+                logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
                 continue
             else:
                 raise RuntimeError(f"生成歌曲失败: 请打开日志或数据库查看报错信息......")
@@ -487,10 +507,10 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
         return json_string
     else:
         try:
-            return StreamingResponse(generate_data(last_user_content, chat_id, timeStamp, data.model),
-                                     headers=headers, media_type="text/event-stream")
+            data_generator = generate_data(last_user_content, chat_id, timeStamp, data.model)
+            return StreamingResponse(data_generator, headers=headers, media_type="text/event-stream")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"生成流式响应时出错: {str(e)}")
+            return JSONResponse(status_code=500, content={"detail": f"生成流式响应时出错: {str(e)}"})
 
 
 # 授权检查
@@ -547,7 +567,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
         if not cookies:
             raise HTTPException(status_code=400, detail="Cookies 列表为空")
 
-        semaphore = asyncio.Semaphore(20)
+        semaphore = asyncio.Semaphore(50)
         add_tasks = []
 
         async def add_cookie(simple_cookie):
@@ -605,7 +625,7 @@ async def refresh_cookies(authorization: str = Header(...)):
         logging.info(f"==========================================")
         logging.info("开始更新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
-        semaphore = asyncio.Semaphore(5)
+        semaphore = asyncio.Semaphore(50)
         add_tasks = []
 
         async def refresh_cookie(simple_cookie):
@@ -663,7 +683,7 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
 
 # 获取cookies的详细详细
 @app.delete(f"{COOKIES_PREFIX}/songID/cookies")
-async def get_cookies(authorization: str = Header(...)):
+async def delete_songID(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         rows_updated = await db_manager.delete_songIDS()

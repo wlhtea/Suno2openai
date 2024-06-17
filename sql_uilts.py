@@ -1,9 +1,9 @@
 import json
 import logging
-import random
 
 import aiomysql
 from fastapi import HTTPException
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 
 class DatabaseManager:
@@ -57,7 +57,10 @@ class DatabaseManager:
                     user=self.user,
                     password=self.password,
                     db=self.db_name,
-                    maxsize=20,
+                    maxsize=200,
+                    minsize=5,
+                    connect_timeout=10,
+                    pool_recycle=1800
                 )
 
                 if self.pool is not None:
@@ -66,6 +69,12 @@ class DatabaseManager:
                     logging.error("连接池创建失败，返回值为 None。")
         except Exception as e:
             logging.error(f"创建连接池时发生错误: {e}")
+
+    # 关闭连接池
+    async def close_db_pool(self):
+        if self.pool:
+            self.pool.close()
+            await self.pool.wait_closed()
 
     # 创建数据库和表
     async def create_database_and_table(self):
@@ -83,62 +92,85 @@ class DatabaseManager:
                             songID2 VARCHAR(255),
                             count INT,
                             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             UNIQUE(cookie(191))
                         )
                     """)
-                    logging.info("Table `suno2openai` created or already exists.")
+                    # 查询表结构，检查是否存在 add_time 列
+                    await cursor.execute('''
+                        SHOW COLUMNS FROM suno2openai LIKE 'add_time';
+                    ''')
+                    column = await cursor.fetchone()
+
+                    if not column:
+                        # 如果 add_time 列不存在，添加该列
+                        await cursor.execute('''
+                            ALTER TABLE suno2openai
+                            ADD COLUMN add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                        ''')
+                        logging.info("成功添加 'add_time' 列。")
+                    else:
+                        logging.info("'add_time' 列已存在，跳过添加。")
+
                     await conn.commit()
                 except Exception as e:
                     await conn.rollback()
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
+    # 获得cookie
     async def get_token(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
-                    # 开始事务
-                    await conn.begin()
+                    # 先查询一个不被锁定且可用的cookie
                     await cursor.execute('''
-                        SELECT COUNT(*) AS total 
-                        FROM suno2openai
-                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0;
+                        SELECT cookie FROM suno2openai
+                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0
+                        ORDER BY RAND() LIMIT 1
+                        LOCK IN SHARE MODE;
                     ''')
-                    result = await cursor.fetchone()
-                    total_rows = result['total']
-
-                    if total_rows == 0:
+                    row = await cursor.fetchone()
+                    if not row:
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
 
-                    random_row_number = random.randint(0, total_rows - 1)
-                    await cursor.execute('''
-                        SELECT cookie
-                        FROM suno2openai
-                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        LIMIT 1 OFFSET %s;
-                    ''', (random_row_number,))
-                    row = await cursor.fetchone()
+                    cookie = row['cookie']
+                    # 开始事务
+                    await conn.begin()
+                    try:
+                        # 第二个查询，锁定获取的cookie
+                        await cursor.execute('''
+                            SELECT cookie FROM suno2openai 
+                            WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0
+                            LIMIT 1 FOR UPDATE;
+                        ''', (cookie,))
+                        row = await cursor.fetchone()
+                        if not row:
+                            raise HTTPException(status_code=429, detail="并发更新cookie时发生并发冲突，重试中...")
 
-                    if row:
+                        cookie = row['cookie']
+                        # 然后更新选中的cookie
                         await cursor.execute('''
                             UPDATE suno2openai
                             SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-                            WHERE cookie = %s;
-                        ''', ("tmp", "tmp", row['cookie']))
-
+                            WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0;
+                        ''', ("tmp", "tmp", cookie))
                         await conn.commit()
-                        return row['cookie']
-                    else:
-                        await conn.rollback()
-                        raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+                        return cookie
+                    except Exception as update_error:
+                        raise update_error
 
-                except Exception as e:
+                except aiomysql.MySQLError as mysql_error:
                     await conn.rollback()
-                    logging.error(f"发生错误：{str(e)}")
-                    if '锁等待超时' in str(e):
+                    if '锁等待超时' in str(mysql_error):
                         raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
                     else:
-                        raise HTTPException(status_code=500, detail="内部服务器错误")
+                        raise HTTPException(status_code=429, detail=f"数据库错误：{str(mysql_error)}")
 
+                except Exception as e:
+                    await conn.commit()
+                    raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
+
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         async with self.pool.acquire() as conn:
             try:
@@ -154,27 +186,18 @@ class DatabaseManager:
                 await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-    async def get_cookie_by_songid(self, songid):
-        async with self.pool.acquire() as conn:
-            try:
-                async with conn.cursor() as cur:
-                    await cur.execute('''
-                        SELECT cookie FROM suno2openai WHERE songID = %s OR songID2 = %s
-                    ''', (songid, songid))
-                    row = await cur.fetchone()
-                    await conn.commit()
-            except Exception as e:
-                await conn.rollback()
-                raise HTTPException(status_code=500, detail=f"{str(e)}")
-        if row:
-            return row[0]
-        else:
-            return await self.get_token()
-
+    # 删除单个cookie的songID
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def delete_song_ids(self, cookie):
         async with self.pool.acquire() as conn:
             try:
+                # 开始事务
+                await conn.begin()
                 async with conn.cursor() as cur:
+                    # 锁定目标行以防止其他事务修改
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
+                    ''', (cookie,))
                     await cur.execute('''
                         UPDATE suno2openai
                         SET songID = NULL, songID2 = NULL
@@ -186,10 +209,17 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除所有的songID
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def delete_songIDS(self):
         async with self.pool.acquire() as conn:
             try:
+                # 开始事务
+                await conn.begin()
                 async with conn.cursor() as cur:
+                    # 锁定目标行以防止其他事务修改
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai FOR UPDATE;
+                    ''')
                     await cur.execute('''
                         UPDATE suno2openai
                         SET songID = NULL, songID2 = NULL;
@@ -201,10 +231,17 @@ class DatabaseManager:
                 await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
+    # 更新cookie的count
     async def update_cookie_count(self, cookie, count_increment, update=None):
         async with self.pool.acquire() as conn:
             try:
+                # 开始事务
+                await conn.begin()
                 async with conn.cursor() as cur:
+                    # 锁定目标行以防止其他事务修改
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
+                    ''', (cookie,))
                     if update is not None:
                         await cur.execute('''
                             UPDATE suno2openai
@@ -230,7 +267,6 @@ class DatabaseManager:
                     await conn.commit()
                     return await cur.fetchall()
             except Exception as e:
-                await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def update_song_ids_by_cookie(self, cookie, songID1, songID2):
@@ -248,6 +284,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取所有 cookies 的count总和
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_cookies_count(self):
         try:
             async with self.pool.acquire() as conn:
@@ -258,13 +295,13 @@ class DatabaseManager:
                         await conn.commit()
                         return result['total_count'] if result['total_count'] is not None else 0
                 except Exception as e:
-                    await conn.rollback()
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
         except Exception as e:
             logging.error(f"Unexpected error: {e}")
             return 0
 
     # 获取有效的 cookies 的count总和
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_valid_cookies_count(self):
         try:
             async with self.pool.acquire() as conn:
@@ -275,13 +312,13 @@ class DatabaseManager:
                         await conn.commit()
                         return result['total_count'] if result['total_count'] is not None else 0
                 except Exception as e:
-                    await conn.rollback()
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
         except Exception as e:
             logging.error(f"Unexpected error: {e}")
             return 0
 
     # 获取 cookies
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
             try:
@@ -290,10 +327,10 @@ class DatabaseManager:
                     await conn.commit()
                     return await cur.fetchall()
             except Exception as e:
-                await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取无效的cookies
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_invalid_cookies(self):
         async with self.pool.acquire() as conn:
             try:
@@ -302,27 +339,37 @@ class DatabaseManager:
                     await conn.commit()
                     return await cur.fetchall()
             except Exception as e:
-                await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取 cookies 和 count
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_all_cookies(self):
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
-                    await cur.execute("SELECT cookie, count FROM suno2openai")
+                    await cur.execute("SELECT cookie, songID, songID2, count, time, add_time FROM suno2openai")
                     result = await cur.fetchall()
+                    # 将所有字段转化为字符串
+                    for row in result:
+                        for key in row:
+                            row[key] = str(row[key])
                     await conn.commit()
                     return json.dumps(result)
             except Exception as e:
-                await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除相应的cookies
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def delete_cookies(self, cookie: str):
         async with self.pool.acquire() as conn:
             try:
+                # 开始事务
+                await conn.begin()
                 async with conn.cursor(aiomysql.DictCursor) as cur:
+                    # 锁定目标行以防止其他事务修改
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
+                    ''', (cookie,))
                     await cur.execute("DELETE FROM suno2openai WHERE cookie = %s", cookie)
                     await conn.commit()
                     return True
