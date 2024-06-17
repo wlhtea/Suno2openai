@@ -101,14 +101,14 @@ class DatabaseManager:
                     await conn.rollback()
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
+    # 获得cookie
     async def get_token(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
-                    # 先查询一个可用的cookie
+                    # 先查询一个不被锁定且可用的cookie
                     await cursor.execute('''
-                        SELECT cookie
-                        FROM suno2openai
+                        SELECT cookie FROM suno2openai
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
                         ORDER BY RAND() LIMIT 1
                         LOCK IN SHARE MODE;
@@ -121,21 +121,26 @@ class DatabaseManager:
                         try:
                             # 第二个查询，锁定获取的cookie
                             await cursor.execute('''
-                                SELECT cookie FROM suno2openai WHERE cookie = %s
+                                SELECT cookie FROM suno2openai 
+                                WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0
                                 LIMIT 1 FOR UPDATE;
                             ''', (cookie,))
-
-                            # 然后更新选中的cookie
-                            await cursor.execute('''
-                                UPDATE suno2openai
-                                SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-                                WHERE cookie = %s;
-                            ''', ("tmp", "tmp", cookie))
-                            await conn.commit()
-                            return cookie
+                            row = await cursor.fetchone()
+                            if row:
+                                cookie = row['cookie']
+                                # 然后更新选中的cookie
+                                await cursor.execute('''
+                                    UPDATE suno2openai
+                                    SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
+                                    WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0;
+                                ''', ("tmp", "tmp", cookie))
+                                await conn.commit()
+                                return cookie
+                            else:
+                                raise HTTPException(status_code=429, detail="并发更新cookie时发生并发冲突，重试中...")
                         except Exception as update_error:
                             await conn.rollback()
-                            raise HTTPException(status_code=500, detail=f"更新cookie时发生错误：{str(update_error)}")
+                            raise aiomysql.MySQLError(str(update_error))
                     else:
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
 
@@ -149,7 +154,7 @@ class DatabaseManager:
 
                 except Exception as e:
                     await conn.rollback()
-                    raise HTTPException(status_code=500, detail=f"发生未知错误：{str(e)}")
+                    raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
