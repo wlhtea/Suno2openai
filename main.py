@@ -137,10 +137,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     scheduler.add_job(cron_refresh_cookies, IntervalTrigger(minutes=120), id='updateRefresh_run')
     scheduler.add_job(cron_delete_cookies, IntervalTrigger(minutes=90), id='updateDelete_run')
     scheduler.start()
-    yield
 
-    # 停止调度器
-    scheduler.shutdown()
+    try:
+        yield
+    finally:
+        # 停止调度器
+        scheduler.shutdown()
+        # 关闭数据库连接池
+        await db_manager.close_db_pool()
 
 
 # FastAPI 应用初始化

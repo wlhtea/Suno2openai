@@ -56,7 +56,11 @@ class DatabaseManager:
                     user=self.user,
                     password=self.password,
                     db=self.db_name,
-                    maxsize=20,
+                    maxsize=80,
+                    minsize=5,
+                    connect_timeout=10,
+                    max_lifetime=30 * 60,
+                    pool_recycle=1800
                 )
 
                 if self.pool is not None:
@@ -65,6 +69,12 @@ class DatabaseManager:
                     logging.error("连接池创建失败，返回值为 None。")
         except Exception as e:
             logging.error(f"创建连接池时发生错误: {e}")
+
+    # 关闭连接池
+    async def close_db_pool(self):
+        if self.pool:
+            self.pool.close()
+            await self.pool.wait_closed()
 
     # 创建数据库和表
     async def create_database_and_table(self):
