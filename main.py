@@ -254,11 +254,9 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             raise RuntimeError("该账号剩余次数为 -1，无法使用")
                         break
                 except Exception as e:
-                    logging.error(f"在请求重试{try_count}次中，第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
-                    if attempt < retries - 1:
-                        continue
-                    else:
-                        raise RuntimeError(f"在请求重试{try_count}次中，获取cookie全部失败，cookie发生异常: {e}")
+                    logging.error(f"在请求重试 {try_count} 次中，第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
+                    if attempt > retries - 1:
+                        raise RuntimeError(f"在请求重试 {try_count} 次中，获取cookie全部失败，cookie发生异常: {e}")
 
             _return_ids = False
             _return_tags = False
