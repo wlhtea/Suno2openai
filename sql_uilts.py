@@ -140,7 +140,7 @@ class DatabaseManager:
                                 raise HTTPException(status_code=429, detail="并发更新cookie时发生并发冲突，重试中...")
                         except Exception as update_error:
                             await conn.rollback()
-                            raise HTTPException(status_code=500, detail=f"更新cookie时发生错误：{str(update_error)}")
+                            raise aiomysql.MySQLError(str(update_error))
                     else:
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
 
