@@ -349,6 +349,10 @@ class DatabaseManager:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
                     await cur.execute("SELECT cookie, songID, songID2, count, time, add_time FROM suno2openai")
                     result = await cur.fetchall()
+                    # 将所有字段转化为字符串
+                    for row in result:
+                        for key in row:
+                            row[key] = str(row[key])
                     await conn.commit()
                     return json.dumps(result)
             except Exception as e:
