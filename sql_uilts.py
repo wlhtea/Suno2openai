@@ -186,6 +186,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除所有的songID
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def delete_songIDS(self):
         async with self.pool.acquire() as conn:
             try:
@@ -261,6 +262,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取所有 cookies 的count总和
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_cookies_count(self):
         try:
             async with self.pool.acquire() as conn:
@@ -278,6 +280,7 @@ class DatabaseManager:
             return 0
 
     # 获取有效的 cookies 的count总和
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_valid_cookies_count(self):
         try:
             async with self.pool.acquire() as conn:
@@ -295,6 +298,7 @@ class DatabaseManager:
             return 0
 
     # 获取 cookies
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
             try:
@@ -307,6 +311,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取无效的cookies
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_invalid_cookies(self):
         async with self.pool.acquire() as conn:
             try:
@@ -319,6 +324,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取 cookies 和 count
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_all_cookies(self):
         async with self.pool.acquire() as conn:
             try:
@@ -332,6 +338,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除相应的cookies
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def delete_cookies(self, cookie: str):
         async with self.pool.acquire() as conn:
             try:
