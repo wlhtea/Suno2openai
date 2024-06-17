@@ -105,28 +105,32 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
-                    # 开始事务
-                    await conn.begin()
-                    # 设置事务隔离级别为SERIALIZABLE
-                    await cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
-
-                    # 查询一个可用的cookie
+                    # 先查询一个可用的cookie
                     await cursor.execute('''
                         SELECT cookie
                         FROM suno2openai
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        LIMIT 1 FOR UPDATE;
+                        LIMIT 1 FOR UPDATE LOCK IN SHARE MODE;
                     ''')
+                    # 开始事务
+                    await conn.begin()
+                    # # 设置事务隔离级别为SERIALIZABLE
+                    # await cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
                     row = await cursor.fetchone()
-
                     if row:
-                        # 更新选中的cookie
+                        cookie = row['cookie']
+                        # 第二个查询，锁定获取的cookie
+                        await cursor.execute('''
+                            SELECT cookie FROM suno2openai WHERE cookie = %s
+                            LIMIT 1 FOR UPDATE;
+                        ''', (cookie,))
+
+                        # 然后更新选中的cookie
                         await cursor.execute('''
                             UPDATE suno2openai
                             SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
                             WHERE cookie = %s;
                         ''', ("tmp", "tmp", row['cookie']))
-
                         await conn.commit()
                         return row['cookie']
                     else:
