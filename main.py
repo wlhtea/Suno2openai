@@ -125,14 +125,13 @@ async def cron_delete_cookies():
 async def init_delete_songID():
     try:
         rows_updated = await db_manager.delete_songIDS()
-        return JSONResponse(
+        logging.info(JSONResponse(
             content={"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated}
-        )
+        ))
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # 生命周期管理
