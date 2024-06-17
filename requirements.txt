@@ -23,4 +23,4 @@ aiomysql
 pandas
 uvicorn
 apscheduler
-tenacity
+tenacity==8.3.0
