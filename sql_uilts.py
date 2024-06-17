@@ -92,7 +92,7 @@ class DatabaseManager:
                             songID2 VARCHAR(255),
                             count INT,
                             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            add_time TIMESTAMP,
                             UNIQUE(cookie(191))
                         )
                     """)
@@ -176,8 +176,8 @@ class DatabaseManager:
             try:
                 async with conn.cursor() as cur:
                     sql = """
-                        INSERT INTO suno2openai (cookie, songID, songID2, count)
-                        VALUES (%s, %s, %s, %s)
+                        INSERT INTO suno2openai (cookie, songID, songID2, count, add_time)
+                        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
                         ON DUPLICATE KEY UPDATE count = VALUES(count)
                     """
                     await cur.execute(sql, (cookie, songID, songID2, count))
