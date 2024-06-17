@@ -214,7 +214,7 @@ async def Delelet_Songid(cookie):
             await db_manager.delete_song_ids(cookie)
             return
         except Exception as e:
-            if attempt > max_retries - 1:
+            if attempt > retries - 1:
                 logging.info(f"删除音乐songID失败: {e}")
 
 
