@@ -110,39 +110,46 @@ class DatabaseManager:
                         SELECT cookie
                         FROM suno2openai
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        LIMIT 1 LOCK IN SHARE MODE;
+                        ORDER BY RAND() LIMIT 1
+                        LOCK IN SHARE MODE;
                     ''')
-                    # # 设置事务隔离级别为SERIALIZABLE
-                    # await cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
                     row = await cursor.fetchone()
                     if row:
+                        cookie = row['cookie']
                         # 开始事务
                         await conn.begin()
-                        cookie = row['cookie']
-                        # 第二个查询，锁定获取的cookie
-                        await cursor.execute('''
-                            SELECT cookie FROM suno2openai WHERE cookie = %s
-                            LIMIT 1 FOR UPDATE;
-                        ''', (cookie,))
+                        try:
+                            # 第二个查询，锁定获取的cookie
+                            await cursor.execute('''
+                                SELECT cookie FROM suno2openai WHERE cookie = %s
+                                LIMIT 1 FOR UPDATE;
+                            ''', (cookie,))
 
-                        # 然后更新选中的cookie
-                        await cursor.execute('''
-                            UPDATE suno2openai
-                            SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-                            WHERE cookie = %s;
-                        ''', ("tmp", "tmp", row['cookie']))
-                        await conn.commit()
-                        return row['cookie']
+                            # 然后更新选中的cookie
+                            await cursor.execute('''
+                                UPDATE suno2openai
+                                SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
+                                WHERE cookie = %s;
+                            ''', ("tmp", "tmp", cookie))
+                            await conn.commit()
+                            return cookie
+                        except Exception as update_error:
+                            await conn.rollback()
+                            raise HTTPException(status_code=500, detail=f"更新cookie时发生错误：{str(update_error)}")
                     else:
-                        await conn.rollback()
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+
+                except aiomysql.MySQLError as mysql_error:
+                    await conn.rollback()
+                    logging.error(f"数据库错误: {str(mysql_error)}")
+                    if '锁等待超时' in str(mysql_error):
+                        raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
+                    else:
+                        raise HTTPException(status_code=500, detail=f"数据库错误：{str(mysql_error)}")
 
                 except Exception as e:
                     await conn.rollback()
-                    if '锁等待超时' in str(e):
-                        raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
-                    else:
-                        raise HTTPException(status_code=500, detail=f"发生错误：{str(e)}")
+                    raise HTTPException(status_code=500, detail=f"发生未知错误：{str(e)}")
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
