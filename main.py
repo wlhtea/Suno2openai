@@ -125,9 +125,7 @@ async def cron_delete_cookies():
 async def init_delete_songID():
     try:
         rows_updated = await db_manager.delete_songIDS()
-        logging.info(JSONResponse(
-            content={"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated}
-        ))
+        logging.info({"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated})
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
