@@ -105,8 +105,6 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
-                    # 开始事务
-                    await conn.begin()
                     await cursor.execute('''
                         SELECT COUNT(*) AS total 
                         FROM suno2openai
@@ -119,6 +117,10 @@ class DatabaseManager:
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
 
                     random_row_number = random.randint(0, total_rows - 1)
+                    # 开始事务
+                    await conn.begin()
+                    # 设置事务隔离级别
+                    await cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
                     await cursor.execute('''
                         SELECT cookie
                         FROM suno2openai
