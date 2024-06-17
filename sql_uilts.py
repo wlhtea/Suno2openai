@@ -267,7 +267,6 @@ class DatabaseManager:
                     await conn.commit()
                     return await cur.fetchall()
             except Exception as e:
-                await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def update_song_ids_by_cookie(self, cookie, songID1, songID2):
@@ -296,7 +295,6 @@ class DatabaseManager:
                         await conn.commit()
                         return result['total_count'] if result['total_count'] is not None else 0
                 except Exception as e:
-                    await conn.rollback()
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
         except Exception as e:
             logging.error(f"Unexpected error: {e}")
@@ -314,7 +312,6 @@ class DatabaseManager:
                         await conn.commit()
                         return result['total_count'] if result['total_count'] is not None else 0
                 except Exception as e:
-                    await conn.rollback()
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
         except Exception as e:
             logging.error(f"Unexpected error: {e}")
@@ -330,7 +327,6 @@ class DatabaseManager:
                     await conn.commit()
                     return await cur.fetchall()
             except Exception as e:
-                await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取无效的cookies
@@ -343,7 +339,6 @@ class DatabaseManager:
                     await conn.commit()
                     return await cur.fetchall()
             except Exception as e:
-                await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取 cookies 和 count
@@ -352,12 +347,11 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
-                    await cur.execute("SELECT cookie, count, songID, songID2, time, add_time FROM suno2openai")
+                    await cur.execute("SELECT cookie, songID, songID2, count, time, add_time FROM suno2openai")
                     result = await cur.fetchall()
                     await conn.commit()
                     return json.dumps(result)
             except Exception as e:
-                await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除相应的cookies
