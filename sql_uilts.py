@@ -3,6 +3,7 @@ import json
 import logging
 import random
 from fastapi import HTTPException
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 
 class DatabaseManager:
@@ -146,6 +147,7 @@ class DatabaseManager:
                     else:
                         raise HTTPException(status_code=500, detail=f"发生错误：{str(e)}")
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         async with self.pool.acquire() as conn:
             try:
@@ -162,6 +164,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除单个cookie的songID
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def delete_song_ids(self, cookie):
         async with self.pool.acquire() as conn:
             try:
