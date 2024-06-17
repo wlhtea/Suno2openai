@@ -110,7 +110,7 @@ class DatabaseManager:
                         SELECT cookie
                         FROM suno2openai
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        LIMIT 1 FOR UPDATE LOCK IN SHARE MODE;
+                        LIMIT 1 LOCK IN SHARE MODE;
                     ''')
                     # # 设置事务隔离级别为SERIALIZABLE
                     # await cursor.execute('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
