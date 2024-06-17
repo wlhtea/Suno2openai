@@ -106,7 +106,7 @@ class DatabaseManager:
                         # 如果 add_time 列不存在，添加该列
                         await cursor.execute('''
                             ALTER TABLE suno2openai
-                            ADD COLUMN add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                            ADD COLUMN add_time TIMESTAMP;
                         ''')
                         logging.info("成功添加 'add_time' 列。")
                     else:
