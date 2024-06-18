@@ -1,9 +1,9 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from suno import SongsGen
 from util.logger import logger
 from util.sql_uilts import DatabaseManager
-from suno import SongsGen
 
 
 class processCookies:
