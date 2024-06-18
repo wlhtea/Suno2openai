@@ -68,7 +68,7 @@ will be replaced with placeholders.
    ```
 
    **Parameter description:**
-    - `-d`: Run the container in background mode and logging.info the container ID.
+    - `-d`: Run the container in background mode and logger.info the container ID.
     - `--name wsunoapi`: Name your container `wsunoapi` for easy referencing.
     - `-p 8000:8000`: Maps the container's port 8000 to the host's port 8000.
     - `-e`: Set environment variables for your container.

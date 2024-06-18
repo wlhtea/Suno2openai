@@ -19,6 +19,8 @@ from selenium.webdriver.edge.service import Service
 from selenium.webdriver.support.ui import Select
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
+from util.logger import logger
+
 
 def shuffle(arr):
     random.shuffle(arr)
@@ -138,16 +140,16 @@ def main():
                 elif confirm.lower() == 'n':
                     break
                 else:
-                    logging.info("Invalid input. Please enter 'y' or 'n'.")
+                    logger.info("Invalid input. Please enter 'y' or 'n'.")
         except Exception as e:
-            logging.info(f"Error: {e}")
+            logger.info(f"Error: {e}")
             continue
         finally:
             if driver is not None:
                 try:
                     driver.quit()
                 except Exception as ex:
-                    logging.info("Error occurred while quitting: ", ex)
+                    logger.info("Error occurred while quitting: ", ex)
 
 
 if __name__ == '__main__':

@@ -92,7 +92,7 @@ replaced with placeholders.
 
 **Parameter Explanation:**
 
-- `-d`: Run the container in detached mode and logging.info the container ID.
+- `-d`: Run the container in detached mode and logger.info the container ID.
 - `--name wsunoapi`: Name your container `wsunoapi` for easy reference.
 - `-p 8000:8000`: Map the container's 8000 port to the host machine's 8000 port.
 - `-e`: Set environment variables for your container.

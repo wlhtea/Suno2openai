@@ -1,8 +1,8 @@
 import asyncio
-import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from sql_uilts import DatabaseManager
+from util.logger import logger
+from util.sql_uilts import DatabaseManager
 from suno import SongsGen
 
 
@@ -21,12 +21,12 @@ class processCookies:
             song_gen = SongsGen(cookie)
             remaining_count = song_gen.get_limit_left()
             if remaining_count == -1 and is_insert:
-                logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
+                logger.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
                 return False
             await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)
             return True
         except Exception as e:
-            logging.error(cookie + f"，添加或刷新失败：{e}")
+            logger.error(cookie + f"，添加或刷新失败：{e}")
             return False
 
     # 在当前线程的事件循环中运行任务添加或刷新cookie
@@ -40,7 +40,7 @@ class processCookies:
             asyncio.set_event_loop(loop)
             result = loop.run_until_complete(self.cookies_task(db_manage, cookie, is_insert))
         except Exception as e:
-            logging.error(cookie + f"，添加或刷新失败：{e}")
+            logger.error(cookie + f"，添加或刷新失败：{e}")
             return False
         finally:
             loop.run_until_complete(db_manage.close_db_pool())
@@ -61,5 +61,5 @@ class processCookies:
                     results.append(future.result())
                 return results
         except Exception as e:
-            logging.error(f"添加或刷新失败：{e}")
+            logger.error(f"添加或刷新失败：{e}")
             return None
