@@ -2,7 +2,6 @@
 import asyncio
 import datetime
 import json
-import logging
 import os
 import random
 import string
@@ -11,7 +10,6 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 import tiktoken
-import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, HTTPException
@@ -20,25 +18,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
 
-import schemas
-from cookie import suno_auth
+from data import schemas
+from data.cookie import suno_auth
 from process import process_cookies
-from sql_uilts import DatabaseManager
+from util.logger import logger
+from util.sql_uilts import DatabaseManager
 from suno.suno import SongsGen
-from utils import generate_music, get_feed
+from util.utils import generate_music, get_feed
 
-log_level_dict = {
-    'DEBUG': logging.DEBUG,
-    'INFO': logging.INFO,
-    'WARNING': logging.WARNING,
-    'ERROR': logging.ERROR,
-    'CRITICAL': logging.CRITICAL
-}
-
-# 配置日志记录器
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(levelname)-8s %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
 
 # 从环境变量中获取配置
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
@@ -56,26 +43,26 @@ db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_N
 process_cookie = process_cookies.processCookies(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
 
 # 记录配置信息
-logging.info("==========================================")
-logging.info(f"BASE_URL: {BASE_URL}")
-logging.info(f"SESSION_ID: {SESSION_ID}")
-logging.info(f"USER_NAME: {USER_NAME}")
-logging.info(f"SQL_NAME: {SQL_NAME}")
-logging.info(f"SQL_PASSWORD: {SQL_PASSWORD}")
-logging.info(f"SQL_IP: {SQL_IP}")
-logging.info(f"SQL_DK: {SQL_DK}")
-logging.info(f"COOKIES_PREFIX: {COOKIES_PREFIX}")
-logging.info(f"AUTH_KEY: {AUTH_KEY}")
-logging.info(f"RETRIES: {RETRIES}")
-logging.info(f"BATCH_SIZE: {BATCH_SIZE}")
-logging.info("==========================================")
+logger.info("==========================================")
+logger.info(f"BASE_URL: {BASE_URL}")
+logger.info(f"SESSION_ID: {SESSION_ID}")
+logger.info(f"USER_NAME: {USER_NAME}")
+logger.info(f"SQL_NAME: {SQL_NAME}")
+logger.info(f"SQL_PASSWORD: {SQL_PASSWORD}")
+logger.info(f"SQL_IP: {SQL_IP}")
+logger.info(f"SQL_DK: {SQL_DK}")
+logger.info(f"COOKIES_PREFIX: {COOKIES_PREFIX}")
+logger.info(f"AUTH_KEY: {AUTH_KEY}")
+logger.info(f"RETRIES: {RETRIES}")
+logger.info(f"BATCH_SIZE: {BATCH_SIZE}")
+logger.info("==========================================")
 
 
 # 刷新cookies函数
 async def cron_refresh_cookies():
     try:
-        logging.info(f"==========================================")
-        logging.info("开始添加数据库里的 process.........")
+        logger.info(f"==========================================")
+        logger.info("开始添加数据库里的 process.........")
         cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
         total_cookies = len(cookies)
         processed_count = 0
@@ -85,20 +72,20 @@ async def cron_refresh_cookies():
                 if result:
                     processed_count += 1
         success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
-        logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
+        logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
                      f"成功率：({success_percentage:.2f}%)")
-        logging.info(f"==========================================")
+        logger.info(f"==========================================")
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error({"添加cookies出现错误": str(e)})
+        logger.error({"添加cookies出现错误": str(e)})
         return JSONResponse(status_code=500, content={"添加cookies出现错误": str(e)})
 
 
 async def cron_delete_cookies():
     try:
-        logging.info(f"==========================================")
-        logging.info("开始删除数据库里的无效cookies.........")
+        logger.info(f"==========================================")
+        logger.info("开始删除数据库里的无效cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
         delete_tasks = []
         for cookie in cookies:
@@ -108,9 +95,9 @@ async def cron_delete_cookies():
         success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
 
-        logging.info(
+        logger.info(
             {"message": "Invalid process 删除成功。", "成功数量": success_count, "失败数量": fail_count})
-        logging.info(f"==========================================")
+        logger.info(f"==========================================")
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
@@ -121,11 +108,11 @@ async def cron_delete_cookies():
 async def init_delete_songID():
     try:
         rows_updated = await db_manager.delete_songIDS()
-        logging.info({"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated})
+        logger.info({"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated})
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
 
 
 # 生命周期管理
@@ -136,9 +123,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         await db_manager.create_pool()
         await db_manager.create_database_and_table()
         await init_delete_songID()
-        logging.info("初始化 SQL 和 songID 成功！")
+        logger.info("初始化 SQL 和 songID 成功！")
     except Exception as e:
-        logging.error(f"初始化 SQL 或者 songID 失败: {str(e)}")
+        logger.error(f"初始化 SQL 或者 songID 失败: {str(e)}")
         raise
 
     # 初始化并启动 APScheduler
@@ -228,7 +215,7 @@ async def Delelet_Songid(cookie):
             return
         except Exception as e:
             if attempt > RETRIES - 1:
-                logging.info(f"删除音乐songID失败: {e}")
+                logger.info(f"删除音乐songID失败: {e}")
 
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
@@ -250,7 +237,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                             raise RuntimeError("该账号剩余次数为 -1，无法使用")
                         break
                 except Exception as e:
-                    logging.error(f"在请求重试 {try_count} 次中，第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
+                    logger.error(f"在请求重试 {try_count} 次中，第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
                     if attempt > RETRIES - 1:
                         raise RuntimeError(f"在请求重试 {try_count} 次中，获取cookie全部失败，cookie发生异常: {e}")
 
@@ -311,7 +298,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                     try:
                         more_information_ = now_data[0]['metadata']
                     except Exception as e:
-                        logging.info(f'more_information_: {e}')
+                        logger.info(f'more_information_: {e}')
                         continue
                     if _return_Forever_url and _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
                         break
@@ -336,7 +323,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                                 _return_Forever_url = True
                                 break
                         except Exception as e:
-                            logging.info('CDN音乐链接出错', e)
+                            logger.info('CDN音乐链接出错', e)
                             pass
 
                     if not _return_ids:
@@ -418,7 +405,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
             if cookie is not None:
                 await Delelet_Songid(cookie)
             if try_count < RETRIES - 1:
-                logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
+                logger.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
                 continue
             else:
                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("生成歌曲失败: 请打开日志或数据库查看报错信息......")}, "finish_reason": None}]})}\n\n"""
@@ -533,10 +520,10 @@ async def get_cookies(authorization: str = Header(...)):
         if remaining_count is None:
             remaining_count = 0
 
-        logging.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
-        logging.info("有效数量: " + str(valid_cookie_count))
-        logging.info("无效数量: " + str(invalid_cookie_count))
-        logging.info("剩余创作音乐次数: " + str(remaining_count))
+        logger.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
+        logger.info("有效数量: " + str(valid_cookie_count))
+        logger.info("无效数量: " + str(invalid_cookie_count))
+        logger.info("剩余创作音乐次数: " + str(remaining_count))
 
         return JSONResponse(
             content={
@@ -550,7 +537,7 @@ async def get_cookies(authorization: str = Header(...)):
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
@@ -558,8 +545,8 @@ async def get_cookies(authorization: str = Header(...)):
 async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
-        logging.info(f"==========================================")
-        logging.info("开始添加数据库里的 process.........")
+        logger.info(f"==========================================")
+        logger.info("开始添加数据库里的 process.........")
         cookies = data.cookies
         total_cookies = len(cookies)
 
@@ -575,9 +562,9 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
                         yield f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n"
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
-            logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
+            logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
                          f"成功率：({success_percentage:.2f}%)")
-            logging.info(f"==========================================")
+            logger.info(f"==========================================")
             yield f"data: 所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
@@ -586,7 +573,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error({"添加cookies出现错误": str(e)})
+        logger.error({"添加cookies出现错误": str(e)})
         return JSONResponse(status_code=500, content={"添加cookies出现错误": str(e)})
 
 
@@ -618,8 +605,8 @@ async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)
 async def refresh_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
-        logging.info(f"==========================================")
-        logging.info("开始刷新数据库里的 process.........")
+        logger.info(f"==========================================")
+        logger.info("开始刷新数据库里的 process.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
         total_cookies = len(cookies)
 
@@ -635,9 +622,9 @@ async def refresh_cookies(authorization: str = Header(...)):
                         yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
-            logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
+            logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
                          f"成功率：({success_percentage:.2f}%)")
-            logging.info(f"==========================================")
+            logger.info(f"==========================================")
             yield f"data: 所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
@@ -646,7 +633,7 @@ async def refresh_cookies(authorization: str = Header(...)):
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error({"刷新cookies出现错误": str(e)})
+        logger.error({"刷新cookies出现错误": str(e)})
         return JSONResponse(status_code=500, content={"刷新cookies出现错误": str(e)})
 
 
@@ -655,8 +642,8 @@ async def refresh_cookies(authorization: str = Header(...)):
 async def delete_invalid_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
-        logging.info(f"==========================================")
-        logging.info("开始删除数据库里的无效cookies.........")
+        logger.info(f"==========================================")
+        logger.info("开始删除数据库里的无效cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
         delete_tasks = []
         for cookie in cookies:
@@ -666,9 +653,9 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
         success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
 
-        logging.info(
+        logger.info(
             {"message": "Invalid process 删除成功。", "成功数量": success_count, "失败数量": fail_count})
-        logging.info(f"==========================================")
+        logger.info(f"==========================================")
         return JSONResponse(
             content={"message": "Invalid process deleted successfully.", "success_count": success_count,
                      "fail_count": fail_count})
@@ -690,7 +677,7 @@ async def delete_songID(authorization: str = Header(...)):
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
@@ -700,15 +687,12 @@ async def fetch_limit_left(cookie, is_insert: bool = False):
         song_gen = SongsGen(cookie)
         remaining_count = song_gen.get_limit_left()
         if remaining_count == -1 and is_insert:
-            logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
+            logger.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
             return False
-        logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新成功！")
+        logger.info(f"该账号剩余次数: {remaining_count}，添加或刷新成功！")
         await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
         return True
     except Exception as e:
-        logging.error(cookie + f"，添加失败：{e}")
+        logger.error(cookie + f"，添加失败：{e}")
         return False
 
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
