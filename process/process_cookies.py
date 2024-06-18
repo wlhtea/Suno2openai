@@ -16,7 +16,7 @@ async def cookies_task(db_manage, cookie, is_insert):
         await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)
         return True
     except Exception as e:
-        logging.error(cookie + f"，添加失败：{e}")
+        logging.error(cookie + f"，添加或刷新失败：{e}")
         return False
 
 
@@ -30,7 +30,7 @@ def fetch_limit_left_async(cookie, is_insert, sql_IP, sql_dk, user_name, sql_pas
         asyncio.set_event_loop(loop)
         result = loop.run_until_complete(cookies_task(tem_db_manage, cookie, is_insert))
     except Exception as e:
-        logging.error(cookie + f"，添加失败：{e}")
+        logging.error(cookie + f"，添加或刷新失败：{e}")
         return False
     finally:
         loop.run_until_complete(tem_db_manage.close_db_pool())
@@ -52,5 +52,5 @@ def refresh_add_cookie(cookies, is_insert, sql_IP, sql_dk, user_name, sql_passwo
                 results.append(future.result())
             return results
     except Exception as e:
-        logging.error(f"，添加失败：{e}")
+        logging.error(f"添加或刷新失败：{e}")
         return None
