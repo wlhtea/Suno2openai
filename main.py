@@ -2,10 +2,10 @@
 import asyncio
 import datetime
 import json
-import os
 import random
 import string
 import time
+import warnings
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -21,41 +21,19 @@ from starlette.responses import StreamingResponse
 from data import schemas
 from data.cookie import suno_auth
 from process import process_cookies
+from suno.suno import SongsGen
+from util.config import (SQL_IP, SQL_DK, USER_NAME,
+                         SQL_PASSWORD, SQL_NAME, COOKIES_PREFIX,
+                         BATCH_SIZE, RETRIES, AUTH_KEY)
 from util.logger import logger
 from util.sql_uilts import DatabaseManager
-from suno.suno import SongsGen
 from util.utils import generate_music, get_feed
 
+warnings.filterwarnings("ignore")
 
 # 从环境变量中获取配置
-BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
-SESSION_ID = os.getenv('SESSION_ID')
-USER_NAME = os.getenv('USER_NAME', '')
-SQL_NAME = os.getenv('SQL_NAME', '')
-SQL_PASSWORD = os.getenv('SQL_PASSWORD', '')
-SQL_IP = os.getenv('SQL_IP', '')
-SQL_DK = os.getenv('SQL_DK', 3306)
-COOKIES_PREFIX = os.getenv('COOKIES_PREFIX', "")
-AUTH_KEY = os.getenv('AUTH_KEY', str(time.time()))
-RETRIES = int(os.getenv('RETRIES', 3))
-BATCH_SIZE = int(os.getenv('BATCH_SIZE', 20))
 db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
 process_cookie = process_cookies.processCookies(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
-
-# 记录配置信息
-logger.info("==========================================")
-logger.info(f"BASE_URL: {BASE_URL}")
-logger.info(f"SESSION_ID: {SESSION_ID}")
-logger.info(f"USER_NAME: {USER_NAME}")
-logger.info(f"SQL_NAME: {SQL_NAME}")
-logger.info(f"SQL_PASSWORD: {SQL_PASSWORD}")
-logger.info(f"SQL_IP: {SQL_IP}")
-logger.info(f"SQL_DK: {SQL_DK}")
-logger.info(f"COOKIES_PREFIX: {COOKIES_PREFIX}")
-logger.info(f"AUTH_KEY: {AUTH_KEY}")
-logger.info(f"RETRIES: {RETRIES}")
-logger.info(f"BATCH_SIZE: {BATCH_SIZE}")
-logger.info("==========================================")
 
 
 # 刷新cookies函数
@@ -73,7 +51,7 @@ async def cron_refresh_cookies():
                     processed_count += 1
         success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
         logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
-                     f"成功率：({success_percentage:.2f}%)")
+                    f"成功率：({success_percentage:.2f}%)")
         logger.info(f"==========================================")
     except HTTPException as http_exc:
         raise http_exc
@@ -563,7 +541,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
             logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
-                         f"成功率：({success_percentage:.2f}%)")
+                        f"成功率：({success_percentage:.2f}%)")
             logger.info(f"==========================================")
             yield f"data: 所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
@@ -623,7 +601,7 @@ async def refresh_cookies(authorization: str = Header(...)):
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
             logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
-                         f"成功率：({success_percentage:.2f}%)")
+                        f"成功率：({success_percentage:.2f}%)")
             logger.info(f"==========================================")
             yield f"data: 所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
@@ -695,4 +673,3 @@ async def fetch_limit_left(cookie, is_insert: bool = False):
     except Exception as e:
         logger.error(cookie + f"，添加失败：{e}")
         return False
-
