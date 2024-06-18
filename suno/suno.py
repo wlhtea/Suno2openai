@@ -1,6 +1,5 @@
 import contextlib
 import json
-import logging
 import os
 import random
 import re
@@ -14,6 +13,8 @@ from curl_cffi.requests import Cookies
 from dotenv import load_dotenv, find_dotenv
 from fake_useragent import UserAgent
 from requests import get as rget
+
+from util.logger import logger
 
 _ = load_dotenv(find_dotenv())
 
@@ -99,7 +100,7 @@ class SongsGen:
             return jwt_token
 
         except Exception as e:
-            logging.error(f"获取auth token失败: {e}")
+            logger.error(f"获取auth token失败: {e}")
             return ""
 
     def _renew_auth_token(self):
@@ -116,7 +117,7 @@ class SongsGen:
             for key, morsel in cookie.items():
                 cookies_dict[key] = morsel.value
         except (IndexError, AttributeError) as e:
-            logging.error(f"解析cookie时出错: {e}")
+            logger.error(f"解析cookie时出错: {e}")
         return Cookies(cookies_dict)
 
     def get_song_library(self):
@@ -124,7 +125,7 @@ class SongsGen:
         page_number = 1
         result = []
         while 1:
-            logging.info(f"Getting page {page_number} data.")
+            logger.info(f"Getting page {page_number} data.")
             url = f"https://studio-api.suno.ai/api/feed/?page={page_number}"
             response = self.session.get(url, impersonate=browser_version)
             data = response.json()
@@ -150,7 +151,7 @@ class SongsGen:
             r.raise_for_status()
             return int(r.json()["total_credits_left"] / 10)
         except Exception as e:
-            logging.error(f"获取剩余次数失败: {e}")
+            logger.error(f"获取剩余次数失败: {e}")
             return -1
 
     def _parse_lyrics(self, data: dict) -> Tuple[str, str]:
@@ -176,7 +177,7 @@ class SongsGen:
                 self.song_info_dict["song_url"] = (
                     f"https://audiopipe.suno.ai/?item_id={id1}"
                 )
-                logging.info("Token expired, will sleep 30 seconds and try to download")
+                logger.info("Token expired, will sleep 30 seconds and try to download")
                 time.sleep(30)
                 # Done here
                 return True
@@ -196,10 +197,10 @@ class SongsGen:
                     return True
             return False
         except Exception as e:
-            logging.info(e)
+            logger.info(e)
             # since we only get the music_id is ok
             # so we can make the id here and sleep some time
-            logging.info("Will sleep 30s and get the music url")
+            logger.info("Will sleep 30s and get the music url")
             time.sleep(30)
             song_name, lyric = self._parse_lyrics(self.now_data[0])
             self.song_info_dict["song_name"] = song_name
@@ -235,21 +236,21 @@ class SongsGen:
                 payload["tags"] = random.choice(MUSIC_GENRE_LIST)
             else:
                 payload["tags"] = tags
-            logging.info(payload)
+            logger.info(payload)
         response = self.session.post(
             url,
             data=json.dumps(payload),
             impersonate=browser_version,
         )
         if not response.ok:
-            logging.info(response.text)
+            logger.info(response.text)
             raise Exception(f"Error response {str(response)}")
         response_body = response.json()
         songs_meta_info = response_body["clips"]
         request_ids = [i["id"] for i in songs_meta_info]
         start_wait = time.time()
-        logging.info("Waiting for results...")
-        logging.info(".", end="", flush=True)
+        logger.info("Waiting for results...")
+        logger.info(".", end="", flush=True)
         sleep_time = 10
         while True:
             if int(time.time() - start_wait) > 600:
@@ -264,7 +265,7 @@ class SongsGen:
                 time.sleep(2)
 
             if not song_info:
-                logging.info(".", end="", flush=True)
+                logger.info(".", end="", flush=True)
             else:
                 break
         # keep the song info dict as old api
@@ -292,14 +293,14 @@ class SongsGen:
             lyric = self.song_info_dict["lyric"]
             link = self.song_info_dict["song_url"]
         except Exception as e:
-            logging.info(e)
+            logger.info(e)
             raise
         with contextlib.suppress(FileExistsError):
             os.mkdir(output_dir)
-        logging.info()
+        logger.info()
         while os.path.exists(os.path.join(output_dir, f"suno_{mp3_index}.mp3")):
             mp3_index += 1
-        logging.info(link)
+        logger.info(link)
         response = rget(link, allow_redirects=False, stream=True)
         if response.status_code != 200:
             raise Exception("Could not download song")
