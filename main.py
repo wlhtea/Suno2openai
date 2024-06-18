@@ -79,10 +79,12 @@ async def cron_refresh_cookies():
         cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
         total_cookies = len(cookies)
         processed_count = 0
-        for result in refresh_add_cookie(cookies, True, SQL_IP,
-                                         int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
-            if result:
-                processed_count += 1
+        for i in range(0, total_cookies, BATCH_SIZE):
+            cookie_batch = cookies[i:i + BATCH_SIZE]
+            for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
+                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                if result:
+                    processed_count += 1
         success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
         logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
                      f"成功率：({success_percentage:.2f}%)")
@@ -564,13 +566,15 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
         async def stream_results():
             processed_count = 0
-            for result in refresh_add_cookie(cookies, True, SQL_IP,
-                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
-                if result:
-                    processed_count += 1
-                    yield f"data: Cookie {processed_count}/{total_cookies} 添加成功!\n\n"
-                else:
-                    yield f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n"
+            for i in range(0, total_cookies, BATCH_SIZE):
+                cookie_batch = cookies[i:i + BATCH_SIZE]
+                for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
+                                                 int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                    if result:
+                        processed_count += 1
+                        yield f"data: Cookie {processed_count}/{total_cookies} 添加成功!\n\n"
+                    else:
+                        yield f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n"
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
             logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
@@ -623,13 +627,15 @@ async def refresh_cookies(authorization: str = Header(...)):
 
         async def stream_results():
             processed_count = 0
-            for result in refresh_add_cookie(cookies, False, SQL_IP,
-                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
-                if result:
-                    processed_count += 1
-                    yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
-                else:
-                    yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
+            for i in range(0, total_cookies, BATCH_SIZE):
+                cookie_batch = cookies[i:i + BATCH_SIZE]
+                for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
+                                                 int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                    if result:
+                        processed_count += 1
+                        yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
+                    else:
+                        yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
             logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
@@ -707,5 +713,5 @@ async def fetch_limit_left(cookie, is_insert: bool = False):
         return False
 
 
-# if __name__ == "__main__":
-#     uvicorn.run("main:app", host="0.0.0.0", port=8000)
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)

@@ -38,10 +38,10 @@ def fetch_limit_left_async(cookie, is_insert, sql_IP, sql_dk, user_name, sql_pas
         return result
 
 
-def refresh_add_cookie(cookies, is_insert, sql_IP, sql_dk, user_name, sql_password, sql_name):
+def refresh_add_cookie(cookies, batch_size, is_insert, sql_IP, sql_dk, user_name, sql_password, sql_name):
     # 使用 ThreadPoolExecutor 管理多线程
     try:
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=batch_size) as executor:
             # 提交任务到线程池
             futures = [
                 executor.submit(fetch_limit_left_async, cookie, is_insert, sql_IP, sql_dk, user_name, sql_password,
