@@ -12,6 +12,7 @@ ARG SQL_DK
 ARG COOKIES_PREFIX
 ARG AUTH_KEY
 ARG RETRIES=3
+ARG BATCH_SIZE=20
 
 # 将构建参数转换为环境变量，以便运行时使用.
 ENV BASE_URL=${BASE_URL} \
@@ -24,6 +25,7 @@ ENV BASE_URL=${BASE_URL} \
     COOKIES_PREFIX=${COOKIES_PREFIX} \
     AUTH_KEY=${AUTH_KEY} \
     RETRIES=${RETRIES} \
+    BATCH_SIZE=${BATCH_SIZE} \
     TZ=Asia/Shanghai
 
 RUN apt-get update && apt-get install -y tzdata
