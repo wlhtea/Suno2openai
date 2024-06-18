@@ -179,15 +179,6 @@ cookies = ['cookie1', 'cookie2']
 
 ![cookie位置示例](https://cdn.linux.do/uploads/default/original/3X/5/1/518adc3a227e60dc759a69da2335778e9dcd3854.png)
 
-### For Team Use
-
-- Obtain cookies in bulk through
-  the [file-based program](https://github.com/wlhtea/Suno2openai/tree/main/suno_%E6%89%93%E5%8F%B7%E5%8F%96cookie).
-- After obtaining, place the generated `outlook.csv` in the same directory as `sign_suno.py` to retrieve cookies.
-- Paste the obtained cookies into the `update_cookie_to_sql.py` file under `cookies = [paste directly here]`.
-- Run `update_cookie_to_sql.py`, provided that the environment is set up correctly, whether you are deploying in Docker
-  or locally.
-
 ## 🔌 Integrating new-api(one-api)
 
 In the channel's proxy settings, enter the project address as `http://<server IP>:8000`. HTTPS and a domain name are
