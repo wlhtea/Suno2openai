@@ -152,13 +152,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         yield
     finally:
         # 停止调度器
-        scheduler.shutdown()
+        scheduler.shutdown(wait=True)
         # 关闭数据库连接池
         await db_manager.close_db_pool()
 
 
 # FastAPI 应用初始化
 app = FastAPI(lifespan=lifespan)
+
 
 app.add_middleware(
     CORSMiddleware,
