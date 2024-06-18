@@ -159,6 +159,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 # FastAPI 应用初始化
 app = FastAPI(lifespan=lifespan)
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
