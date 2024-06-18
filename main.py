@@ -627,7 +627,6 @@ async def refresh_cookies(authorization: str = Header(...)):
                                              int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
                 if result:
                     processed_count += 1
-                    logging.info(f"Cookie {processed_count}/{total_cookies} 刷新成功!")
                     yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
                 else:
                     yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
