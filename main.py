@@ -22,7 +22,7 @@ from starlette.responses import StreamingResponse
 
 import schemas
 from cookie import suno_auth
-from process.process_cookies import refresh_add_cookie
+from process import process_cookies
 from sql_uilts import DatabaseManager
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
@@ -81,8 +81,7 @@ async def cron_refresh_cookies():
         processed_count = 0
         for i in range(0, total_cookies, BATCH_SIZE):
             cookie_batch = cookies[i:i + BATCH_SIZE]
-            for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
-                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+            for result in process_cookie.refresh_add_cookie(cookie_batch, BATCH_SIZE, False):
                 if result:
                     processed_count += 1
         success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
@@ -568,8 +567,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
             processed_count = 0
             for i in range(0, total_cookies, BATCH_SIZE):
                 cookie_batch = cookies[i:i + BATCH_SIZE]
-                for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
-                                                 int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                for result in process_cookie.refresh_add_cookie(cookie_batch, BATCH_SIZE, False):
                     if result:
                         processed_count += 1
                         yield f"data: Cookie {processed_count}/{total_cookies} 添加成功!\n\n"
@@ -629,8 +627,7 @@ async def refresh_cookies(authorization: str = Header(...)):
             processed_count = 0
             for i in range(0, total_cookies, BATCH_SIZE):
                 cookie_batch = cookies[i:i + BATCH_SIZE]
-                for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
-                                                 int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                for result in process_cookie.refresh_add_cookie(cookie_batch, BATCH_SIZE, False):
                     if result:
                         processed_count += 1
                         yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
