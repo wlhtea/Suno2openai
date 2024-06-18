@@ -5,6 +5,7 @@ log_config = uvicorn.config.LOGGING_CONFIG
 default_format = "%(asctime)s | %(levelname)s | %(filename)s:%(lineno)d | %(message)s"
 access_format = (r'%(asctime)s | %(levelname)s | %(client_addr)s: %(request_line)s %(status_code)s '
                  r'| %(filename)s:%(lineno)d')
+
 log_config["formatters"]["default"]["fmt"] = default_format
 log_config["formatters"]["access"]["fmt"] = access_format
 log_config["formatters"]["default"]["datefmt"] = '%Y-%m-%d %H:%M:%S'
