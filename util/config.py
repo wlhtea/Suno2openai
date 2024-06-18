@@ -17,7 +17,7 @@ SQL_DK = os.getenv('SQL_DK', 3306)
 COOKIES_PREFIX = os.getenv('COOKIES_PREFIX', "")
 AUTH_KEY = os.getenv('AUTH_KEY', str(time.time()))
 RETRIES = int(os.getenv('RETRIES', 3))
-BATCH_SIZE = int(os.getenv('BATCH_SIZE', 20))
+BATCH_SIZE = int(os.getenv('BATCH_SIZE', 10))
 
 # 记录配置信息
 logger.info("==========================================")
