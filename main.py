@@ -112,9 +112,6 @@ async def cron_delete_cookies():
 
         logging.info({"message": "Invalid cookies 删除成功。", "成功数量": success_count, "失败数量": fail_count})
         logging.info(f"==========================================")
-        return JSONResponse(
-            content={"message": "Invalid cookies deleted successfully.", "success_count": success_count,
-                     "fail_count": fail_count})
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
