@@ -50,7 +50,8 @@ SQL_IP = os.getenv('SQL_IP', '')
 SQL_DK = os.getenv('SQL_DK', 3306)
 COOKIES_PREFIX = os.getenv('COOKIES_PREFIX', "")
 AUTH_KEY = os.getenv('AUTH_KEY', str(time.time()))
-retries = int(os.getenv('RETRIES', 3))
+RETRIES = int(os.getenv('RETRIES', 3))
+BATCH_SIZE = int(os.getenv('BATCH_SIZE', 20))
 db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
 
 # 记录配置信息
@@ -64,7 +65,8 @@ logging.info(f"SQL_IP: {SQL_IP}")
 logging.info(f"SQL_DK: {SQL_DK}")
 logging.info(f"COOKIES_PREFIX: {COOKIES_PREFIX}")
 logging.info(f"AUTH_KEY: {AUTH_KEY}")
-logging.info(f"RETRIES: {retries}")
+logging.info(f"RETRIES: {RETRIES}")
+logging.info(f"BATCH_SIZE: {BATCH_SIZE}")
 logging.info("==========================================")
 
 
@@ -76,10 +78,12 @@ async def cron_refresh_cookies():
         cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
         total_cookies = len(cookies)
         processed_count = 0
-        for result in refresh_add_cookie(cookies, True, SQL_IP,
-                                         int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
-            if result:
-                processed_count += 1
+        for i in range(0, total_cookies, BATCH_SIZE):
+            cookie_batch = cookies[i:i + BATCH_SIZE]
+            for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
+                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                if result:
+                    processed_count += 1
         success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
         logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
                      f"成功率：({success_percentage:.2f}%)")
@@ -218,22 +222,22 @@ def get_clips_ids(response: json):
 
 
 async def Delelet_Songid(cookie):
-    for attempt in range(retries):
+    for attempt in range(RETRIES):
         try:
             await db_manager.delete_song_ids(cookie)
             return
         except Exception as e:
-            if attempt > retries - 1:
+            if attempt > RETRIES - 1:
                 logging.info(f"删除音乐songID失败: {e}")
 
 
 async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None, continue_at=None,
                         continue_clip_id=None):
-    for try_count in range(retries):
+    for try_count in range(RETRIES):
         cookie = None
         song_gen = None
         try:
-            for attempt in range(retries):
+            for attempt in range(RETRIES):
                 try:
                     cookie = await db_manager.get_token()
                     if cookie is None:
@@ -247,7 +251,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
                         break
                 except Exception as e:
                     logging.error(f"在请求重试 {try_count} 次中，第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
-                    if attempt > retries - 1:
+                    if attempt > RETRIES - 1:
                         raise RuntimeError(f"在请求重试 {try_count} 次中，获取cookie全部失败，cookie发生异常: {e}")
 
             _return_ids = False
@@ -413,7 +417,7 @@ async def generate_data(chat_user_message, chat_id, timeStamp, ModelVersion, tag
         except Exception as e:
             if cookie is not None:
                 await Delelet_Songid(cookie)
-            if try_count < retries - 1:
+            if try_count < RETRIES - 1:
                 logging.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
                 continue
             else:
@@ -561,13 +565,15 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
         async def stream_results():
             processed_count = 0
-            for result in refresh_add_cookie(cookies, True, SQL_IP,
-                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
-                if result:
-                    processed_count += 1
-                    yield f"data: Cookie {processed_count}/{total_cookies} 添加成功!\n\n"
-                else:
-                    yield f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n"
+            for i in range(0, total_cookies, BATCH_SIZE):
+                cookie_batch = cookies[i:i + BATCH_SIZE]
+                for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
+                                                 int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                    if result:
+                        processed_count += 1
+                        yield f"data: Cookie {processed_count}/{total_cookies} 添加成功!\n\n"
+                    else:
+                        yield f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n"
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
             logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
@@ -620,13 +626,15 @@ async def refresh_cookies(authorization: str = Header(...)):
 
         async def stream_results():
             processed_count = 0
-            for result in refresh_add_cookie(cookies, False, SQL_IP,
-                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
-                if result:
-                    processed_count += 1
-                    yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
-                else:
-                    yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
+            for i in range(0, total_cookies, BATCH_SIZE):
+                cookie_batch = cookies[i:i + BATCH_SIZE]
+                for result in refresh_add_cookie(cookie_batch, BATCH_SIZE, False, SQL_IP,
+                                                 int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                    if result:
+                        processed_count += 1
+                        yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
+                    else:
+                        yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
             logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
@@ -704,5 +712,5 @@ async def fetch_limit_left(cookie, is_insert: bool = False):
         return False
 
 
-# if __name__ == "__main__":
-#     uvicorn.run("main:app", host="0.0.0.0", port=8000)
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)

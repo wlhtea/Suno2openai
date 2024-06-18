@@ -162,7 +162,7 @@ class DatabaseManager:
                     await conn.commit()
                     raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
 
-    # @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         async with self.pool.acquire() as conn:
             try:
