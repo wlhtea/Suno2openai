@@ -39,17 +39,11 @@ class DatabaseManager:
                             if not result:
                                 await cursor.execute(f"CREATE DATABASE {self.db_name}")
                                 logging.info(f"数据库 {self.db_name} 已创建.")
-                            else:
-                                logging.info(f"数据库 {self.db_name} 已存在.")
                     except Exception as e:
                         logging.error(f"发生错误: {e}")
                     finally:
                         if connection:
                             connection.close()
-                            logging.info("数据库连接已关闭.")
-
-                logging.info("Creating connection pool with parameters: "
-                             f"host={self.host}, port={self.port}, user={self.user}, db={self.db_name}")
 
                 self.pool = await aiomysql.create_pool(
                     host=self.host,
@@ -63,9 +57,7 @@ class DatabaseManager:
                     pool_recycle=1800
                 )
 
-                if self.pool is not None:
-                    logging.info("连接池创建成功。")
-                else:
+                if self.pool is None:
                     logging.error("连接池创建失败，返回值为 None。")
         except Exception as e:
             logging.error(f"创建连接池时发生错误: {e}")
@@ -170,7 +162,7 @@ class DatabaseManager:
                     await conn.commit()
                     raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    # @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         async with self.pool.acquire() as conn:
             try:
@@ -283,7 +275,7 @@ class DatabaseManager:
                 await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-    # 获取所有 cookies 的count总和
+    # 获取所有 process 的count总和
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_cookies_count(self):
         try:
@@ -300,7 +292,7 @@ class DatabaseManager:
             logging.error(f"Unexpected error: {e}")
             return 0
 
-    # 获取有效的 cookies 的count总和
+    # 获取有效的 process 的count总和
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_valid_cookies_count(self):
         try:
@@ -317,7 +309,7 @@ class DatabaseManager:
             logging.error(f"Unexpected error: {e}")
             return 0
 
-    # 获取 cookies
+    # 获取 process
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_cookies(self):
         async with self.pool.acquire() as conn:
@@ -341,7 +333,7 @@ class DatabaseManager:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-    # 获取 cookies 和 count
+    # 获取 process 和 count
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def get_all_cookies(self):
         async with self.pool.acquire() as conn:
@@ -384,7 +376,7 @@ class DatabaseManager:
 #     await db_manager.insert_cookie('example_cookie', 1, True)
 #     await db_manager.update_cookie_count('example_cookie', 5)
 #     await db_manager.update_cookie_working('example_cookie', False)
-#     cookies = await db_manager.query_cookies()
+#     process = await db_manager.query_cookies()
 #     cookie = await db_manager.get_non_working_cookie()
 #
 # if __name__ == "__main__":

@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 import tiktoken
+import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import FastAPI, HTTPException
@@ -21,6 +22,7 @@ from starlette.responses import StreamingResponse
 
 import schemas
 from cookie import suno_auth
+from process.process_cookies import refresh_add_cookie
 from sql_uilts import DatabaseManager
 from suno.suno import SongsGen
 from utils import generate_music, get_feed
@@ -70,31 +72,23 @@ logging.info("==========================================")
 async def cron_refresh_cookies():
     try:
         logging.info(f"==========================================")
-        logging.info("开始更新数据库里的 cookies.........")
-        cookies = [item['cookie'] for item in await db_manager.get_cookies()]
-        semaphore = asyncio.Semaphore(50)
-        add_tasks = []
-
-        async def refresh_cookie(simple_cookie):
-            async with semaphore:
-                return await fetch_limit_left(simple_cookie, False)
-
-        # 使用 asyncio.create_task 而不是直接 await
-        for cookie in cookies:
-            add_tasks.append(refresh_cookie(cookie))
-
-        results = await asyncio.gather(*add_tasks, return_exceptions=True)
-        success_count = sum(1 for result in results if result is True)
-        fail_count = len(cookies) - success_count
-
-        logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info("开始添加数据库里的 process.........")
+        cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
+        total_cookies = len(cookies)
+        processed_count = 0
+        for result in refresh_add_cookie(cookies, True, SQL_IP,
+                                         int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+            if result:
+                processed_count += 1
+        success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
+        logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
+                     f"成功率：({success_percentage:.2f}%)")
         logging.info(f"==========================================")
-
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error(f"刷新 cookies 时发生错误: {str(e)}")
-        raise e
+        logging.error({"添加cookies出现错误": str(e)})
+        return JSONResponse(status_code=500, content={"添加cookies出现错误": str(e)})
 
 
 async def cron_delete_cookies():
@@ -110,7 +104,8 @@ async def cron_delete_cookies():
         success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
 
-        logging.info({"message": "Invalid cookies 删除成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(
+            {"message": "Invalid process 删除成功。", "成功数量": success_count, "失败数量": fail_count})
         logging.info(f"==========================================")
     except HTTPException as http_exc:
         raise http_exc
@@ -159,7 +154,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
 # FastAPI 应用初始化
 app = FastAPI(lifespan=lifespan)
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -546,7 +540,7 @@ async def get_cookies(authorization: str = Header(...)):
                 "valid_cookie_count": valid_cookie_count,
                 "invalid_cookie_count": invalid_cookie_count,
                 "remaining_count": remaining_count,
-                "cookies": cookies_json
+                "process": cookies_json
             }
         )
     except HTTPException as http_exc:
@@ -556,41 +550,39 @@ async def get_cookies(authorization: str = Header(...)):
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-# 添加cookies
 @app.put(f"{COOKIES_PREFIX}/cookies")
 async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
+        logging.info(f"==========================================")
+        logging.info("开始添加数据库里的 process.........")
         cookies = data.cookies
+        total_cookies = len(cookies)
 
-        if not cookies:
-            raise HTTPException(status_code=400, detail="Cookies 列表为空")
+        async def stream_results():
+            processed_count = 0
+            for result in refresh_add_cookie(cookies, True, SQL_IP,
+                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                if result:
+                    processed_count += 1
+                    yield f"data: Cookie {processed_count}/{total_cookies} 添加成功!\n\n"
+                else:
+                    yield f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n"
 
-        semaphore = asyncio.Semaphore(50)
-        add_tasks = []
+            success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
+            logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
+                         f"成功率：({success_percentage:.2f}%)")
+            logging.info(f"==========================================")
+            yield f"data: 所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
+            yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
-        async def add_cookie(simple_cookie):
-            async with semaphore:
-                return await fetch_limit_left(simple_cookie, True)
-
-        # 使用 asyncio.create_task 而不是直接 await
-        for cookie in cookies:
-            add_tasks.append(add_cookie(cookie))
-
-        results = await asyncio.gather(*add_tasks, return_exceptions=True)
-        success_count = sum(1 for result in results if result is True)
-        fail_count = len(cookies) - success_count
-
-        logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
-
-        return JSONResponse(
-            content={"message": "Cookies add successfully.", "success_count": success_count, "fail_count": fail_count})
+        return StreamingResponse(stream_results(), media_type="text/event-stream")
 
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error({"error": str(e)})
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        logging.error({"添加cookies出现错误": str(e)})
+        return JSONResponse(status_code=500, content={"添加cookies出现错误": str(e)})
 
 
 # 删除cookie
@@ -622,35 +614,35 @@ async def refresh_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         logging.info(f"==========================================")
-        logging.info("开始更新数据库里的 cookies.........")
+        logging.info("开始刷新数据库里的 process.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
-        semaphore = asyncio.Semaphore(50)
-        add_tasks = []
+        total_cookies = len(cookies)
 
-        async def refresh_cookie(simple_cookie):
-            async with semaphore:
-                return await fetch_limit_left(simple_cookie, False)
+        async def stream_results():
+            processed_count = 0
+            for result in refresh_add_cookie(cookies, False, SQL_IP,
+                                             int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME):
+                if result:
+                    processed_count += 1
+                    logging.info(f"Cookie {processed_count}/{total_cookies} 刷新成功!")
+                    yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
+                else:
+                    yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
 
-        # 使用 asyncio.create_task 而不是直接 await
-        for cookie in cookies:
-            add_tasks.append(refresh_cookie(cookie))
+            success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
+            logging.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
+                         f"成功率：({success_percentage:.2f}%)")
+            logging.info(f"==========================================")
+            yield f"data: 所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
+            yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
-        results = await asyncio.gather(*add_tasks, return_exceptions=True)
-        success_count = sum(1 for result in results if result is True)
-        fail_count = len(cookies) - success_count
-
-        logging.info({"message": "Cookies 更新成功。", "成功数量": success_count, "失败数量": fail_count})
-        logging.info(f"==========================================")
-
-        return JSONResponse(
-            content={"message": "Cookies refresh successfully.", "success_count": success_count,
-                     "fail_count": fail_count})
+        return StreamingResponse(stream_results(), media_type="text/event-stream")
 
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logging.error({"error": str(e)})
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        logging.error({"刷新cookies出现错误": str(e)})
+        return JSONResponse(status_code=500, content={"刷新cookies出现错误": str(e)})
 
 
 # 删除cookie
@@ -669,10 +661,11 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
         success_count = sum(1 for result in results if result is True)
         fail_count = len(cookies) - success_count
 
-        logging.info({"message": "Invalid cookies 删除成功。", "成功数量": success_count, "失败数量": fail_count})
+        logging.info(
+            {"message": "Invalid process 删除成功。", "成功数量": success_count, "失败数量": fail_count})
         logging.info(f"==========================================")
         return JSONResponse(
-            content={"message": "Invalid cookies deleted successfully.", "success_count": success_count,
+            content={"message": "Invalid process deleted successfully.", "success_count": success_count,
                      "fail_count": fail_count})
     except HTTPException as http_exc:
         raise http_exc
@@ -704,9 +697,13 @@ async def fetch_limit_left(cookie, is_insert: bool = False):
         if remaining_count == -1 and is_insert:
             logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
             return False
-        await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
         logging.info(f"该账号剩余次数: {remaining_count}，添加或刷新成功！")
+        await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
         return True
     except Exception as e:
         logging.error(cookie + f"，添加失败：{e}")
         return False
+
+
+# if __name__ == "__main__":
+#     uvicorn.run("main:app", host="0.0.0.0", port=8000)
