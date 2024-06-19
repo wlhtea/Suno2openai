@@ -345,6 +345,27 @@ class DatabaseManager:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    async def get_row_cookies(self):
+        try:
+            await self.create_pool()
+            async with self.pool.acquire() as conn:
+                try:
+                    async with conn.cursor(aiomysql.DictCursor) as cur:
+                        await cur.execute("SELECT cookie FROM suno2openai")
+                        results = await cur.fetchall()
+                        cookies = []
+                        for row in results:
+                            cookies.append(row['cookie'])
+                        await conn.commit()
+                        return cookies
+                except Exception as e:
+                    print(f"Database operation failed: {e}")  # Improved logging
+                    raise HTTPException(status_code=500, detail=f"Database operation failed: {str(e)}")
+        except Exception as e:
+            print(f"Failed to acquire connection pool: {e}")  # Improved logging
+            raise HTTPException(status_code=500, detail=f"Failed to acquire connection pool: {str(e)}")
+
     # 删除相应的cookies
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def delete_cookies(self, cookie: str):
