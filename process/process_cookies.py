@@ -36,7 +36,6 @@ class processCookies:
         #
         loop = asyncio.new_event_loop()
         try:
-            loop.run_until_complete(db_manage.create_pool())
             asyncio.set_event_loop(loop)
             result = loop.run_until_complete(self.cookies_task(db_manage, cookie, is_insert))
         except Exception as e:
@@ -63,3 +62,18 @@ class processCookies:
         except Exception as e:
             logger.error(f"添加或刷新失败：{e}")
             return None
+
+    # 添加cookie的函数
+    async def fetch_limit_left(db_manager, cookie, is_insert: bool = False):
+        try:
+            song_gen = SongsGen(cookie)
+            remaining_count = song_gen.get_limit_left()
+            if remaining_count == -1 and is_insert:
+                logger.info(f"该账号剩余次数: {remaining_count}，添加或刷新失败！")
+                return False
+            logger.info(f"该账号剩余次数: {remaining_count}，添加或刷新成功！")
+            await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
+            return True
+        except Exception as e:
+            logger.error(cookie + f"，添加失败：{e}")
+            return False
