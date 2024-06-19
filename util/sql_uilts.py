@@ -86,7 +86,7 @@ class DatabaseManager:
                             songID2 VARCHAR(255),
                             count INT,
                             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            add_time TIMESTAMP,
+                            add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             UNIQUE(cookie(191))
                         )
                     """)
@@ -100,7 +100,7 @@ class DatabaseManager:
                         # 如果 add_time 列不存在，添加该列
                         await cursor.execute('''
                             ALTER TABLE suno2openai
-                            ADD COLUMN add_time TIMESTAMP;
+                            ADD COLUMN add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
                         ''')
                         logger.info("成功添加 'add_time' 列。")
                     else:
@@ -112,60 +112,41 @@ class DatabaseManager:
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获得cookie
+    @retry(stop=stop_after_attempt(5), wait=wait_fixed(0))
     async def get_token(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
+                    # 开始事务
+                    await conn.begin()
                     # 先查询一个不被锁定且可用的cookie
                     await cursor.execute('''
                         SELECT cookie FROM suno2openai
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        ORDER BY RAND() LIMIT 1
-                        LOCK IN SHARE MODE;
+                        LIMIT 1 FOR UPDATE SKIP LOCKED;
                     ''')
                     row = await cursor.fetchone()
                     if not row:
+                        await conn.commit
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
 
                     cookie = row['cookie']
-                    # 开始事务
-                    await conn.begin()
-                    try:
-                        # 第二个查询，锁定获取的cookie
-                        await cursor.execute('''
-                            SELECT cookie FROM suno2openai 
-                            WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0
-                            LIMIT 1 FOR UPDATE;
-                        ''', (cookie,))
-                        row = await cursor.fetchone()
-                        if not row:
-                            raise HTTPException(status_code=429, detail="并发更新cookie时发生并发冲突，重试中...")
+                    # 在这里执行 UPDATE 操作
+                    await cursor.execute('''
+                        UPDATE suno2openai
+                        SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
+                        WHERE cookie = %s;
+                    ''', ("tmp", "tmp", cookie))
 
-                        cookie = row['cookie']
-                        # 然后更新选中的cookie
-                        await cursor.execute('''
-                            UPDATE suno2openai
-                            SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-                            WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0;
-                        ''', ("tmp", "tmp", cookie))
-                        await conn.commit()
-                        return cookie
-                    except Exception as update_error:
-                        raise update_error
-
-                except aiomysql.MySQLError as mysql_error:
-                    await conn.rollback()
-                    if '锁等待超时' in str(mysql_error):
-                        raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
-                    else:
-                        raise HTTPException(status_code=429, detail=f"数据库错误：{str(mysql_error)}")
+                    await conn.commit()
+                    return cookie
 
                 except Exception as e:
-                    await conn.commit()
+                    await conn.rollback()
                     raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
 
-    # @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         await self.create_pool()
         async with self.pool.acquire() as conn:

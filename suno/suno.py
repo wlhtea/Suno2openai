@@ -104,7 +104,7 @@ class SongsGen:
             return ""
 
     def _renew_auth_token(self):
-        auth_token = self._get_auth_token()
+        auth_token = self.get_auth_token()
         HEADERS["Authorization"] = f"Bearer {auth_token}"
         self.session.headers = HEADERS
 
@@ -117,52 +117,63 @@ class SongsGen:
             for key, morsel in cookie.items():
                 cookies_dict[key] = morsel.value
         except (IndexError, AttributeError) as e:
-            logger.error(f"解析cookie时出错: {e}")
+            raise f"解析cookie时出错: {e}"
         return Cookies(cookies_dict)
 
     def get_song_library(self):
-        self._renew_auth_token()
-        page_number = 1
-        result = []
-        while 1:
-            logger.info(f"Getting page {page_number} data.")
-            url = f"https://studio-api.suno.ai/api/feed/?page={page_number}"
-            response = self.session.get(url, impersonate=browser_version)
-            data = response.json()
-            if page_number == 3:
-                break
-            if len(data) < 20:
+        try:
+            self._renew_auth_token()
+            page_number = 1
+            result = []
+            while 1:
+                logger.info(f"Getting page {page_number} data.")
+                url = f"https://studio-api.suno.ai/api/feed/?page={page_number}"
+                response = self.session.get(url, impersonate=browser_version)
+                data = response.json()
+                if page_number == 3:
+                    break
+                if len(data) < 20:
+                    result.extend(data)
+                    break
+                # spider rule
+                time.sleep(2)
+                if page_number % 3 == 0:
+                    self._renew_auth_token()
+                page_number += 1
                 result.extend(data)
-                break
-            # spider rule
-            time.sleep(2)
-            if page_number % 3 == 0:
-                self._renew_auth_token()
-            page_number += 1
-            result.extend(data)
-        return result
+            return result
+        except Exception as e:
+            raise f"获取get_song_library失败: {e}"
 
     def get_limit_left(self) -> int:
-        r = self.session.get(
-            "https://studio-api.suno.ai/api/billing/info/",
-            headers={"Impersonate": "browser_version"}
-        )
         try:
-            r.raise_for_status()
-            return int(r.json()["total_credits_left"] / 10)
+            r = self.session.get(
+                "https://studio-api.suno.ai/api/billing/info/",
+                headers={"Impersonate": "browser_version"}
+            )
+            try:
+                r.raise_for_status()
+                return int(r.json()["total_credits_left"] / 10)
+            except Exception as e:
+                logger.error(f"获取剩余次数失败: {e}")
+                return -1
         except Exception as e:
-            logger.error(f"获取剩余次数失败: {e}")
-            return -1
+            raise f"获取get_limit_left失败: {e}"
 
-    def _parse_lyrics(self, data: dict) -> Tuple[str, str]:
-        song_name = data.get("title", "")
-        mt = data.get("metadata")
-        if (
-                not mt
-        ):  # Remove checking for title because custom songs have no title if not specified
-            return "", ""
-        lyrics = re.sub(r"\[.*?]", "", mt.get("prompt"))
-        return song_name, lyrics
+    @staticmethod
+    def _parse_lyrics(data: dict) -> Tuple[str, str]:
+        try:
+            song_name = data.get("title", "")
+            mt = data.get("metadata")
+            if (
+                    not mt
+            ):  # Remove checking for title because custom songs have no title if not specified
+                return "", ""
+            lyrics = re.sub(r"\[.*?]", "", mt.get("prompt"))
+            return song_name, lyrics
+
+        except Exception as e:
+            raise f"获取_parse_lyrics失败: {e}"
 
     def _fetch_songs_metadata(self, ids):
         id1, id2 = ids[:2]
@@ -219,57 +230,60 @@ class SongsGen:
             make_instrumental: bool = False,
             is_custom: bool = False,
     ) -> dict:
-        url = f"{base_url}/api/generate/v2/"
-        self.session.headers["user-agent"] = ua.random
-        payload = {
-            "gpt_description_prompt": prompt,
-            # chirp-v3-5
-            "mv": "chirp-v3-0",
-            "prompt": "",
-            "make_instrumental": make_instrumental,
-        }
-        if is_custom:
-            payload["prompt"] = prompt
-            payload["gpt_description_prompt"] = ""
-            payload["title"] = title
-            if not tags:
-                payload["tags"] = random.choice(MUSIC_GENRE_LIST)
-            else:
-                payload["tags"] = tags
-            logger.info(payload)
-        response = self.session.post(
-            url,
-            data=json.dumps(payload),
-            impersonate=browser_version,
-        )
-        if not response.ok:
-            logger.info(response.text)
-            raise Exception(f"Error response {str(response)}")
-        response_body = response.json()
-        songs_meta_info = response_body["clips"]
-        request_ids = [i["id"] for i in songs_meta_info]
-        start_wait = time.time()
-        logger.info("Waiting for results...")
-        logger.info(".", end="", flush=True)
-        sleep_time = 10
-        while True:
-            if int(time.time() - start_wait) > 600:
-                raise Exception("Request timeout")
-            # TODOs support all mp3 here
-            song_info = self._fetch_songs_metadata(request_ids)
-            # spider rule
-            if sleep_time > 2:
-                time.sleep(sleep_time)
-                sleep_time -= 1
-            else:
-                time.sleep(2)
+        try:
+            url = f"{base_url}/api/generate/v2/"
+            self.session.headers["user-agent"] = ua.random
+            payload = {
+                "gpt_description_prompt": prompt,
+                # chirp-v3-5
+                "mv": "chirp-v3-0",
+                "prompt": "",
+                "make_instrumental": make_instrumental,
+            }
+            if is_custom:
+                payload["prompt"] = prompt
+                payload["gpt_description_prompt"] = ""
+                payload["title"] = title
+                if not tags:
+                    payload["tags"] = random.choice(MUSIC_GENRE_LIST)
+                else:
+                    payload["tags"] = tags
+                logger.info(payload)
+            response = self.session.post(
+                url,
+                data=json.dumps(payload),
+                impersonate=browser_version,
+            )
+            if not response.ok:
+                logger.info(response.text)
+                raise Exception(f"Error response {str(response)}")
+            response_body = response.json()
+            songs_meta_info = response_body["clips"]
+            request_ids = [i["id"] for i in songs_meta_info]
+            start_wait = time.time()
+            logger.info("Waiting for results...")
+            logger.info(".", end="", flush=True)
+            sleep_time = 10
+            while True:
+                if int(time.time() - start_wait) > 600:
+                    raise Exception("Request timeout")
+                # TODOs support all mp3 here
+                song_info = self._fetch_songs_metadata(request_ids)
+                # spider rule
+                if sleep_time > 2:
+                    time.sleep(sleep_time)
+                    sleep_time -= 1
+                else:
+                    time.sleep(2)
 
-            if not song_info:
-                logger.info(".", end="", flush=True)
-            else:
-                break
-        # keep the song info dict as old api
-        return self.song_info_dict
+                if not song_info:
+                    logger.info(".", end="", flush=True)
+                else:
+                    break
+            # keep the song info dict as old api
+            return self.song_info_dict
+        except Exception as e:
+            raise f"获取get_songs失败: {e}"
 
     def save_songs(
             self,
@@ -293,8 +307,7 @@ class SongsGen:
             lyric = self.song_info_dict["lyric"]
             link = self.song_info_dict["song_url"]
         except Exception as e:
-            logger.info(e)
-            raise
+            raise f"save_songs失败: {e}"
         with contextlib.suppress(FileExistsError):
             os.mkdir(output_dir)
         logger.info()

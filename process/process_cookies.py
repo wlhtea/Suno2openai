@@ -53,7 +53,7 @@ class processCookies:
             with ThreadPoolExecutor(max_workers=batch_size) as executor:
                 # 提交任务到线程池
                 futures = [
-                    executor.submit(self.fetch_limit_left_async, cookie, is_insert) for cookie in cookies]
+                    executor.submit(self.fetch_limit_left_async, str(cookie).strip(), is_insert) for cookie in cookies]
                 results = []
                 # 获取并处理结果
                 for future in as_completed(futures):
@@ -64,6 +64,7 @@ class processCookies:
             return None
 
     # 添加cookie的函数
+    @staticmethod
     async def fetch_limit_left(db_manager, cookie, is_insert: bool = False):
         try:
             song_gen = SongsGen(cookie)
@@ -77,3 +78,4 @@ class processCookies:
         except Exception as e:
             logger.error(cookie + f"，添加失败：{e}")
             return False
+

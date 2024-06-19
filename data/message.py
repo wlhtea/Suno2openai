@@ -18,24 +18,18 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
                         continue_clip_id=None):
     for try_count in range(RETRIES):
         cookie = None
-        song_gen = None
         try:
-            for attempt in range(RETRIES):
-                try:
-                    cookie = await db_manager.get_token()
-                    if cookie is None:
-                        raise RuntimeError("没有可用的cookie")
-                    else:
-                        song_gen = SongsGen(cookie)
-                        remaining_count = song_gen.get_limit_left()
-                        if remaining_count == -1:
-                            await db_manager.delete_cookies(cookie)
-                            raise RuntimeError("该账号剩余次数为 -1，无法使用")
-                        break
-                except Exception as e:
-                    logger.error(f"在请求重试 {try_count} 次中，第 {attempt + 1} 次尝试获取cookie失败，错误为：{str(e)}")
-                    if attempt > RETRIES - 1:
-                        raise RuntimeError(f"在请求重试 {try_count} 次中，获取cookie全部失败，cookie发生异常: {e}")
+            cookie = str(await db_manager.get_token()).strip()
+            logger.info(f"cookie: {cookie}")
+            if cookie is None:
+                raise RuntimeError("没有可用的cookie")
+            else:
+                song_gen = SongsGen(cookie)
+                remaining_count = song_gen.get_limit_left()
+                if remaining_count == -1:
+                    await db_manager.delete_cookies(cookie)
+                    raise RuntimeError("该账号剩余次数为 -1，无法使用")
+                return
 
             _return_ids = False
             _return_tags = False
@@ -258,3 +252,17 @@ async def response_async(db_manager, data, content_all, chat_id, timeStamp, last
             return StreamingResponse(data_generator, headers=headers, media_type="text/event-stream")
         except Exception as e:
             return JSONResponse(status_code=500, content={"detail": f"生成流式响应时出错: {str(e)}"})
+
+
+# 在当前线程的事件循环中运行任务添加cookie
+def response_chat(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
+    loop = asyncio.new_event_loop()
+    try:
+        asyncio.set_event_loop(loop)
+        response = loop.run_until_complete(
+            response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers))
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"生成响应时出错: {str(e)}")
+    finally:
+        loop.close()
