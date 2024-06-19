@@ -2,7 +2,7 @@ import json
 
 import aiomysql
 from fastapi import HTTPException
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import retry, stop_after_attempt, wait_fixed, wait_random
 
 from util.logger import logger
 
@@ -112,15 +112,14 @@ class DatabaseManager:
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获得cookie
-    @retry(stop=stop_after_attempt(5), wait=wait_fixed(0))
-    async def get_token(self):
-        await self.create_pool()
+    @retry(stop=stop_after_attempt(5), wait=wait_random(min=0.1, max=0.5))
+    async def get_request_cookie(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
                     # 开始事务
                     await conn.begin()
-                    # 先查询一个不被锁定且可用的cookie
+                    # 查询一个不被锁定且可用的cookie
                     await cursor.execute('''
                         SELECT cookie FROM suno2openai
                         WHERE songID IS NULL AND songID2 IS NULL AND count > 0
@@ -128,11 +127,11 @@ class DatabaseManager:
                     ''')
                     row = await cursor.fetchone()
                     if not row:
-                        await conn.commit
+                        await conn.commit()
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
 
                     cookie = row['cookie']
-                    # 在这里执行 UPDATE 操作
+                    # 执行更新操作
                     await cursor.execute('''
                         UPDATE suno2openai
                         SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
@@ -140,10 +139,11 @@ class DatabaseManager:
                     ''', ("tmp", "tmp", cookie))
 
                     await conn.commit()
+                    logger.info(f"成功获取cookie: {cookie}")
                     return cookie
 
                 except Exception as e:
-                    await conn.rollback()
+                    await conn.rollback()  # 确保 rollback 正确调用
                     raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
