@@ -2,9 +2,34 @@ version: '3'
 
 services:
   suno-api:
-    build: .
+    image: wsunoapi/suno2openai:latest
+    container_name: suno-api
     ports:
-      - "8000:8000"
-    env_file:
-      - .env
-      - TZ=Asia/Shanghai
+      - 8001:8000
+    restart: always
+    network_mode: host
+    environment:
+      BASE_URL: 'https://studio-api.suno.ai'
+      SESSION_ID: 'cookie'
+      USER_NAME: 'root'
+      SQL_NAME: 'suno2api'
+      SQL_PASSWORD: '密码（和下面两个密码相同）'
+      SQL_IP: 'mysql'
+      SQL_DK: 8002 (和下面端口对齐)
+      COOKIES_PREFIX: ''
+      AUTH_KEY: ''
+      RETRIES: 3
+      TZ: Asia/Shanghai
+
+  mysql:
+    image: mysql:5.7.44-oraclelinux7
+    ports:
+      - 8002:3306
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 密码
+      MYSQL_DATABASE: suno2api
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 密码
+
