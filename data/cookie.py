@@ -69,11 +69,3 @@ def start_keep_alive(suno_cookie: SunoCookie):
 
 
 suno_auth = SunoCookie()
-# first = True
-# suno_auth.set_session_id(os.getenv("SESSION_ID"))
-# suno_auth.load_cookie(os.getenv("COOKIE"))
-# if first:
-#     start_keep_alive(suno_auth)
-#     first = False
-# else:
-#     logger.info('cookie保活失败')
