@@ -139,7 +139,6 @@ class DatabaseManager:
                     ''', ("tmp", "tmp", cookie))
 
                     await conn.commit()
-                    logger.info(f"成功获取cookie: {cookie}")
                     return cookie
 
                 except Exception as e:
