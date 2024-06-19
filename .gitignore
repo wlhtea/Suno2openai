@@ -16,3 +16,6 @@ suno_打号取cookie/打号机.py
 env
 *.pyc
 *.pyc
+suno/test.py
+/suno
+suno/test.py

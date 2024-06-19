@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -184,33 +184,41 @@ async def verify_auth_header(authorization: str = Header(...)):
 
 # 获取cookies的详细详细
 @app.post(f"{COOKIES_PREFIX}/cookies")
-async def get_cookies(authorization: str = Header(...)):
+async def get_cookies(authorization: str = Header(...), cookies_type: str = Query(None)):
     try:
         await verify_auth_header(authorization)
 
-        cookies = await db_manager.get_all_cookies()
-        cookies_json = json.loads(cookies)
-        valid_cookie_count = int(await db_manager.get_valid_cookies_count())
-        invalid_cookie_count = len(cookies_json) - valid_cookie_count
-        remaining_count = int(await db_manager.get_cookies_count())
+        if cookies_type == "list":
+            cookies = await db_manager.get_row_cookies()
+            return JSONResponse(
+                content={
+                    "cookies": cookies
+                }
+            )
+        else:
+            cookies = await db_manager.get_all_cookies()
+            cookies_json = json.loads(cookies)
+            valid_cookie_count = int(await db_manager.get_valid_cookies_count())
+            invalid_cookie_count = len(cookies_json) - valid_cookie_count
+            remaining_count = int(await db_manager.get_cookies_count())
 
-        if remaining_count is None:
-            remaining_count = 0
+            if remaining_count is None:
+                remaining_count = 0
 
-        logger.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
-        logger.info("有效数量: " + str(valid_cookie_count))
-        logger.info("无效数量: " + str(invalid_cookie_count))
-        logger.info("剩余创作音乐次数: " + str(remaining_count))
+            logger.info({"message": "Cookies 获取成功。", "数量": len(cookies_json)})
+            logger.info("有效数量: " + str(valid_cookie_count))
+            logger.info("无效数量: " + str(invalid_cookie_count))
+            logger.info("剩余创作音乐次数: " + str(remaining_count))
 
-        return JSONResponse(
-            content={
-                "cookie_count": len(cookies_json),
-                "valid_cookie_count": valid_cookie_count,
-                "invalid_cookie_count": invalid_cookie_count,
-                "remaining_count": remaining_count,
-                "process": cookies_json
-            }
-        )
+            return JSONResponse(
+                content={
+                    "cookie_count": len(cookies_json),
+                    "valid_cookie_count": valid_cookie_count,
+                    "invalid_cookie_count": invalid_cookie_count,
+                    "remaining_count": remaining_count,
+                    "process": cookies_json
+                }
+            )
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
