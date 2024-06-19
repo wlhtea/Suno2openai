@@ -7,7 +7,6 @@ services:
     ports:
       - 8001:8000
     restart: always
-    network_mode: host
     environment:
       BASE_URL: 'https://studio-api.suno.ai'
       SESSION_ID: 'cookie'
