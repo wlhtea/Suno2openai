@@ -40,7 +40,7 @@ process_cookie = process_cookies.processCookies(SQL_IP, int(SQL_DK), USER_NAME, 
 async def cron_refresh_cookies():
     try:
         logger.info(f"==========================================")
-        logger.info("开始添加数据库里的 process.........")
+        logger.info("开始添加数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
         total_cookies = len(cookies)
         processed_count = 0
@@ -524,7 +524,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         logger.info(f"==========================================")
-        logger.info("开始添加数据库里的 process.........")
+        logger.info("开始添加数据库里的 cookies.........")
         cookies = data.cookies
         total_cookies = len(cookies)
 
@@ -584,7 +584,7 @@ async def refresh_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
         logger.info(f"==========================================")
-        logger.info("开始刷新数据库里的 process.........")
+        logger.info("开始刷新数据库里的 cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_cookies()]
         total_cookies = len(cookies)
 
