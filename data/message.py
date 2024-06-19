@@ -29,7 +29,6 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
                 if remaining_count == -1:
                     await db_manager.delete_cookies(cookie)
                     raise RuntimeError("该账号剩余次数为 -1，无法使用")
-                return
 
             _return_ids = False
             _return_tags = False
