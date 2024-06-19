@@ -22,7 +22,7 @@ services:
       TZ: Asia/Shanghai
 
   mysql:
-    image: mysql:8.0.37-oraclelinux9
+    image: mysql:8.0.37
     ports:
       - 8002:3306
     container_name: mysql
