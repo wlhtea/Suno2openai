@@ -19,8 +19,7 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
     for try_count in range(RETRIES):
         cookie = None
         try:
-            cookie = str(await db_manager.get_token()).strip()
-            logger.info(f"cookie: {cookie}")
+            cookie = str(await db_manager.get_request_cookie()).strip()
             if cookie is None:
                 raise RuntimeError("没有可用的cookie")
             else:
@@ -252,16 +251,3 @@ async def response_async(db_manager, data, content_all, chat_id, timeStamp, last
         except Exception as e:
             return JSONResponse(status_code=500, content={"detail": f"生成流式响应时出错: {str(e)}"})
 
-
-# 在当前线程的事件循环中运行任务添加cookie
-def response_chat(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
-    loop = asyncio.new_event_loop()
-    try:
-        asyncio.set_event_loop(loop)
-        response = loop.run_until_complete(
-            response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers))
-        return response
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"生成响应时出错: {str(e)}")
-    finally:
-        loop.close()

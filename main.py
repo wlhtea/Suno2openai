@@ -3,7 +3,6 @@ import asyncio
 import datetime
 import json
 import warnings
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -16,7 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.responses import StreamingResponse
 
 from data import schemas
-from data.message import response_chat
+from data.message import response_async
 from process import process_cookies
 from util.config import (SQL_IP, SQL_DK, USER_NAME,
                          SQL_PASSWORD, SQL_NAME, COOKIES_PREFIX,
@@ -30,7 +29,6 @@ warnings.filterwarnings("ignore")
 # 从环境变量中获取配置
 db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
 process_cookie = process_cookies.processCookies(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
-executor = ThreadPoolExecutor(max_workers=300)
 
 
 # 刷新cookies函数
@@ -113,7 +111,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         yield
     finally:
         # 停止调度器
-        executor.shutdown(wait=True)
         scheduler.shutdown(wait=True)
         # 关闭数据库连接池
         await db_manager.close_db_pool()
@@ -172,9 +169,7 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
     }
 
     try:
-        future = executor.submit(response_chat, db_manager, data, content_all, chat_id, timeStamp, last_user_content,
-                                 headers)
-        return future.result()
+        return await response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers)
     except HTTPException as http_exc:
         raise http_exc
 
