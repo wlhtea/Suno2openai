@@ -4,6 +4,8 @@ import os
 import aiohttp
 from dotenv import load_dotenv
 
+from util.logger import logger
+
 load_dotenv()
 
 BASE_URL = os.getenv("BASE_URL")
@@ -18,17 +20,18 @@ COMMON_HEADERS = {
 
 
 async def fetch(url, headers=None, data=None, method="POST"):
-    if headers is None:
-        headers = {}
-    headers.update(COMMON_HEADERS)
-    if data is not None:
-        data = json.dumps(data)
+    try:
+        if headers is None:
+            headers = {}
+        headers.update(COMMON_HEADERS)
+        if data is not None:
+            data = json.dumps(data)
 
-    # logger.info(data, method, headers, url)
-
-    async with aiohttp.ClientSession() as session:
-        async with session.request(method=method, url=url, data=data, headers=headers) as resp:
-            return await resp.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.request(method=method, url=url, data=data, headers=headers) as resp:
+                return await resp.json()
+    except Exception as e:
+        raise ValueError(f"Error fetching data: {e}")
 
 
 async def get_feed(ids, token):
