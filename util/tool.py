@@ -48,8 +48,8 @@ def get_clips_ids(response: json):
             return clip_ids
         else:
             raise ValueError("Invalid response format: 'clips' key not found or is not a list.")
-    except json.JSONDecodeError:
-        raise ValueError("Invalid JSON response")
+    except Exception as e:
+        raise ValueError(f"Invalid JSON response：{e}")
 
 
 # async def get_token():
