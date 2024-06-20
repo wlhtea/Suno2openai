@@ -25,12 +25,8 @@ class processCookies:
             await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)
             return True
         except Exception as e:
-            if not is_insert:
-                await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)
-                logger.error(f"{tem_word}成功，已将改cookie禁用：{e}")
-                return False
-            else:
-                raise RuntimeError(f"该账号剩余次数: {remaining_count}，添加失败")
+            tem_word = "添加" if is_insert else "刷新"
+            raise RuntimeError(f"，{tem_word}失败：{e}")
 
     # 在当前线程的事件循环中运行任务添加或刷新cookie
     def fetch_limit_left_async(self, cookie, is_insert):
