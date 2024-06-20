@@ -1,7 +1,9 @@
 import json
 import os
+from http.cookies import SimpleCookie
 
 import aiohttp
+from curl_cffi.requests import Cookies
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -68,3 +70,15 @@ async def get_lyrics(lid, token):
         return await fetch(api_url, headers, method="GET")
     except Exception as e:
         raise ValueError(f"Error getting lyrics: {e}")
+
+
+def parse_cookie_string(cookie_string: str) -> Cookies:
+    cookie = SimpleCookie()
+    cookie.load(cookie_string)
+    cookies_dict = {}
+    try:
+        for key, morsel in cookie.items():
+            cookies_dict[key] = morsel.value
+    except (IndexError, AttributeError) as e:
+        raise Exception(f"解析cookie时出错: {e}")
+    return Cookies(cookies_dict)
