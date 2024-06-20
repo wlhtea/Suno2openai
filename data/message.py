@@ -16,6 +16,33 @@ from util.utils import generate_music, get_feed
 async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None,
                         continue_at=None,
                         continue_clip_id=None):
+    if ModelVersion == "suno-v3":
+        Model = "chirp-v3-0"
+    elif ModelVersion == "suno-v3.5":
+        Model = "chirp-v3-5"
+    else:
+        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("请选择suno-v3 或者 suno-v3.5其中一个")}, "finish_reason": None}]})}\n\n"""
+        yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+        return
+
+    data = {
+        "gpt_description_prompt": f"{chat_user_message}",
+        "prompt": "",
+        "mv": Model,
+        "title": "",
+        "tags": ""
+    }
+
+    if continue_clip_id is not None:
+        data = {
+            "prompt": chat_user_message,
+            "mv": Model,
+            "title": title,
+            "tags": tags,
+            "continue_at": continue_at,
+            "continue_clip_id": continue_clip_id
+        }
+
     for try_count in range(RETRIES):
         cookie = None
         try:
@@ -48,53 +75,25 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
 
             suno_auth.set_session_id(sid)
             suno_auth.load_cookie(cookie)
-            Model = "chirp-v3-0"
-            if ModelVersion == "suno-v3":
-                Model = "chirp-v3-0"
-            elif ModelVersion == "suno-v3.5":
-                Model = "chirp-v3-5"
-            else:
-                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("请选择suno-v3 或者 suno-v3.5其中一个")}, "finish_reason": None}]})}\n\n"""
-                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-
-            data = {
-                "gpt_description_prompt": f"{chat_user_message}",
-                "prompt": "",
-                "mv": Model,
-                "title": "",
-                "tags": ""
-            }
-
-            if continue_clip_id is not None:
-                data = {
-                    "prompt": chat_user_message,
-                    "mv": Model,
-                    "title": title,
-                    "tags": tags,
-                    "continue_at": continue_at,
-                    "continue_clip_id": continue_clip_id
-                }
 
             response = await generate_music(data=data, token=token)
             # await asyncio.sleep(3)
             clip_ids = get_clips_ids(response)
             song_id_1 = clip_ids[0]
             song_id_2 = clip_ids[1]
-            # await db_manager.update_song_ids_by_cookie(cookie, song_id_1, song_id_2)
 
             tem_text = "\n### 🤯 Creating\n```suno\n{prompt:" + f"{chat_user_message}" + "}\n```\n"
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": tem_text}, "finish_reason": None}]})}\n\n"""
             for clip_id in clip_ids:
                 count = 0
                 while True:
-                    # cookie = await db_manager.get_cookie_by_songid(clip_id)
                     token, sid = SongsGen(cookie).get_auth_token(w=1)
-                    now_data = await get_feed(ids=clip_id, token=token)
                     try:
+                        now_data = await get_feed(ids=clip_id, token=token)
                         more_information_ = now_data[0]['metadata']
-                    except Exception as e:
-                        logger.info(f'more_information_: {e}')
-                        continue
+                    except:
+                        pass
+
                     if _return_Forever_url and _return_ids and _return_tags and _return_title and _return_prompt and _return_image_url and _return_audio_url:
                         break
                     if not _return_Forever_url:
