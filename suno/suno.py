@@ -17,9 +17,10 @@ base_url = "https://studio-api.suno.ai"
 browser_version = "edge101"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 "
-                  "Safari/537.36 Edg/126.0.0.0",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) \
+        Gecko/20100101 Firefox/117.0",
     "Impersonate": browser_version,
+    # "Accept-Encoding": "gzip, deflate, br",
 }
 
 MUSIC_GENRE_LIST = [
@@ -77,7 +78,7 @@ class SongsGen:
 
     async def get_auth_token(self, w=None):
         try:
-            async with self.token_session.get(get_session_url) as response_sid:
+            async with self.token_session.get(get_session_url, headers=HEADERS) as response_sid:
                 data_sid = await response_sid.json()
                 r = data_sid.get("response")
                 if not r or not r.get('sessions'):
