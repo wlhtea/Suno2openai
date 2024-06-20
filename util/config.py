@@ -7,6 +7,9 @@ from util.logger import logger
 
 load_dotenv(encoding="ascii")
 
+# 版本号
+VERSION = "0.2.0"
+
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 SESSION_ID = os.getenv('SESSION_ID')
 USER_NAME = os.getenv('USER_NAME', '')
@@ -21,6 +24,7 @@ BATCH_SIZE = int(os.getenv('BATCH_SIZE', 10))
 
 # 记录配置信息
 logger.info("==========================================")
+logger.info(f"VERSION: {VERSION}")
 logger.info(f"BASE_URL: {BASE_URL}")
 logger.info(f"SESSION_ID: {SESSION_ID}")
 logger.info(f"USER_NAME: {USER_NAME}")
