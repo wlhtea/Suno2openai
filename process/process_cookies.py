@@ -79,4 +79,3 @@ class processCookies:
         except Exception as e:
             logger.error(cookie + f"，{tem_word}失败：{e}")
             return False
-

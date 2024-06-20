@@ -4,8 +4,6 @@ import os
 import aiohttp
 from dotenv import load_dotenv
 
-from util.logger import logger
-
 load_dotenv()
 
 BASE_URL = os.getenv("BASE_URL")

@@ -253,4 +253,3 @@ async def response_async(db_manager, data, content_all, chat_id, timeStamp, last
             return StreamingResponse(data_generator, headers=headers, media_type="text/event-stream")
         except Exception as e:
             return JSONResponse(status_code=500, content={"detail": f"生成流式响应时出错: {str(e)}"})
-
