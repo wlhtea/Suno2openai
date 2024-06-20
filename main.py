@@ -54,8 +54,8 @@ async def cron_refresh_cookies():
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logger.error({"添加cookies出现错误": str(e)})
-        return JSONResponse(status_code=500, content={"添加cookies出现错误": str(e)})
+        logger.error({"刷新cookies出现错误": str(e)})
+        return JSONResponse(status_code=500, content={"刷新cookies出现错误": str(e)})
 
 
 async def cron_delete_cookies():
@@ -84,7 +84,7 @@ async def cron_delete_cookies():
 async def init_delete_songID():
     try:
         rows_updated = await db_manager.delete_songIDS()
-        logger.info({"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated})
+        logger.info({"message": "Cookies songIDs 更新成功！", "rows_updated": rows_updated})
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
@@ -280,7 +280,7 @@ async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)
         fail_count = len(cookies) - success_count
 
         return JSONResponse(
-            content={"message": "Cookies delete successfully.", "success_count": success_count,
+            content={"message": "Cookies 成功删除！", "success_count": success_count,
                      "fail_count": fail_count})
     except HTTPException as http_exc:
         raise http_exc
@@ -342,10 +342,10 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
         fail_count = len(cookies) - success_count
 
         logger.info(
-            {"message": "Invalid process 删除成功。", "成功数量": success_count, "失败数量": fail_count})
+            {"message": "Invalid cookies 删除成功。", "成功数量": success_count, "失败数量": fail_count})
         logger.info(f"==========================================")
         return JSONResponse(
-            content={"message": "Invalid process deleted successfully.", "success_count": success_count,
+            content={"message": "无效的cookies删除成功！", "success_count": success_count,
                      "fail_count": fail_count})
     except HTTPException as http_exc:
         raise http_exc
@@ -360,7 +360,7 @@ async def delete_songID(authorization: str = Header(...)):
         await verify_auth_header(authorization)
         rows_updated = await db_manager.delete_songIDS()
         return JSONResponse(
-            content={"message": "Cookies songIDs更新成功！", "rows_updated": rows_updated}
+            content={"message": "Cookies songIDs 更新成功！", "rows_updated": rows_updated}
         )
     except HTTPException as http_exc:
         raise http_exc
