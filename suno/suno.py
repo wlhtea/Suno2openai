@@ -16,13 +16,6 @@ base_url = "https://studio-api.suno.ai"
 
 browser_version = "edge101"
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) \
-        Gecko/20100101 Firefox/117.0",
-    "Impersonate": browser_version,
-    # "Accept-Encoding": "gzip, deflate, br",
-}
-
 MUSIC_GENRE_LIST = [
     "African",
     "Asian",
@@ -46,7 +39,12 @@ MUSIC_GENRE_LIST = [
 
 class SongsGen:
     def __init__(self, cookie: str) -> None:
-        self.headers = {
+        self.token_headers = {
+            "User-Agent": ua.random,
+            "Impersonate": browser_version,
+            # "Accept-Encoding": "gzip, deflate, br",
+        }
+        self.request_headers = {
             "Accept-Encoding": "gzip, deflate, br",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) \
                 Gecko/20100101 Firefox/117.0",
@@ -62,9 +60,9 @@ class SongsGen:
     async def init_limit_session(self) -> None:
         try:
             auth_token = await self.get_auth_token()
-            self.headers["Authorization"] = f"Bearer {auth_token}"
-            self.headers["user-agent"] = ua.random
-            self.request_session.headers.update(self.headers)
+            self.request_headers["Authorization"] = f"Bearer {auth_token}"
+            self.request_headers["user-agent"] = ua.random
+            self.request_session.headers.update(self.request_headers)
         except Exception as e:
             raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
 
@@ -78,7 +76,7 @@ class SongsGen:
 
     async def get_auth_token(self, w=None):
         try:
-            async with self.token_session.get(get_session_url, headers=HEADERS) as response_sid:
+            async with self.token_session.get(get_session_url, headers=self.token_headers) as response_sid:
                 data_sid = await response_sid.json()
                 r = data_sid.get("response")
                 if not r or not r.get('sessions'):
@@ -86,7 +84,8 @@ class SongsGen:
                 sid = r['sessions'][0].get('id')
                 if not sid:
                     raise Exception("Failed to get session id")
-            async with self.token_session.post(exchange_token_url.format(sid=sid), headers=HEADERS) as response_jwt:
+            async with self.token_session.post(exchange_token_url.format(sid=sid),
+                                               headers=self.token_headers) as response_jwt:
                 data_jwt = await response_jwt.json()
                 jwt_token = data_jwt.get('jwt')
                 if not jwt_token:
