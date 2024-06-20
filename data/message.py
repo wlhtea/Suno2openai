@@ -267,6 +267,7 @@ async def response_async(db_manager, data, content_all, chat_id, timeStamp, last
 # 线程用于请求
 def request_chat(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
     loop = asyncio.new_event_loop()
+    result = None
     try:
         asyncio.set_event_loop(loop)
         result = loop.run_until_complete(
