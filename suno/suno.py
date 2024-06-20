@@ -100,8 +100,7 @@ class SongsGen:
             return jwt_token
 
         except Exception as e:
-            logger.error(f"获取auth token失败: {e}")
-            return ""
+            raise f"获取get_auth_token失败: {e}"
 
     def _renew_auth_token(self):
         auth_token = self.get_auth_token()
@@ -155,7 +154,7 @@ class SongsGen:
                 r.raise_for_status()
                 return int(r.json()["total_credits_left"] / 10)
             except Exception as e:
-                logger.error(f"获取剩余次数失败: {e}")
+                raise f"获取剩余次数失败: {e}"
                 return -1
         except Exception as e:
             raise f"获取get_limit_left失败: {e}"

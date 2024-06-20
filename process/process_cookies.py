@@ -33,14 +33,12 @@ class processCookies:
     def fetch_limit_left_async(self, cookie, is_insert):
         db_manage = DatabaseManager(self.host, self.port, self.user, self.password, self.db_name)
         result = False
-        #
         loop = asyncio.new_event_loop()
         try:
             asyncio.set_event_loop(loop)
             result = loop.run_until_complete(self.cookies_task(db_manage, cookie, is_insert))
         except Exception as e:
             logger.error(cookie + f"，添加或刷新失败：{e}")
-            return False
         finally:
             loop.run_until_complete(db_manage.close_db_pool())
             loop.close()
