@@ -112,7 +112,7 @@ class DatabaseManager:
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获得cookie
-    @retry(stop=stop_after_attempt(5), wait=wait_random(min=0.15, max=0.3))
+    @retry(stop=stop_after_attempt(5), wait=wait_random(min=0.10, max=0.3))
     async def get_request_cookie(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
