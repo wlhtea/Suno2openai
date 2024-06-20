@@ -2,6 +2,7 @@
 import asyncio
 import datetime
 import json
+import time
 import warnings
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -143,6 +144,7 @@ async def get_root():
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data, authorization: str = Header(...)):
+    start_time = time.time()
     content_all = ''
     if SQL_IP == '' or SQL_PASSWORD == '' or SQL_NAME == '':
         raise ValueError("BASE_URL is not set")
@@ -178,13 +180,14 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
 
     try:
         # 协程处理
-        return await response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers)
+        return await response_async(start_time, db_manager, data, content_all,
+                                    chat_id, timeStamp, last_user_content, headers)
     except HTTPException as http_exc:
         raise http_exc
 
     # 线程处理
     # try:
-    #     future = executor.submit(request_chat, db_manager, data, content_all, chat_id, timeStamp,
+    #     future = executor.submit(start_time, request_chat, db_manager, data, content_all, chat_id, timeStamp,
     #                              last_user_content, headers)
     #     return future.result()
     # except Exception as e:

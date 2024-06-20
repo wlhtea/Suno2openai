@@ -13,9 +13,9 @@ from util.utils import generate_music, get_feed
 
 
 # 流式请求
-async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, ModelVersion, tags=None, title=None,
-                        continue_at=None,
-                        continue_clip_id=None):
+async def generate_data(start_time, db_manager, chat_user_message, chat_id,
+                        timeStamp, ModelVersion, tags=None, title=None,
+                        continue_at=None, continue_clip_id=None):
     if ModelVersion == "suno-v3":
         Model = "chirp-v3-0"
     elif ModelVersion == "suno-v3.5":
@@ -102,7 +102,7 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
                         break
                     if not _return_Forever_url:
                         try:
-                            if check_status_complete(now_data):
+                            if check_status_complete(now_data, start_time):
                                 Aideo_Markdown_Conetent = (f""
                                                            f"\n### 🎷 CDN音乐链接\n"
                                                            f"- **🎧 音乐1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
@@ -213,10 +213,11 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
 
 
 # 返回消息，使用协程
-async def response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
+async def response_async(start_time, db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
     if not data.stream:
         try:
-            async for data_string in generate_data(db_manager, last_user_content, chat_id, timeStamp, data.model):
+            async for data_string in generate_data(start_time, db_manager, last_user_content,
+                                                   chat_id, timeStamp, data.model):
                 try:
                     json_data = data_string.split('data: ')[1].strip()
 
@@ -258,20 +259,20 @@ async def response_async(db_manager, data, content_all, chat_id, timeStamp, last
         return json_string
     else:
         try:
-            data_generator = generate_data(db_manager, last_user_content, chat_id, timeStamp, data.model)
+            data_generator = generate_data(start_time, db_manager, last_user_content, chat_id, timeStamp, data.model)
             return StreamingResponse(data_generator, headers=headers, media_type="text/event-stream")
         except Exception as e:
             return JSONResponse(status_code=500, content={"detail": f"生成流式响应时出错: {str(e)}"})
 
 
 # 线程用于请求
-def request_chat(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
+def request_chat(start_time, db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
     loop = asyncio.new_event_loop()
     result = None
     try:
         asyncio.set_event_loop(loop)
         result = loop.run_until_complete(
-            response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers))
+            response_async(start_time, db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
     finally:
