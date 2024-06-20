@@ -8,27 +8,44 @@ services:
       - 8001:8000
     restart: always
     environment:
+      # 默认
       BASE_URL: 'https://studio-api.suno.ai'
+      # 默认
       SESSION_ID: 'cookie'
+      # 数据表用户名（可以用root也可以不用）
       USER_NAME: 'root'
+      # 数据表名称
       SQL_NAME: 'suno2api'
+      # 数据表密码
       SQL_PASSWORD: '密码（和下面两个密码相同）'
+      # mysql 服务ip
       SQL_IP: 'mysql'
-      SQL_DK: 8002 (和下面端口对齐)
+      # mysql服务端口 (下面mysql端口对齐)
+      SQL_DK: 8002
+      # cookies管理接口前缀，一定要以/开头
       COOKIES_PREFIX: ''
+      # 请求密钥
       AUTH_KEY: ''
+      # 重试次数（默认3）
       RETRIES: 3
+      # 添加刷新cookies时的批处理数量（默认10）
+      BATCH_SIZE: 10
       TZ: Asia/Shanghai
 
-  mysql:
-    image: mysql:8.0.37
-    ports:
-      - 8002:3306
-    container_name: mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: 密码
-      MYSQL_DATABASE: suno2api
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 密码
-
+  # 可以用远程或本地数据库
+#  mysql:
+#    image: mysql:8.0.37
+#    ports:
+#      - 8002:3306
+#    container_name: mysql
+#    restart: always
+#    environment:
+#      MYSQL_ROOT_PASSWORD: 密码
+#      MYSQL_DATABASE: suno2api
+#      MYSQL_USER: root
+#      MYSQL_PASSWORD: 密码
+#    volumes:
+#      - db:/var/lib/mysql:rw
+#
+#volumes:
+#  db:
