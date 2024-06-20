@@ -35,19 +35,22 @@ process_cookie = process_cookies.processCookies(SQL_IP, int(SQL_DK), USER_NAME, 
 async def cron_refresh_cookies():
     try:
         logger.info(f"==========================================")
-        logger.info("开始添加数据库里的 cookies.........")
-        cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
+        logger.info("开始刷新数据库里的 cookies.........")
+        cookies = [item['cookie'] for item in await db_manager.get_cookies()]
         total_cookies = len(cookies)
+
         processed_count = 0
         for i in range(0, total_cookies, BATCH_SIZE):
             cookie_batch = cookies[i:i + BATCH_SIZE]
             for result in process_cookie.refresh_add_cookie(cookie_batch, BATCH_SIZE, False):
                 if result:
                     processed_count += 1
+
         success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
-        logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
+        logger.info(f"所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，"
                     f"成功率：({success_percentage:.2f}%)")
         logger.info(f"==========================================")
+
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
@@ -307,7 +310,7 @@ async def refresh_cookies(authorization: str = Header(...)):
                         yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
-            logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
+            logger.info(f"所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，"
                         f"成功率：({success_percentage:.2f}%)")
             logger.info(f"==========================================")
             yield f"data: 所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
