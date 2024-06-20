@@ -28,7 +28,6 @@ class processCookies:
         except Exception as e:
             tem_word = "添加" if is_insert else "刷新"
             raise f"，{tem_word}失败：{e}"
-            return False
 
     # 在当前线程的事件循环中运行任务添加或刷新cookie
     def fetch_limit_left_async(self, cookie, is_insert):
@@ -40,7 +39,7 @@ class processCookies:
             result = loop.run_until_complete(self.cookies_task(db_manage, cookie, is_insert))
         except Exception as e:
             result = False
-            logger.error(cookie + str(e))
+            logger.error(str(e) + "：" + cookie)
         finally:
             loop.run_until_complete(db_manage.close_db_pool())
             loop.close()

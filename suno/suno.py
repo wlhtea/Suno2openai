@@ -154,10 +154,11 @@ class SongsGen:
                 r.raise_for_status()
                 return int(r.json()["total_credits_left"] / 10)
             except Exception as e:
-                raise f"获取剩余次数失败: {e}"
+                logger.error(f"获取剩余次数失败: {e}")
                 return -1
         except Exception as e:
-            raise f"获取get_limit_left失败: {e}"
+            logger.error(f"获取get_limit_left失败: {e}")
+            return -1
 
     @staticmethod
     def _parse_lyrics(data: dict) -> Tuple[str, str]:
