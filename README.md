@@ -30,6 +30,10 @@ This tutorial provides step-by-step guidance on running a Docker container with 
 - Basic knowledge of Docker CLI.
 - MySQL version >= 5.7
 
+### How to get cookie
+![image](https://github.com/wlhtea/Suno2openai/assets/115779315/51fec32d-0fe4-403d-8760-1e85f74a1fb6)
+copy all content about the cookie
+
 ### Steps
 
 1. **Pull Docker Image**
