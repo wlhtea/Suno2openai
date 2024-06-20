@@ -44,7 +44,7 @@ def check_status_complete(response):
         raise ValueError(f"Invalid JSON response: {e}")
 
 
-def get_clips_ids(response: json):
+async def get_clips_ids(response: json):
     try:
         if 'clips' in response and isinstance(response['clips'], list):
             clip_ids = [clip['id'] for clip in response['clips']]

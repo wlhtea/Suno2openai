@@ -5,7 +5,6 @@ from fastapi import HTTPException
 from starlette.responses import StreamingResponse, JSONResponse
 
 from data.cookie import suno_auth
-from suno.suno import SongsGen
 from util.config import RETRIES
 from util.logger import logger
 from util.tool import get_clips_ids, check_status_complete, deleteSongID, calculate_token_costs
@@ -45,23 +44,24 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
 
     for try_count in range(RETRIES):
         cookie = None
+        song_gen = None
         try:
             cookie = str(await db_manager.get_request_cookie()).strip()
             if cookie is None:
                 raise RuntimeError("没有可用的cookie")
             else:
-                song_gen = SongsGen(cookie)
-                remaining_count = song_gen.get_limit_left()
-                if remaining_count == -1:
-                    await db_manager.delete_cookies(cookie)
-                    raise RuntimeError("该账号剩余次数为 -1，无法使用")
+                # song_gen = SongsGen(cookie)
+                # remaining_count = await song_gen.get_limit_left()
+                # if remaining_count == -1:
+                #     await db_manager.delete_cookies(cookie)
+                #     raise RuntimeError("该账号剩余次数为 -1，无法使用")
 
                 # 测试并发集
-                # yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object":
-                # "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0,
-                # "delta": {"content": str(cookie)}, "finish_reason": None}]})}\n\n"""
-                # yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-                # return
+                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object":
+                    "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0,
+                                                                                                       "delta": {"content": str(cookie)}, "finish_reason": None}]})}\n\n"""
+                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+                return
 
             _return_ids = False
             _return_tags = False
@@ -71,14 +71,15 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
             _return_video_url = False
             _return_audio_url = False
             _return_Forever_url = False
-            token, sid = song_gen.get_auth_token(w=1)
+
+            token, sid = await song_gen.get_auth_token(w=1)
 
             suno_auth.set_session_id(sid)
             suno_auth.load_cookie(cookie)
 
             response = await generate_music(data=data, token=token)
             # await asyncio.sleep(3)
-            clip_ids = get_clips_ids(response)
+            clip_ids = await get_clips_ids(response)
             song_id_1 = clip_ids[0]
             song_id_2 = clip_ids[1]
 
@@ -87,7 +88,9 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
             for clip_id in clip_ids:
                 count = 0
                 while True:
-                    token, sid = SongsGen(cookie).get_auth_token(w=1)
+                    token, sid = await song_gen.get_auth_token(w=1)
+                    now_data = None
+                    more_information_ = None
                     try:
                         now_data = await get_feed(ids=clip_id, token=token)
                         more_information_ = now_data[0]['metadata']
@@ -99,7 +102,6 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
                     if not _return_Forever_url:
                         try:
                             if check_status_complete(now_data):
-                                await deleteSongID(db_manager, cookie)
                                 Aideo_Markdown_Conetent = (f""
                                                            f"\n### 🎷 CDN音乐链接\n"
                                                            f"- **🎧 音乐1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
@@ -117,7 +119,7 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
                                 _return_Forever_url = True
                                 break
                         except Exception as e:
-                            logger.info('CDN音乐链接出错', e)
+                            logger.info(f'CDN音乐链接出错：{e}')
                             pass
 
                     if not _return_ids:
@@ -195,18 +197,22 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
 
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
             break
+
         except Exception as e:
-            if cookie is not None:
-                await deleteSongID(db_manager, cookie)
             if try_count < RETRIES - 1:
                 logger.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
                 continue
             else:
                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("生成歌曲失败: 请打开日志或数据库查看报错信息......")}, "finish_reason": None}]})}\n\n"""
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+        finally:
+            if song_gen is not None:
+                await song_gen.close_session()
+            if cookie is not None:
+                await deleteSongID(db_manager, cookie)
 
 
-# 返回消息
+# 返回消息，使用协程
 async def response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
     if not data.stream:
         try:
@@ -256,3 +262,17 @@ async def response_async(db_manager, data, content_all, chat_id, timeStamp, last
             return StreamingResponse(data_generator, headers=headers, media_type="text/event-stream")
         except Exception as e:
             return JSONResponse(status_code=500, content={"detail": f"生成流式响应时出错: {str(e)}"})
+
+
+# 线程用于请求
+def request_chat(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
+    loop = asyncio.new_event_loop()
+    try:
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(
+            response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+    finally:
+        loop.close()
+        return result
