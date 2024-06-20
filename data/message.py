@@ -198,7 +198,7 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
 
         except Exception as e:
             if try_count < RETRIES - 1:
-                logger.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}")
+                logger.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}，重试中......")
                 continue
             else:
                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("生成歌曲失败: 请打开日志或数据库查看报错信息......")}, "finish_reason": None}]})}\n\n"""
