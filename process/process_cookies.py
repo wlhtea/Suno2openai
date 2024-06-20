@@ -27,7 +27,7 @@ class processCookies:
             return True
         except Exception as e:
             tem_word = "添加" if is_insert else "刷新"
-            raise f"，{tem_word}失败：{e}"
+            raise RuntimeError(f"，{tem_word}失败：{e}")
 
     # 在当前线程的事件循环中运行任务添加或刷新cookie
     def fetch_limit_left_async(self, cookie, is_insert):

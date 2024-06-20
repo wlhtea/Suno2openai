@@ -100,7 +100,7 @@ class SongsGen:
             return jwt_token
 
         except Exception as e:
-            raise f"获取get_auth_token失败: {e}"
+            raise Exception(f"获取get_auth_token失败: {e}")
 
     def _renew_auth_token(self):
         auth_token = self.get_auth_token()
@@ -116,7 +116,7 @@ class SongsGen:
             for key, morsel in cookie.items():
                 cookies_dict[key] = morsel.value
         except (IndexError, AttributeError) as e:
-            raise f"解析cookie时出错: {e}"
+            raise Exception(f"解析cookie时出错: {e}")
         return Cookies(cookies_dict)
 
     def get_song_library(self):
@@ -142,7 +142,7 @@ class SongsGen:
                 result.extend(data)
             return result
         except Exception as e:
-            raise f"获取get_song_library失败: {e}"
+            raise Exception(f"获取get_song_library失败: {e}")
 
     def get_limit_left(self) -> int:
         try:
@@ -173,7 +173,7 @@ class SongsGen:
             return song_name, lyrics
 
         except Exception as e:
-            raise f"获取_parse_lyrics失败: {e}"
+            raise Exception(f"获取_parse_lyrics失败: {e}")
 
     def _fetch_songs_metadata(self, ids):
         id1, id2 = ids[:2]
@@ -283,7 +283,7 @@ class SongsGen:
             # keep the song info dict as old api
             return self.song_info_dict
         except Exception as e:
-            raise f"获取get_songs失败: {e}"
+            raise Exception(f"获取get_songs失败: {e}")
 
     def save_songs(
             self,
@@ -307,7 +307,7 @@ class SongsGen:
             lyric = self.song_info_dict["lyric"]
             link = self.song_info_dict["song_url"]
         except Exception as e:
-            raise f"save_songs失败: {e}"
+            raise Exception(f"save_songs失败: {e}")
         with contextlib.suppress(FileExistsError):
             os.mkdir(output_dir)
         logger.info()
