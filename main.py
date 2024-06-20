@@ -51,13 +51,11 @@ async def cron_refresh_cookies():
                     f"成功率：({success_percentage:.2f}%)")
         logger.info(f"==========================================")
 
-    except HTTPException as http_exc:
-        raise http_exc
     except Exception as e:
         logger.error({"刷新cookies出现错误": str(e)})
-        return JSONResponse(status_code=500, content={"刷新cookies出现错误": str(e)})
 
 
+# 删除无效cookies
 async def cron_delete_cookies():
     try:
         logger.info(f"==========================================")
@@ -74,10 +72,15 @@ async def cron_delete_cookies():
         logger.info(
             {"message": "Invalid process 删除成功。", "成功数量": success_count, "失败数量": fail_count})
         logger.info(f"==========================================")
-    except HTTPException as http_exc:
-        raise http_exc
+
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": e})
+        logger.error({"删除无效cookies出现错误": e})
+
+
+# 先刷新在删除cookies
+async def cron_optimize_cookies():
+    await cron_refresh_cookies()
+    await cron_delete_cookies()
 
 
 # 初始化所有songID
@@ -106,8 +109,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(cron_refresh_cookies, IntervalTrigger(minutes=60), id='updateRefresh_run')
-    scheduler.add_job(cron_delete_cookies, IntervalTrigger(minutes=30), id='updateDelete_run')
+    scheduler.add_job(cron_optimize_cookies, IntervalTrigger(minutes=60), id='updateRefresh_run')
     scheduler.start()
 
     try:
