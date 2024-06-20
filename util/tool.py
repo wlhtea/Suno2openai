@@ -41,7 +41,7 @@ def check_status_complete(response):
     return False
 
 
-async def get_clips_ids(response: json):
+def get_clips_ids(response: json):
     try:
         if 'clips' in response and isinstance(response['clips'], list):
             clip_ids = [clip['id'] for clip in response['clips']]

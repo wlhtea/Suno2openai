@@ -31,9 +31,6 @@ db_manager = DatabaseManager(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_N
 process_cookie = process_cookies.processCookies(SQL_IP, int(SQL_DK), USER_NAME, SQL_PASSWORD, SQL_NAME)
 
 
-# executor = ThreadPoolExecutor(max_workers=300, thread_name_prefix="Music_thread")
-
-
 # 刷新cookies函数
 async def cron_refresh_cookies():
     try:
@@ -177,18 +174,9 @@ async def get_last_user_message(data: schemas.Data, authorization: str = Header(
     }
 
     try:
-        # 协程处理
         return await response_async(db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers)
     except HTTPException as http_exc:
         raise http_exc
-
-    # 线程处理
-    # try:
-    #     future = executor.submit(request_chat, db_manager, data, content_all, chat_id, timeStamp,
-    #                              last_user_content, headers)
-    #     return future.result()
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=str(e))
 
 
 # 授权检查
