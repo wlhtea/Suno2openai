@@ -5,7 +5,6 @@ from fastapi import HTTPException
 from starlette.responses import StreamingResponse, JSONResponse
 
 from data.cookie import suno_auth
-from suno.suno import SongsGen
 from util.config import RETRIES
 from util.logger import logger
 from util.tool import get_clips_ids, check_status_complete, deleteSongID, calculate_token_costs
@@ -51,16 +50,18 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
             if cookie is None:
                 raise RuntimeError("没有可用的cookie")
             else:
-                song_gen = SongsGen(cookie)
-                remaining_count = await song_gen.get_limit_left()
-                if remaining_count == -1:
-                    await db_manager.delete_cookies(cookie)
-                    raise RuntimeError("该账号剩余次数为 -1，无法使用")
+                # song_gen = SongsGen(cookie)
+                # remaining_count = await song_gen.get_limit_left()
+                # if remaining_count == -1:
+                #     await db_manager.delete_cookies(cookie)
+                #     raise RuntimeError("该账号剩余次数为 -1，无法使用")
 
-                # 测试并发集 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object":
-                # "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0,
-                # "delta": {"content": str(cookie)}, "finish_reason": None}]})}\n\n""" yield f"""data:""" + ' ' +
-                # f"""[DONE]\n\n""" return
+                # 测试并发集
+                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object":
+                    "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0,
+                                                                                                       "delta": {"content": str(cookie)}, "finish_reason": None}]})}\n\n"""
+                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+                return
 
             _return_ids = False
             _return_tags = False
@@ -87,7 +88,9 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
             for clip_id in clip_ids:
                 count = 0
                 while True:
-                    token, sid = SongsGen(cookie).get_auth_token(w=1)
+                    token, sid = await song_gen.get_auth_token(w=1)
+                    now_data = None
+                    more_information_ = None
                     try:
                         now_data = await get_feed(ids=clip_id, token=token)
                         more_information_ = now_data[0]['metadata']
@@ -115,7 +118,8 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
                                     f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                                 _return_Forever_url = True
                                 break
-                        except:
+                        except Exception as e:
+                            logger.info(f'CDN音乐链接出错：{e}')
                             pass
 
                     if not _return_ids:
