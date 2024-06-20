@@ -19,9 +19,10 @@ class processCookies:
     async def cookies_task(db_manage, cookie, is_insert):
         tem_word = "添加" if is_insert else "刷新"
         remaining_count = -1
+        song_gen = None
         try:
             song_gen = SongsGen(cookie)
-            remaining_count = song_gen.get_limit_left()
+            remaining_count = await song_gen.get_limit_left()
             await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)
             return True
         except Exception as e:
@@ -32,7 +33,7 @@ class processCookies:
             else:
                 raise RuntimeError(f"该账号剩余次数: {remaining_count}，添加失败")
         finally:
-            song_gen.close_session()
+            await song_gen.close_session()
 
     # 在当前线程的事件循环中运行任务添加或刷新cookie
     def fetch_limit_left_async(self, cookie, is_insert):
@@ -68,20 +69,21 @@ class processCookies:
             return None
 
     # 添加cookie的函数
-    @staticmethod
-    async def fetch_limit_left(db_manager, cookie, is_insert: bool = False):
-        tem_word = "添加" if is_insert else "刷新"
-        try:
-            song_gen = SongsGen(cookie)
-            remaining_count = song_gen.get_limit_left()
-            if remaining_count == -1 and is_insert:
-                logger.info(f"该账号剩余次数: {remaining_count}，添加失败！")
-                return False
-            logger.info(f"该账号剩余次数: {remaining_count}，{tem_word}成功！")
-            await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
-            return True
-        except Exception as e:
-            logger.error(cookie + f"，{tem_word}失败：{e}")
-            return False
-        finally:
-            song_gen.close_session()
+    # @staticmethod
+    # async def fetch_limit_left(db_manager, cookie, is_insert: bool = False):
+    #     tem_word = "添加" if is_insert else "刷新"
+    #     song_gen = None
+    #     try:
+    #         song_gen = SongsGen(cookie)
+    #         remaining_count = await song_gen.get_limit_left()
+    #         if remaining_count == -1 and is_insert:
+    #             logger.info(f"该账号剩余次数: {remaining_count}，添加失败！")
+    #             return False
+    #         logger.info(f"该账号剩余次数: {remaining_count}，{tem_word}成功！")
+    #         await db_manager.insert_or_update_cookie(cookie=cookie, count=remaining_count)
+    #         return True
+    #     except Exception as e:
+    #         logger.error(cookie + f"，{tem_word}失败：{e}")
+    #         return False
+    #     finally:
+    #         await song_gen.close_session()
