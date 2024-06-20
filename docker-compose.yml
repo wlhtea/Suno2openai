@@ -30,6 +30,8 @@ services:
       RETRIES: 3
       # 添加刷新cookies时的批处理数量（默认10）
       BATCH_SIZE: 10
+      # 最大请求时间（默认5min）
+      MAX_TIME: 5
       TZ: Asia/Shanghai
 
   # 可以用远程或本地数据库

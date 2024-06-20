@@ -2,8 +2,9 @@ import json
 
 import aiomysql
 from fastapi import HTTPException
-from tenacity import retry, stop_after_attempt, wait_fixed, wait_random
+from tenacity import retry, stop_after_attempt, wait_random
 
+from util.config import RETRIES
 from util.logger import logger
 
 
@@ -112,7 +113,7 @@ class DatabaseManager:
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获得cookie
-    @retry(stop=stop_after_attempt(5), wait=wait_random(min=0.10, max=0.3))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_request_cookie(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
@@ -165,7 +166,7 @@ class DatabaseManager:
                     await conn.rollback()
                     raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -183,7 +184,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除单个cookie的songID
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def delete_song_ids(self, cookie):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -206,7 +207,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除所有的songID
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def delete_songIDS(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -285,7 +286,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取所有 process 的count总和
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_cookies_count(self):
         await self.create_pool()
         try:
@@ -303,7 +304,7 @@ class DatabaseManager:
             return 0
 
     # 获取有效的 process 的count总和
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_valid_cookies_count(self):
         await self.create_pool()
         try:
@@ -321,7 +322,7 @@ class DatabaseManager:
             return 0
 
     # 获取 process
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_cookies(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -334,7 +335,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取无效的cookies
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_invalid_cookies(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -347,7 +348,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取 process 和 count
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_all_cookies(self):
         await self.create_pool()
         async with self.pool.acquire() as conn:
@@ -364,7 +365,7 @@ class DatabaseManager:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_row_cookies(self):
         try:
             await self.create_pool()
@@ -386,7 +387,7 @@ class DatabaseManager:
             raise HTTPException(status_code=500, detail=f"Failed to acquire connection pool: {str(e)}")
 
     # 删除相应的cookies
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def delete_cookies(self, cookie: str):
         await self.create_pool()
         async with self.pool.acquire() as conn:

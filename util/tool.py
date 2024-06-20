@@ -5,7 +5,7 @@ import time
 
 import tiktoken
 
-from util.config import RETRIES
+from util.config import RETRIES, MAX_TIME
 from util.logger import logger
 
 
@@ -31,14 +31,18 @@ def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str
     return input_token_count, output_token_count
 
 
-def check_status_complete(response):
+def check_status_complete(response, start_time):
     try:
         if not isinstance(response, list):
             raise ValueError("Invalid response format: expected a list")
 
+        if time.time() - start_time > 60 * MAX_TIME:
+            return True
+
         for item in response:
             if item.get("status", None) == "complete":
                 return True
+
         return False
     except Exception as e:
         raise ValueError(f"Invalid JSON response: {e}")
