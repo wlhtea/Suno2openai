@@ -32,13 +32,16 @@ def calculate_token_costs(input_prompt: str, output_prompt: str, model_name: str
 
 
 def check_status_complete(response):
-    if not isinstance(response, list):
-        raise ValueError("Invalid response format: expected a list")
+    try:
+        if not isinstance(response, list):
+            raise ValueError("Invalid response format: expected a list")
 
-    for item in response:
-        if item.get("status") == "complete":
-            return True
-    return False
+        for item in response:
+            if item.get("status", None) == "complete":
+                return True
+        return False
+    except Exception as e:
+        raise ValueError(f"Invalid JSON response: {e}")
 
 
 async def get_clips_ids(response: json):
