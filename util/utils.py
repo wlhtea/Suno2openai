@@ -35,30 +35,39 @@ async def fetch(url, headers=None, data=None, method="POST"):
 
 
 async def get_feed(ids, token):
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
-    api_url = f"{BASE_URL}/api/feed/?ids={ids}"
-    response = await fetch(api_url, headers, method="GET")
-    return response
+    try:
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+        api_url = f"{BASE_URL}/api/feed/?ids={ids}"
+        response = await fetch(api_url, headers, method="GET")
+        return response
+    except Exception as e:
+        raise ValueError(f"Error fetching feed: {e}")
 
 
 async def generate_music(data, token):
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
-    api_url = f"{BASE_URL}/api/generate/v2/"
-    response = await fetch(api_url, headers, data)
-    return response
+    try:
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+        api_url = f"{BASE_URL}/api/generate/v2/"
+        response = await fetch(api_url, headers, data)
+        return response
+    except Exception as e:
+        raise ValueError(f"Error generating music: {e}")
 
 
 async def generate_lyrics(prompt, token):
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
-    api_url = f"{BASE_URL}/api/generate/lyrics/"
-    data = {"prompt": prompt}
-    return await fetch(api_url, headers, data)
+    try:
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+        api_url = f"{BASE_URL}/api/generate/lyrics/"
+        data = {"prompt": prompt}
+        return await fetch(api_url, headers, data)
+    except Exception as e:
+        raise ValueError(f"Error generating lyrics: {e}")
 
 
 async def get_lyrics(lid, token):
@@ -70,15 +79,3 @@ async def get_lyrics(lid, token):
         return await fetch(api_url, headers, method="GET")
     except Exception as e:
         raise ValueError(f"Error getting lyrics: {e}")
-
-
-def parse_cookie_string(cookie_string: str) -> Cookies:
-    cookie = SimpleCookie()
-    cookie.load(cookie_string)
-    cookies_dict = {}
-    try:
-        for key, morsel in cookie.items():
-            cookies_dict[key] = morsel.value
-    except (IndexError, AttributeError) as e:
-        raise Exception(f"解析cookie时出错: {e}")
-    return Cookies(cookies_dict)
