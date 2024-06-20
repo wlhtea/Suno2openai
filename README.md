@@ -1,25 +1,8 @@
 [中文](https://github.com/wlhtea/Suno2openai/blob/main/README_ZH.md) English
 
-# Suno2openai
+## Suno2openai
 
-> Integrated based on [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator)
-> and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant
-> with
-> OpenAI formats.
-
-## Changelog
-
-- 2024.6.05 Separate database names from user names
-- 2024.6.03 Added suno-v3.5 model call and cdn link fetch.
-- 2024.4.14 Support for non-streaming output with `stream=False` docker version 0.1.1 No need to update if you don't
-  need this feature.
-- 2024.4.14 Updated a script to automatically retrieve cookies from registered Outlook emails and write them into the
-  database.
-- 2024.4.12 **Completed integration of new-api and one-api**, select OpenAI calls, and input the project deployment
-  address (no need for /v1/); the key can be left empty.
-- 2024.4.10 Due to Suno's official updates, some project features were inoperable, now modified. Please re-pull the
-  projects pulled before 2024/4/10 15:04; Docker to be updated later (already updated, be mindful of the version number
-  when pulling).
+> Integrated based on [SunoSongsCreator](https://github.com/yihong0618/SunoSongsCreator) and [Suno-API](https://github.com/SunoAI-API/Suno-API) projects, offering standardized service interfaces compliant with OpenAI formats.
 
 ## ✨ Project Highlights
 
@@ -37,23 +20,25 @@
 
 ---
 
-## 🫙 Docker Deployment
+## 🐳 Docker Deployment
 
-This tutorial provides step-by-step guidance on running a Docker container with specific environment variables and port
-mappings. For the purpose of this guide, sensitive information such as SQL names, passwords, and IP addresses will be
-replaced with placeholders.
+This tutorial provides step-by-step guidance on running a Docker container with specific environment variables and port mappings. For the purpose of this guide, sensitive information such as SQL names, passwords, and IP addresses will be replaced with placeholders.
 
-## Prerequisites
+### Prerequisites
 
 - Docker is installed on your machine.
 - Basic knowledge of Docker CLI.
+- MySQL version >= 5.7
 
-## Steps
+### How to get cookie
+![image](https://github.com/wlhtea/Suno2openai/assets/115779315/51fec32d-0fe4-403d-8760-1e85f74a1fb6)
+copy all content about the cookie
+
+### Steps
 
 1. **Pull Docker Image**
 
-   Ensure the Docker image `wlhtea/suno2openai:latest` is available on your machine. If not, you can pull it from the
-   Docker repository using:
+   Ensure the Docker image `wlhtea/suno2openai:latest` is available on your machine. If not, you can pull it from the Docker repository using:
 
    ```bash
    docker pull wlhtea/suno2openai:latest
@@ -61,65 +46,61 @@ replaced with placeholders.
 
 2. **Run Docker Container**
 
-   Run the Docker container using necessary environment variables and port mappings.
-   Replace `<SQL_NAME>`, `<SQL_PASSWORD>`, and `<SQL_IP>` with your actual SQL database connection values. These should
-   be kept confidential and not shared publicly.
+   Run the Docker container using necessary environment variables and port mappings. Replace `<SQL_NAME>`, `<SQL_PASSWORD>`, and `<SQL_IP>` with your actual SQL database connection values. These should be kept confidential and not shared publicly.
 
    ```bash
-      docker run -d --name wsunoapi \
+   docker run -d --name wsunoapi \
       -p 8000:8000 \
-      -e USER_NAME='<USER_NAME>'
+      -e BASE_URL='<BASE_URL>' \
+      -e SESSION_ID='<SESSION_ID>' \
+      -e USER_NAME='<USER_NAME>' \
       -e SQL_NAME='<SQL_NAME>' \
       -e SQL_PASSWORD='<SQL_PASSWORD>' \
-      -e SQL_IP='<SQL_IP>' \
+      -e SQL_IP='127.0.0.1' \
       -e SQL_DK=3306 \
+      -e COOKIES_PREFIX='your_cookies_prefix' \
+      -e AUTH_KEY='<AUTH_KEY>' \
+      -e RETRIES=3 \
+      -e BATCH_SIZE=10 \
       --restart=always \
       wlhtea/suno2openai:latest
    ```
 
-   ### **example**
-   ```         
+   ### Example
+
+   ```bash
    docker run -d --name wsunoapi \
-         -p 8000:8000 \
-         -e USER_NAME=suno2openaiUsername
-         -e SQL_NAME=suno2openaiSQLname \
-         -e SQL_PASSWORD=12345678 \
-         -e SQL_IP=100.101.102.103 \
-         -e SQL_DK=3306 \
-         --restart=always \
-         wlhtea/suno2openai:latest
+      -p 8000:8000 \
+      -e BASE_URL='https://studio-api.suno.ai' \
+      -e SESSION_ID='your-session-id' \
+      -e USER_NAME='suno2openaiUsername' \
+      -e SQL_NAME='suno2openaiSQLname' \
+      -e SQL_PASSWORD='12345678' \
+      -e SQL_IP='127.0.0.1' \
+      -e SQL_DK=3306 \
+      -e COOKIES_PREFIX='your_cookies_prefix' \
+      -e AUTH_KEY='your-auth-key' \
+      -e RETRIES=3 \
+      -e BATCH_SIZE=10 \
+      --restart=always \
+      wlhtea/suno2openai:latest
    ```
 
 **Parameter Explanation:**
 
-- `-d`: Run the container in detached mode and logger.info the container ID.
+- `-d`: Run the container in detached mode and log the container ID.
 - `--name wsunoapi`: Name your container `wsunoapi` for easy reference.
 - `-p 8000:8000`: Map the container's 8000 port to the host machine's 8000 port.
 - `-e`: Set environment variables for your container.
 - `--restart=always`: Ensure the container always restarts, unless manually stopped.
 
-**Add Cookie to Database**
-Simply open the database and add cookies with the remaining count (an automatic import feature will be added later).
+3. **Access the Application**
 
-   ```mysql
-      id = int
-      cookie = Cookie
-      count = int
-      working = 0
-   ```
-
-Database may report error: 'NoneType' object has no attribute '
-items', [check here if correct](https://github.com/wlhtea/Suno2openai/issues/10)
-
-5. **Access the Application**
-
-   Once the container is running, the application inside should be accessible via `http://localhost:8000` or the 8000
-   port of your Docker host machine's IP address.
+   Once the container is running, the application inside should be accessible via `http://localhost:8000` or the 8000 port of your Docker host machine's IP address.
 
 ## Note
 
-Before running the Docker container, make sure you replace placeholders like `<SQL_NAME>`, `<SQL_PASSWORD>`, `<SQL_IP>`,
-and `<your-session-id>` with actual values.
+Before running the Docker container, make sure you replace placeholders like `<SQL_NAME>`, `<SQL_PASSWORD>`, `<SQL_IP>`, and `<your-session-id>` with actual values.
 
 ## 📦 Docker-Compose Deployment
 
@@ -133,19 +114,24 @@ git clone https://github.com/wlhtea/Suno2openai.git
 
 ### Create a Database
 
-Create a database (name it as you wish), remember to save the password, and ensure the database permissions are set
-correctly (allow connections from all IPs or only from Docker container IPs).
+Create a database (name it as you wish), remember to save the password, and ensure the database permissions are set correctly (allow connections from all IPs or only from Docker container IPs).
 
 ### Configure Environment Variables
 
 **Rename the `env.example` file to `.env` and fill in the corresponding details:**
 
 ```plaintext
-SQL_NAME=<Database Name>
-SQL_PASSWORD=<Database Password>
-SQL_IP=<Database Host IP>
-SQL_DK=3306 # Database port
-USER_NAME=<Database Username>
+BASE_URL=https://studio-api.suno.ai
+SESSION_ID=your-session-id
+USER_NAME=your-username
+SQL_NAME=your-database-name
+SQL_PASSWORD=your-database-password
+SQL_IP=127.0.0.1
+SQL_DK=3306
+COOKIES_PREFIX=your_cookies_prefix
+AUTH_KEY=your-auth-key
+RETRIES=3
+BATCH_SIZE=10
 ```
 
 ### Enter the Project Directory
@@ -154,46 +140,154 @@ USER_NAME=<Database Username>
 cd Suno2openai
 ```
 
-### Update Cookie
-
 ### Start Docker
 
 ```bash
 docker compose build && docker compose up
 ```
 
-**Notes**:
+**Notes:**
 
 - **Security Group Configuration**: Ensure the port 8000 is open.
 - **HTTPS Support**: If the frontend project uses HTTPS, the proxy URL of this project should also use HTTPS.
 
-## 🍪 Obtaining Cookies
+---
 
-### For Personal Use
+## 📋 API Requests
 
-Edit the `update_cookie_to_sql.py` file and insert your cookies into the array below:
+### API Overview
+
+1. **Add Cookie**: Use the `/your_cookies_prefix/cookies` endpoint to add cookies.
+2. **Get All Cookies**: Use the `/your_cookies_prefix/cookies` endpoint to retrieve all cookies.
+3. **Delete Cookie**: Use the `/your_cookies_prefix/cookies` endpoint to delete specific cookies.
+4. **Refresh Cookie**: Use the `/your_cookies_prefix/refresh/cookies` endpoint to refresh cookies.
+5. **Generate Chat Completion**: Use the `/v1/chat/completions` endpoint to generate chat responses.
+
+### Add Cookie Example
+
+You can add cookies using the `/your_cookies_prefix/cookies` endpoint. Here is an example request using `requests` library in Python:
 
 ```python
-cookies = ['cookie1', 'cookie2']
+import requests
+
+url = "http://localhost:8000/your_cookies_prefix/cookies"
+headers = {
+    "Authorization": "Bearer your-auth-key",
+    "Content-Type": "application/json"
+}
+data = {
+    "cookies": ["cookie1", "cookie2"]
+}
+
+response = requests.put(url, headers=headers, json=data)
+print(response.text)
 ```
 
-![cookie位置示例](https://cdn.linux.do/uploads/default/original/3X/5/1/518adc3a227e60dc759a69da2335778e9dcd3854.png)
+### Get All Cookies Example
 
-## 🔌 Integrating new-api(one-api)
+You can retrieve all cookies using the `/your_cookies_prefix/cookies` endpoint. Here is an example request:
 
-In the channel's proxy settings, enter the project address as `http://<server IP>:8000`. HTTPS and a domain name are
-recommended.
+```python
+import requests
+
+url = "http://localhost:8000/your_cookies_prefix/cookies"
+headers = {
+    "Authorization": "Bearer your-auth-key",
+    "Content-Type": "application/json"
+}
+
+response = requests.post(url, headers=headers)
+print(response.text)
+```
+
+### Delete Cookie Example
+
+You can delete specific cookies using the `/your_cookies_prefix/cookies` endpoint. Here is an example request:
+
+```python
+import requests
+
+url = "http://localhost:8000/your_cookies_prefix/cookies"
+headers = {
+    "Authorization": "Bearer your-auth-key",
+    "Content-Type": "application/json"
+}
+data = {
+    "cookies": ["cookie1", "cookie2"]
+}
+
+response = requests.delete(url, headers=headers, json=data)
+print(response.text)
+```
+
+### Refresh Cookies Example
+
+You can refresh cookies using the `/your_cookies_prefix/refresh/cookies` endpoint. Here is an example request:
+
+```python
+import requests
+
+url = "http://localhost:8000/your_cookies_prefix/refresh/cookies"
+headers = {
+    "Authorization": "Bearer your-auth-key",
+    "Content-Type": "application/json"
+}
+
+response = requests.get(url, headers=headers)
+print(response.text)
+```
+
+### Generate Chat Completion Example
+
+You can use the `/v1/chat/completions` endpoint to generate chat responses. Here is an example request:
+
+```python
+import requests
+
+url = "http://localhost:8000/v1/chat/completions"
+headers = {
+    "Authorization": "Bearer your-auth-key",
+    "Content-Type": "application/json"
+}
+data = {
+    "model": "gpt-3.5-turbo",
+    "messages": [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Tell me a joke."}
+    ]
+    # "stream": true  # Uncomment to enable streaming output
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.text)
+```
+
+### Parameter Explanation
+
+- `BASE_URL`: Default API base URL, defaults to `https://studio-api.suno.ai` if not set.
+- `SESSION_ID`: The session ID.
+- `USER_NAME`: Database username.
+- `SQL_NAME`: Database name.
+- `SQL_PASSWORD`: Database password.
+- `SQL_IP`: Database IP address.
+- `SQL_DK`: Database port, default is 3306.
+- `COOKIES_PREFIX`: Prefix for cookies.
+- `AUTH_KEY`: Authorization key, default is the current timestamp.
+- `RETRIES`: Number of retries, default is 3.
+- `
+
+BATCH_SIZE`: Batch size, default is 10.
+
+---
 
 ## 🎉 Effect Display
 
-![效果图](https://github.com/wlhtea/Suno2openai/assets/115779315/3bcf2cee-770f-46a9-8438-b8bbfced0143)
+![Effect Display](https://github.com/wlhtea/Suno2openai/assets/115779315/6f289256-6ba5-4016-b9a3-20640d864302)
 
 ## 💌 Internship Opportunities
 
-If interested in welcoming a third-year student with experience in data analysis and front-end/back-end development for
-an internship, please contact:
+If interested in welcoming a third-year student with experience in data analysis and front-end/back-end development for an internship, please contact:
 
 - 📧 **Email**: 1544007699@qq.com
 
-**Support Us**: If you find this project helpful, please do not hesitate to star it ⭐! We welcome any form of support
-and suggestions, let’s progress together!
+**Support Us**: If you find this project helpful, please do not hesitate to star it ⭐! We welcome any form of support and suggestions, let’s progress together!
