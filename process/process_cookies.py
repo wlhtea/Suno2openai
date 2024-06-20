@@ -31,6 +31,8 @@ class processCookies:
                 return False
             else:
                 raise RuntimeError(f"该账号剩余次数: {remaining_count}，添加失败")
+        finally:
+            song_gen.close_session()
 
     # 在当前线程的事件循环中运行任务添加或刷新cookie
     def fetch_limit_left_async(self, cookie, is_insert):
@@ -81,3 +83,5 @@ class processCookies:
         except Exception as e:
             logger.error(cookie + f"，{tem_word}失败：{e}")
             return False
+        finally:
+            song_gen.close_session()
