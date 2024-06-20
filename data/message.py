@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from starlette.responses import StreamingResponse, JSONResponse
 
 from data.cookie import suno_auth
+from suno.suno import SongsGen
 from util.config import RETRIES
 from util.logger import logger
 from util.tool import get_clips_ids, check_status_complete, deleteSongID, calculate_token_costs
@@ -50,18 +51,16 @@ async def generate_data(db_manager, chat_user_message, chat_id, timeStamp, Model
             if cookie is None:
                 raise RuntimeError("没有可用的cookie")
             else:
-                # song_gen = SongsGen(cookie)
-                # remaining_count = await song_gen.get_limit_left()
-                # if remaining_count == -1:
-                #     await db_manager.delete_cookies(cookie)
-                #     raise RuntimeError("该账号剩余次数为 -1，无法使用")
+                song_gen = SongsGen(cookie)
+                remaining_count = await song_gen.get_limit_left()
+                if remaining_count == -1:
+                    await db_manager.delete_cookies(cookie)
+                    raise RuntimeError("该账号剩余次数为 -1，无法使用")
 
-                # 测试并发集
-                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object":
-                    "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0,
-                                                                                                       "delta": {"content": str(cookie)}, "finish_reason": None}]})}\n\n"""
-                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-                return
+                # 测试并发集 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object":
+                # "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0,
+                # "delta": {"content": str(cookie)}, "finish_reason": None}]})}\n\n""" yield f"""data:""" + ' ' +
+                # f"""[DONE]\n\n""" return
 
             _return_ids = False
             _return_tags = False
