@@ -39,23 +39,28 @@ MUSIC_GENRE_LIST = [
 
 class SongsGen:
     def __init__(self, cookie: str) -> None:
-        self.token_headers = {
-            "User-Agent": ua.random,
-            "Impersonate": browser_version,
-            # "Accept-Encoding": "gzip, deflate, br",
-        }
-        self.request_headers = {
-            "Accept-Encoding": "gzip, deflate, br",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) \
-                Gecko/20100101 Firefox/117.0",
-            "Impersonate": browser_version,
-        }
-        self.cookie = cookie
-        self.request_session = ClientSession()
-        self.request_session.cookie_jar.update_cookies(utils.parse_cookie_string(self.cookie))
+        try:
+            self.token_headers = {
+                "User-Agent": ua.random,
+                "Impersonate": browser_version,
+                # "Accept-Encoding": "gzip, deflate, br",
+            }
+            self.request_headers = {
+                "Accept-Encoding": "gzip, deflate, br",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) \
+                    Gecko/20100101 Firefox/117.0",
+                "Impersonate": browser_version,
+            }
 
-        self.token_session = ClientSession()
-        self.token_session.cookie_jar.update_cookies(utils.parse_cookie_string(self.cookie))
+            self.cookie_string = utils.parse_cookie_string(cookie)
+
+            self.request_session = ClientSession()
+            self.request_session.cookie_jar.update_cookies(self.cookie_string)
+
+            self.token_session = ClientSession()
+            self.token_session.cookie_jar.update_cookies(self.cookie_string)
+        except Exception as e:
+            raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
 
     async def init_limit_session(self) -> None:
         try:
@@ -64,7 +69,7 @@ class SongsGen:
             self.request_headers["user-agent"] = ua.random
             self.request_session.headers.update(self.request_headers)
         except Exception as e:
-            raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
+            raise Exception(f"初始化获取get_auth_token失败,请检查cookie是否有效: {e}")
 
     async def close_session(self):
         if self.request_session is not None:
