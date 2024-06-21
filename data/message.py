@@ -5,7 +5,6 @@ import json
 from fastapi import HTTPException
 from starlette.responses import StreamingResponse, JSONResponse
 
-from data.cookie import suno_auth
 from suno.suno import SongsGen
 from util.config import RETRIES
 from util.logger import logger
