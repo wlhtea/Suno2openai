@@ -23,8 +23,12 @@ class processCookies:
         try:
             song_gen = SongsGen(cookie)
             remaining_count = await song_gen.get_limit_left()
-            await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)
-            return True
+            if remaining_count == -1 and is_insert:
+                logger.info(f"该账号剩余次数: {remaining_count}，添加失败！")
+                return False
+            else:
+                await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)
+                return True
         except Exception as e:
             if not is_insert:
                 await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)

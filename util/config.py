@@ -14,6 +14,8 @@ VERSION = "0.2.1"
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
 # SESSION_ID
 SESSION_ID = os.getenv('SESSION_ID')
+# 代理
+PROXY = os.getenv('PROXY', None)
 # 用户名
 USER_NAME = os.getenv('USER_NAME', '')
 # 数据库名
@@ -29,17 +31,22 @@ COOKIES_PREFIX = os.getenv('COOKIES_PREFIX', "")
 # 鉴权key
 AUTH_KEY = os.getenv('AUTH_KEY', str(time.time()))
 # 重试次数
-RETRIES = int(os.getenv('RETRIES', 3))
+RETRIES = int(os.getenv('RETRIES', 5))
 # 添加刷新cookies时的批处理数量（默认10）
 BATCH_SIZE = int(os.getenv('BATCH_SIZE', 10))
 # 最大等待时间（分钟）
 MAX_TIME = int(os.getenv('MAX_TIME', 5))
+
+# 处理措施
+if not PROXY:
+    PROXY = None
 
 # 记录配置信息
 logger.info("==========================================")
 logger.info(f"VERSION: {VERSION}")
 logger.info(f"BASE_URL: {BASE_URL}")
 logger.info(f"SESSION_ID: {SESSION_ID}")
+logger.info(f"PROXY: {PROXY}")
 logger.info(f"USER_NAME: {USER_NAME}")
 logger.info(f"SQL_NAME: {SQL_NAME}")
 logger.info(f"SQL_PASSWORD: {SQL_PASSWORD}")
