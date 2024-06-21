@@ -1,7 +1,9 @@
+# -*- coding:utf-8 -*-
 from aiohttp import ClientSession
 from fake_useragent import UserAgent
 
 from util import utils
+from util.config import PROXY
 from util.logger import logger
 
 ua = UserAgent(browsers=["edge"])
@@ -41,7 +43,7 @@ class SongsGen:
     def __init__(self, cookie: str) -> None:
         try:
             self.token_headers = {
-                "User-Agent": ua.random,
+                "User-Agent": ua.edge,
                 "Impersonate": browser_version,
                 # "Accept-Encoding": "gzip, deflate, br",
             }
@@ -66,7 +68,7 @@ class SongsGen:
         try:
             auth_token = await self.get_auth_token()
             self.request_headers["Authorization"] = f"Bearer {auth_token}"
-            self.request_headers["user-agent"] = ua.random
+            self.request_headers["user-agent"] = ua.edge
             self.request_session.headers.update(self.request_headers)
         except Exception as e:
             raise Exception(f"初始化获取get_auth_token失败,请检查cookie是否有效: {e}")
@@ -81,7 +83,7 @@ class SongsGen:
 
     async def get_auth_token(self, w=None):
         try:
-            async with self.token_session.get(get_session_url, headers=self.token_headers) as response_sid:
+            async with self.token_session.get(get_session_url, headers=self.token_headers, proxy=PROXY) as response_sid:
                 data_sid = await response_sid.json()
                 r = data_sid.get("response")
                 if not r or not r.get('sessions'):
@@ -90,7 +92,7 @@ class SongsGen:
                 if not sid:
                     raise Exception("Failed to get session id")
             async with self.token_session.post(exchange_token_url.format(sid=sid),
-                                               headers=self.token_headers) as response_jwt:
+                                               headers=self.token_headers, proxy=PROXY) as response_jwt:
                 data_jwt = await response_jwt.json()
                 jwt_token = data_jwt.get('jwt')
                 if not jwt_token:
@@ -104,7 +106,7 @@ class SongsGen:
     async def get_limit_left(self) -> int:
         await self.init_limit_session()
         try:
-            async with self.request_session.get("https://studio-api.suno.ai/api/billing/info/") as r:
+            async with self.request_session.get("https://studio-api.suno.ai/api/billing/info/", proxy=PROXY) as r:
                 try:
                     r.raise_for_status()
                     data = await r.json()

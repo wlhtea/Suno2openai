@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import asyncio
 import json
 
@@ -75,8 +76,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
             token, sid = await song_gen.get_auth_token(w=1)
 
-            suno_auth.set_session_id(sid)
-            suno_auth.load_cookie(cookie)
+            # suno_auth.set_session_id(sid)
+            # suno_auth.load_cookie(cookie)
 
             response = await generate_music(data=data, token=token)
             # await asyncio.sleep(3)
@@ -206,7 +207,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             break
 
         except Exception as e:
-            if try_count < RETRIES - 1:
+            if try_count < RETRIES:
                 logger.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}，重试中......")
                 continue
             else:

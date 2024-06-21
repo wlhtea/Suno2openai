@@ -6,6 +6,9 @@ import aiohttp
 from curl_cffi.requests import Cookies
 from dotenv import load_dotenv
 
+from suno.suno import ua
+from util.config import PROXY
+
 load_dotenv()
 
 BASE_URL = os.getenv("BASE_URL")
@@ -28,7 +31,7 @@ async def fetch(url, headers=None, data=None, method="POST"):
             data = json.dumps(data)
 
         async with aiohttp.ClientSession() as session:
-            async with session.request(method=method, url=url, data=data, headers=headers) as resp:
+            async with session.request(method=method, url=url, data=data, headers=headers, proxy=PROXY) as resp:
                 return await resp.json()
     except Exception as e:
         raise ValueError(f"Error fetching data: {e}")
@@ -49,7 +52,21 @@ async def get_feed(ids, token):
 async def generate_music(data, token):
     try:
         headers = {
-            "Authorization": f"Bearer {token}"
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+            "Access-Control-Request-Headers": "affiliate-id,authorization",
+            "Access-Control-Request-Method": "POST",
+            "Origin": "https://suno.com",
+            "Priority": "u=1, i",
+            "Referer": "https://suno.com/",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "cross-site",
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0",
         }
         api_url = f"{BASE_URL}/api/generate/v2/"
         response = await fetch(api_url, headers, data)
