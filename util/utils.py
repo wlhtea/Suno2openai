@@ -6,7 +6,6 @@ import aiohttp
 from curl_cffi.requests import Cookies
 from dotenv import load_dotenv
 
-from suno.suno import ua
 from util.config import PROXY
 
 load_dotenv()
