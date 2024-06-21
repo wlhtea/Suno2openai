@@ -95,6 +95,37 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                     # if (_return_Forever_url and _return_ids and _return_tags and
                     #         _return_title and _return_prompt and _return_image_url and _return_audio_url):
                     #     break
+
+                    try:
+                        token, sid = await song_gen.get_auth_token(w=1)
+                        now_data = await get_feed(ids=clip_id, token=token)
+                        more_information_ = now_data[0]['metadata']
+                    except:
+                        continue
+
+                    if not _return_Forever_url:
+                        try:
+                            if check_status_complete(now_data, start_time):
+                                Aideo_Markdown_Conetent = (f""
+                                                           f"\n### 🎷 CDN音乐链接\n"
+                                                           f"- **🎧 音乐1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
+                                                           f"- **🎧 音乐2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
+                                Video_Markdown_Conetent = (f""
+                                                           f"\n### 📺 CDN视频链接\n"
+                                                           f"- **📽️ 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
+                                                           f"- **📽️ 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n"
+                                                           f"\n### 👀 更多\n"
+                                                           f"**🤗还想听更多歌吗，快来告诉我**🎶✨\n")
+                                yield str(
+                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
+                                yield str(
+                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
+                                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+                                _return_Forever_url = True
+                                break
+                        except:
+                            pass
+
                     if not _return_ids:
                         try:
                             song_id_text = (f""
@@ -106,14 +137,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                             _return_ids = True
                         except:
                             pass
-
-                    token, sid = await song_gen.get_auth_token(w=1)
-
-                    try:
-                        now_data = await get_feed(ids=clip_id, token=token)
-                        more_information_ = now_data[0]['metadata']
-                    except:
-                        continue
 
                     if not _return_title:
                         try:
@@ -167,30 +190,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
                                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
                                 _return_audio_url = True
-
-                    if not _return_Forever_url:
-                        try:
-                            if check_status_complete(now_data, start_time):
-                                Aideo_Markdown_Conetent = (f""
-                                                           f"\n### 🎷 CDN音乐链接\n"
-                                                           f"- **🎧 音乐1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
-                                                           f"- **🎧 音乐2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
-                                Video_Markdown_Conetent = (f""
-                                                           f"\n### 📺 CDN视频链接\n"
-                                                           f"- **📽️ 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
-                                                           f"- **📽️ 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n"
-                                                           f"\n### 👀 更多\n"
-                                                           f"**🤗还想听更多歌吗，快来告诉我**🎶✨\n")
-                                yield str(
-                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
-                                yield str(
-                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
-                                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-                                _return_Forever_url = True
-                                break
-                        except:
-                            pass
-
                     if (_return_ids and _return_tags and _return_title and _return_prompt and
                             _return_image_url and _return_audio_url and not _return_Forever_url):
                         count += 1
