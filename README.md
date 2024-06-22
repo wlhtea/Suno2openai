@@ -274,7 +274,7 @@ print(response.text)
 - `SQL_PASSWORD`: Database password.
 - `SQL_IP`: Database IP address.
 - `SQL_DK`: Database port, default is 3306.
-- `COOKIES_PREFIX`: Prefix for cookies.
+- `COOKIES_PREFIX`: Prefix for cookies, remember `/` to begin with.
 - `AUTH_KEY`: Authorization key, default is the current timestamp.
 - `RETRIES`: Number of retries, default is 5.
 - `BATCH_SIZE`: Batch size, default is 10.
