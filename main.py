@@ -53,16 +53,14 @@ async def cron_refresh_cookies():
         success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
         logger.info(f"所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，"
                     f"成功率：({success_percentage:.2f}%)")
-        logger.info(f"==========================================")
 
     except Exception as e:
-        logger.error({"刷新cookies出现错误": str(e)})
+        logger.error({"刷新 cookies 出现错误": str(e)})
 
 
 # 删除无效cookies
 async def cron_delete_cookies():
     try:
-        logger.info(f"==========================================")
         logger.info("开始删除数据库里的无效cookies.........")
         cookies = [item['cookie'] for item in await db_manager.get_invalid_cookies()]
         delete_tasks = []
@@ -74,11 +72,11 @@ async def cron_delete_cookies():
         fail_count = len(cookies) - success_count
 
         logger.info(
-            {"message": "Invalid process 删除成功。", "成功数量": success_count, "失败数量": fail_count})
+            {"message": "无效的 Cookies 删除成功。", "成功数量": success_count, "失败数量": fail_count})
         logger.info(f"==========================================")
 
     except Exception as e:
-        logger.error({"删除无效cookies出现错误": e})
+        logger.error({"删除无效 cookies 出现错误": e})
 
 
 # 先刷新在删除cookies
@@ -113,7 +111,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(cron_optimize_cookies, IntervalTrigger(minutes=60), id='updateRefresh_run')
+    scheduler.add_job(cron_optimize_cookies, IntervalTrigger(minutes=60), id='Refresh_and_delete_run')
     scheduler.start()
 
     try:
