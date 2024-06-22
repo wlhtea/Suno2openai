@@ -26,8 +26,8 @@ services:
       COOKIES_PREFIX: ''
       # 请求密钥
       AUTH_KEY: ''
-      # 重试次数（默认3）
-      RETRIES: 3
+      # 重试次数（默认5）
+      RETRIES: 5
       # 添加刷新cookies时的批处理数量（默认10）
       BATCH_SIZE: 10
       # 最大请求时间（默认5min）
