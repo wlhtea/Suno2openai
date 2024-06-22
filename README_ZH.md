@@ -272,7 +272,7 @@ print(response.text)
 - `SQL_PASSWORD`: 数据库密码。
 - `SQL_IP`: 数据库 IP 地址。
 - `SQL_DK`: 数据库端口，默认是 3306。
-- `COOKIES_PREFIX`: Cookie 前缀。
+- `COOKIES_PREFIX`: Cookie 前缀（记得要以/开头，例如/test）
 - `AUTH_KEY`: 授权密钥，默认为当前时间戳。
 - `RETRIES`: 重试次数，默认为 5。
 - `BATCH_SIZE`: 批处理大小，默认为 10。
