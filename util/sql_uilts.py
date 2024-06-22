@@ -2,8 +2,9 @@ import json
 
 import aiomysql
 from fastapi import HTTPException
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import retry, stop_after_attempt, wait_random
 
+from util.config import RETRIES
 from util.logger import logger
 
 
@@ -71,6 +72,7 @@ class DatabaseManager:
 
     # 创建数据库和表
     async def create_database_and_table(self):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 try:
@@ -85,7 +87,7 @@ class DatabaseManager:
                             songID2 VARCHAR(255),
                             count INT,
                             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            add_time TIMESTAMP,
+                            add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             UNIQUE(cookie(191))
                         )
                     """)
@@ -99,7 +101,7 @@ class DatabaseManager:
                         # 如果 add_time 列不存在，添加该列
                         await cursor.execute('''
                             ALTER TABLE suno2openai
-                            ADD COLUMN add_time TIMESTAMP;
+                            ADD COLUMN add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
                         ''')
                         logger.info("成功添加 'add_time' 列。")
                     else:
@@ -111,17 +113,18 @@ class DatabaseManager:
                     raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获得cookie
-    async def get_token(self):
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
+    async def get_request_cookie(self):
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
                     # 先查询一个不被锁定且可用的cookie
                     await cursor.execute('''
-                        SELECT cookie FROM suno2openai
-                        WHERE songID IS NULL AND songID2 IS NULL AND count > 0
-                        ORDER BY RAND() LIMIT 1
-                        LOCK IN SHARE MODE;
-                    ''')
+                            SELECT cookie FROM suno2openai
+                            WHERE songID IS NULL AND songID2 IS NULL AND count > 0
+                            ORDER BY RAND() LIMIT 1
+                            LOCK IN SHARE MODE;
+                        ''')
                     row = await cursor.fetchone()
                     if not row:
                         raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
@@ -132,10 +135,10 @@ class DatabaseManager:
                     try:
                         # 第二个查询，锁定获取的cookie
                         await cursor.execute('''
-                            SELECT cookie FROM suno2openai 
-                            WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0
-                            LIMIT 1 FOR UPDATE;
-                        ''', (cookie,))
+                                SELECT cookie FROM suno2openai 
+                                WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0
+                                LIMIT 1 FOR UPDATE;
+                            ''', (cookie,))
                         row = await cursor.fetchone()
                         if not row:
                             raise HTTPException(status_code=429, detail="并发更新cookie时发生并发冲突，重试中...")
@@ -143,10 +146,10 @@ class DatabaseManager:
                         cookie = row['cookie']
                         # 然后更新选中的cookie
                         await cursor.execute('''
-                            UPDATE suno2openai
-                            SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
-                            WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0;
-                        ''', ("tmp", "tmp", cookie))
+                                UPDATE suno2openai
+                                SET count = count - 1, songID = %s, songID2 = %s, time = CURRENT_TIMESTAMP
+                                WHERE cookie = %s AND songID IS NULL AND songID2 IS NULL AND count > 0;
+                            ''', ("tmp", "tmp", cookie))
                         await conn.commit()
                         return cookie
                     except Exception as update_error:
@@ -160,11 +163,12 @@ class DatabaseManager:
                         raise HTTPException(status_code=429, detail=f"数据库错误：{str(mysql_error)}")
 
                 except Exception as e:
-                    await conn.commit()
+                    await conn.rollback()
                     raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
 
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -180,8 +184,9 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除单个cookie的songID
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def delete_song_ids(self, cookie):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 # 开始事务
@@ -202,8 +207,9 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除所有的songID
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def delete_songIDS(self):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 # 开始事务
@@ -226,6 +232,7 @@ class DatabaseManager:
 
     # 更新cookie的count
     async def update_cookie_count(self, cookie, count_increment, update=None):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 # 开始事务
@@ -253,6 +260,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def query_cookies(self):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -263,6 +271,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     async def update_song_ids_by_cookie(self, cookie, songID1, songID2):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
@@ -277,8 +286,9 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取所有 process 的count总和
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_cookies_count(self):
+        await self.create_pool()
         try:
             async with self.pool.acquire() as conn:
                 try:
@@ -294,8 +304,9 @@ class DatabaseManager:
             return 0
 
     # 获取有效的 process 的count总和
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_valid_cookies_count(self):
+        await self.create_pool()
         try:
             async with self.pool.acquire() as conn:
                 try:
@@ -311,8 +322,9 @@ class DatabaseManager:
             return 0
 
     # 获取 process
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_cookies(self):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -323,8 +335,9 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取无效的cookies
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_invalid_cookies(self):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -335,8 +348,9 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获取 process 和 count
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_all_cookies(self):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor(aiomysql.DictCursor) as cur:
@@ -351,9 +365,31 @@ class DatabaseManager:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
+    async def get_row_cookies(self):
+        try:
+            await self.create_pool()
+            async with self.pool.acquire() as conn:
+                try:
+                    async with conn.cursor(aiomysql.DictCursor) as cur:
+                        await cur.execute("SELECT cookie FROM suno2openai")
+                        results = await cur.fetchall()
+                        cookies = []
+                        for row in results:
+                            cookies.append(row['cookie'])
+                        await conn.commit()
+                        return cookies
+                except Exception as e:
+                    print(f"Database operation failed: {e}")  # Improved logging
+                    raise HTTPException(status_code=500, detail=f"Database operation failed: {str(e)}")
+        except Exception as e:
+            print(f"Failed to acquire connection pool: {e}")  # Improved logging
+            raise HTTPException(status_code=500, detail=f"Failed to acquire connection pool: {str(e)}")
+
     # 删除相应的cookies
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(0))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def delete_cookies(self, cookie: str):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
                 # 开始事务

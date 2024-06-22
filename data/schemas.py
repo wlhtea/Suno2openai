@@ -1,8 +1,10 @@
 # -*- coding:utf-8 -*-
 
-from typing import Any, Optional
+from typing import Any
+from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic import Field
 
 
 class Response(BaseModel):
@@ -22,10 +24,6 @@ class GenerateBase(BaseModel):
     tags: str = ""
     continue_at: Optional[str] = None
     continue_clip_id: Optional[str] = None
-
-
-from pydantic import BaseModel
-from typing import List, Optional
 
 
 class Message(BaseModel):

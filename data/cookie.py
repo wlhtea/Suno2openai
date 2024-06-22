@@ -5,6 +5,7 @@ from threading import Thread
 
 import requests
 
+from util.config import PROXY
 from util.logger import logger
 from util.utils import COMMON_HEADERS
 
@@ -41,7 +42,8 @@ def update_token(suno_cookie):
 
     resp = requests.post(
         url=f"https://clerk.suno.ai/v1/client/sessions/{session_id}/tokens?_clerk_js_version=4.70.5",
-        headers=headers
+        headers=headers,
+        proxies=PROXY
     )
 
     resp_headers = dict(resp.headers)
@@ -69,11 +71,3 @@ def start_keep_alive(suno_cookie: SunoCookie):
 
 
 suno_auth = SunoCookie()
-# first = True
-# suno_auth.set_session_id(os.getenv("SESSION_ID"))
-# suno_auth.load_cookie(os.getenv("COOKIE"))
-# if first:
-#     start_keep_alive(suno_auth)
-#     first = False
-# else:
-#     logger.info('cookie保活失败')
