@@ -60,8 +60,9 @@ copy all content about the cookie
       -e SQL_DK=3306 \
       -e COOKIES_PREFIX='your_cookies_prefix' \
       -e AUTH_KEY='<AUTH_KEY>' \
-      -e RETRIES=3 \
+      -e RETRIES=5 \
       -e BATCH_SIZE=10 \
+      -e MAX_TIME=5 \
       --restart=always \
       wlhtea/suno2openai:latest
    ```
@@ -80,8 +81,9 @@ copy all content about the cookie
       -e SQL_DK=3306 \
       -e COOKIES_PREFIX='your_cookies_prefix' \
       -e AUTH_KEY='your-auth-key' \
-      -e RETRIES=3 \
+      -e RETRIES=5 \
       -e BATCH_SIZE=10 \
+      -e MAX_TIME=5 \
       --restart=always \
       wlhtea/suno2openai:latest
    ```
@@ -130,8 +132,9 @@ SQL_IP=127.0.0.1
 SQL_DK=3306
 COOKIES_PREFIX=your_cookies_prefix
 AUTH_KEY=your-auth-key
-RETRIES=3
+RETRIES=5
 BATCH_SIZE=10
+MAX_TIME=5
 ```
 
 ### Enter the Project Directory
@@ -273,8 +276,9 @@ print(response.text)
 - `SQL_DK`: Database port, default is 3306.
 - `COOKIES_PREFIX`: Prefix for cookies.
 - `AUTH_KEY`: Authorization key, default is the current timestamp.
-- `RETRIES`: Number of retries, default is 3.
-- `
+- `RETRIES`: Number of retries, default is 5.
+- `BATCH_SIZE`: Batch size, default is 10.
+- `MAX_TIME`: Maximum request time (min), default is 5.
 
 BATCH_SIZE`: Batch size, default is 10.
 

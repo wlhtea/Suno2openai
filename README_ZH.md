@@ -56,8 +56,9 @@
       -e SQL_DK=3306 \
       -e COOKIES_PREFIX='your_cookies_prefix' \
       -e AUTH_KEY='<AUTH_KEY>' \
-      -e RETRIES=3 \
+      -e RETRIES=5 \
       -e BATCH_SIZE=10 \
+      -e MAX_TIME=5 \
       --restart=always \
       wlhtea/suno2openai:latest
    ```
@@ -76,8 +77,9 @@
       -e SQL_DK=3306 \
       -e COOKIES_PREFIX='your_cookies_prefix' \
       -e AUTH_KEY='your-auth-key' \
-      -e RETRIES=3 \
+      -e RETRIES=5 \
       -e BATCH_SIZE=10 \
+      -e MAX_TIME=5 \
       --restart=always \
       wlhtea/suno2openai:latest
    ```
@@ -126,8 +128,9 @@ SQL_IP=127.0.0.1
 SQL_DK=3306
 COOKIES_PREFIX=your_cookies_prefix
 AUTH_KEY=your-auth-key
-RETRIES=3
+RETRIES=5
 BATCH_SIZE=10
+MAX_TIME=5
 ```
 
 ### 进入项目目录
@@ -271,8 +274,9 @@ print(response.text)
 - `SQL_DK`: 数据库端口，默认是 3306。
 - `COOKIES_PREFIX`: Cookie 前缀。
 - `AUTH_KEY`: 授权密钥，默认为当前时间戳。
-- `RETRIES`: 重试次数，默认为 3。
+- `RETRIES`: 重试次数，默认为 5。
 - `BATCH_SIZE`: 批处理大小，默认为 10。
+- `MAX_TIME`: 最大请求时间（min），默认为 5。
 
 ---
 
