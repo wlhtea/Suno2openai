@@ -40,6 +40,7 @@ MUSIC_GENRE_LIST = [
 
 
 class SongsGen:
+    # 初始化
     def __init__(self, cookie: str) -> None:
         try:
             self.token_headers = {
@@ -56,16 +57,18 @@ class SongsGen:
 
             self.cookie_string = utils.parse_cookie_string(cookie)
 
-            self.request_session = ClientSession()
-            self.request_session.cookie_jar.update_cookies(self.cookie_string)
+            self.request_session = None
 
             self.token_session = ClientSession()
             self.token_session.cookie_jar.update_cookies(self.cookie_string)
         except Exception as e:
             raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
 
+    # 初始化request_session会话
     async def init_limit_session(self) -> None:
         try:
+            self.request_session = ClientSession()
+            self.request_session.cookie_jar.update_cookies(self.cookie_string)
             auth_token = await self.get_auth_token()
             self.request_headers["Authorization"] = f"Bearer {auth_token}"
             self.request_headers["user-agent"] = ua.edge
@@ -73,14 +76,24 @@ class SongsGen:
         except Exception as e:
             raise Exception(f"初始化获取get_auth_token失败,请检查cookie是否有效: {e}")
 
+    # 关闭会话
     async def close_session(self):
         if self.request_session is not None:
-            await self.request_session.close()
-            self.request_session = None
+            try:
+                await self.request_session.close()
+            except Exception as e:
+                logger.error(f"Error closing request session: {e}")
+            finally:
+                self.request_session = None
         if self.token_session is not None:
-            await self.token_session.close()
-            self.token_session = None
+            try:
+                await self.token_session.close()
+            except Exception as e:
+                logger.error(f"Error closing token session: {e}")
+            finally:
+                self.token_session = None
 
+    # 获取token
     async def get_auth_token(self, w=None):
         try:
             async with self.token_session.get(get_session_url, headers=self.token_headers, proxy=PROXY) as response_sid:
@@ -103,17 +116,19 @@ class SongsGen:
         except Exception as e:
             raise Exception(f"获取get_auth_token失败: {e}")
 
+    # 获取剩余次数
     async def get_limit_left(self) -> int:
-        await self.init_limit_session()
+        if self.request_session is None:
+            await self.init_limit_session()
         try:
-            async with self.request_session.get("https://studio-api.suno.ai/api/billing/info/", proxy=PROXY) as r:
-                try:
-                    r.raise_for_status()
-                    data = await r.json()
-                    return int(data["total_credits_left"] / 10)
-                except Exception as e:
-                    logger.error(f"获取剩余次数失败: {e}")
-                    return -1
+            response = await self.request_session.get("https://studio-api.suno.ai/api/billing/info/", proxy=PROXY)
+            try:
+                response.raise_for_status()
+                data = await response.json()
+                return int(data["total_credits_left"] / 10)
+            except Exception as e:
+                logger.error(f"获取剩余次数失败: {e}")
+                return -1
         except Exception as e:
             logger.error(f"获取get_limit_left失败: {e}")
             return -1
