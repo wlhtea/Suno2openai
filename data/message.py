@@ -111,7 +111,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                             isinstance(now_data[0], dict) and
                             'audio_url' in now_data[0] and
                             now_data[0]['audio_url'] == "https://cdn1.suno.ai/None.mp3"):
-                        raise PromptException(f"\n歌曲提示词：`{chat_user_message}`，存在违规词，歌曲创作失败！")
+                        raise PromptException(f"\n歌曲提示词：`{chat_user_message}`，存在违规词，歌曲创作失败😭\n\n### "
+                                              f"👀 更多\n**🤗还想听更多歌吗，请更换提示词，告诉我吧**🎶✨\n")
 
                     # 第一步：拿歌曲IDs
                     if not _return_ids:
