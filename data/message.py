@@ -110,14 +110,15 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                             isinstance(now_data[0], dict) and
                             'audio_url' in now_data[0] and
                             now_data[0]['audio_url'] == "https://cdn1.suno.ai/None.mp3"):
-                        raise PromptException(f"\n歌曲提示词：`{chat_user_message}`，存在违规词，歌曲创作失败😭\n\n### "
-                                              f"👀 更多\n**🤗还想听更多歌吗，请更换提示词，告诉我吧**🎶✨\n")
+                        raise PromptException(f"\n### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
+                                              f"存在违规词，歌曲创作失败😭\n\n### "
+                                              f"👀 更多\n\n**🤗请更换提示词，我会为你重新创作**🎶✨\n")
 
                     # 第一步：拿歌曲IDs
                     if not _return_ids:
                         try:
                             song_id_text = (f""
-                                            f"### ⭐ 歌曲信息\n"
+                                            f"### ⭐ 歌曲信息\n\n"
                                             f"- **🧩 ID1️⃣**：{song_id_1}\n"
                                             f"- **🧩 ID2️⃣**：{song_id_2}\n")
                             yield str(
@@ -132,7 +133,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         try:
                             title = now_data[0]["title"]
                             if title != '':
-                                title_data = f"- **🤖 歌名**：{title} \n"
+                                title_data = f"- **🤖 歌名**：{title} \n\n"
                                 yield """data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
                                 _return_title = True
                                 continue
@@ -157,7 +158,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         try:
                             prompt = more_information_["prompt"]
                             if prompt is not None and prompt != '':
-                                prompt_data = f"### 📖 完整歌词\n```\n{prompt}\n```\n\n"
+                                prompt_data = f"### 📖 完整歌词\n\n```\n{prompt}\n```\n\n"
                                 yield str(
                                     f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": prompt_data}, "finish_reason": None}]})}\n\n""")
                                 _return_prompt = True
@@ -169,8 +170,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                     elif not _return_image_url:
                         try:
                             if now_data[0].get('image_url') is not None:
-                                image_url_small_data = f"### 🖼️ 歌曲图片\n"
-                                image_url_lager_data = f"![image_large_url]({now_data[0]['image_large_url']}) \n\n### 🤩 即刻享受"
+                                image_url_small_data = f"### 🖼️ 歌曲图片\n\n"
+                                image_url_lager_data = f"![image_large_url]({now_data[0]['image_large_url']}) \n\n### 🤩 即刻享受\n"
                                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_small_data}, "finish_reason": None}]})}\n\n"""
                                 yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": image_url_lager_data}, "finish_reason": None}]})}\n\n"""
                                 _return_image_url = True
@@ -210,8 +211,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                                                f"\n### 📺 CDN视频链接\n"
                                                                f"- **📽️ 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
                                                                f"- **📽️ 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n"
-                                                               f"\n### 👀 更多\n"
-                                                               f"**🤗还想听更多歌吗，快来告诉我**🎶✨\n")
+                                                               f"\n### 👀 更多\n\n"
+                                                               f"- **🤗还想听更多歌吗，快来告诉我**🎶✨\n")
                                     yield str(
                                         f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                                     yield str(
