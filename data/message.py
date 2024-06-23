@@ -87,7 +87,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             if not song_id_1 and not song_id_2:
                 raise Exception("生成clip_ids为空")
 
-            tem_text = "\n### 🤯 Creating\n\n```suno\n{prompt:" + f"{chat_user_message}" + "}\n```\n"
+            tem_text = "\n### 🤯 Creating\n\n```suno\n{prompt:" + f"{chat_user_message}" + "}\n```\n\n"
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": tem_text}, "finish_reason": None}]})}\n\n"""
             for clip_id in clip_ids:
                 count = 0
@@ -110,7 +110,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                             isinstance(now_data[0], dict) and
                             'audio_url' in now_data[0] and
                             now_data[0]['audio_url'] == "https://cdn1.suno.ai/None.mp3"):
-                        raise PromptException(f"\n### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
+                        raise PromptException(f"### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
                                               f"存在违规词，歌曲创作失败😭\n\n### "
                                               f"👀 更多\n\n**🤗请更换提示词，我会为你重新创作**🎶✨\n")
 
@@ -189,7 +189,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                     audio_url_2 = f'https://audiopipe.suno.ai/?item_id={song_id_2}'
 
                                     audio_url_data_1 = f"\n- **🔗 实时音乐1️⃣**：{audio_url_1}"
-                                    audio_url_data_2 = f"\n- **🔗 实时音乐2️⃣**：{audio_url_2}\n\n### 🚀 生成CDN链接中（2min~）\n"
+                                    audio_url_data_2 = f"\n- **🔗 实时音乐2️⃣**：{audio_url_2}\n\n### 🚀 生成CDN链接中（2min~）\n\n"
                                     yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_1}, "finish_reason": None}]})}\n\n"""
                                     yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": audio_url_data_2}, "finish_reason": None}]})}\n\n"""
                                     _return_audio_url = True
@@ -204,15 +204,15 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                             try:
                                 if check_status_complete(now_data, start_time):
                                     Aideo_Markdown_Conetent = (f""
-                                                               f"\n### 🎷 CDN音乐链接\n"
+                                                               f"\n\n### 🎷 CDN音乐链接\n\n"
                                                                f"- **🎧 音乐1️⃣**：{'https://cdn1.suno.ai/' + clip_id + '.mp3'} \n"
                                                                f"- **🎧 音乐2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
                                     Video_Markdown_Conetent = (f""
-                                                               f"\n### 📺 CDN视频链接\n"
+                                                               f"\n### 📺 CDN视频链接\n\n"
                                                                f"- **📽️ 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
                                                                f"- **📽️ 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n"
                                                                f"\n### 👀 更多\n\n"
-                                                               f"- **🤗还想听更多歌吗，快来告诉我**🎶✨\n")
+                                                               f"**🤗还想听更多歌吗，快来告诉我**🎶✨\n")
                                     yield str(
                                         f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                                     yield str(
