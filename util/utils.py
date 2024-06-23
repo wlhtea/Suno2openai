@@ -31,9 +31,11 @@ async def fetch(url, headers=None, data=None, method="POST"):
 
         async with aiohttp.ClientSession() as session:
             async with session.request(method=method, url=url, data=data, headers=headers, proxy=PROXY) as resp:
+                if resp.status != 200:
+                    raise ValueError(f"请求状态码：{resp.status}，请求报错：{resp.text()}")
                 return await resp.json()
     except Exception as e:
-        raise ValueError(f"Error fetching data: {e}")
+        raise ValueError(f"Error fetching data:{e}")
 
 
 async def get_feed(ids, token):
@@ -43,6 +45,7 @@ async def get_feed(ids, token):
         }
         api_url = f"{BASE_URL}/api/feed/?ids={ids}"
         response = await fetch(api_url, headers, method="GET")
+        print(str(response))
         return response
     except Exception as e:
         raise ValueError(f"Error fetching feed: {e}")
@@ -69,6 +72,7 @@ async def generate_music(data, token):
         }
         api_url = f"{BASE_URL}/api/generate/v2/"
         response = await fetch(api_url, headers, data)
+        print(str(response))
         return response
     except Exception as e:
         raise ValueError(f"Error generating music: {e}")
