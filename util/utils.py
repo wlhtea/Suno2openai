@@ -45,7 +45,6 @@ async def get_feed(ids, token):
         }
         api_url = f"{BASE_URL}/api/feed/?ids={ids}"
         response = await fetch(api_url, headers, method="GET")
-        print(str(response))
         return response
     except Exception as e:
         raise ValueError(f"Error fetching feed: {e}")
@@ -72,7 +71,6 @@ async def generate_music(data, token):
         }
         api_url = f"{BASE_URL}/api/generate/v2/"
         response = await fetch(api_url, headers, data)
-        print(str(response))
         return response
     except Exception as e:
         raise ValueError(f"Error generating music: {e}")
