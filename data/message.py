@@ -335,7 +335,6 @@ async def end_chat(cookie, db_manager, song_gen):
     try:
         if cookie is not None:
             remaining_count = await song_gen.get_limit_left()
-            logger.info("剩余次数为：" + str(remaining_count))
             if remaining_count == -1:
                 await db_manager.delete_cookies(cookie)
             else:
