@@ -254,6 +254,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         finally:
             try:
                 if cookie is not None:
+                    remaining_count = await song_gen.get_limit_left()
                     if remaining_count == -1:
                         await db_manager.delete_cookies(cookie)
                     else:
