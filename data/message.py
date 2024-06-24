@@ -252,10 +252,14 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
         finally:
-            try:
-                end_chat(cookie, db_manager, song_gen)
-            except Exception as e:
-                logger.error(f"{str(e)}")
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(end_chat(cookie, db_manager, song_gen))
+            else:
+                try:
+                    loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
 
 # 返回消息，使用协程
@@ -326,18 +330,15 @@ def request_chat(start_time, db_manager, data, content_all, chat_id, timeStamp, 
         return result
 
 
-def end_chat(cookie, db_manager, song_gen):
-    loop = asyncio.new_event_loop()
+async def end_chat(cookie, db_manager, song_gen):
     try:
         if cookie is not None:
-            asyncio.set_event_loop(loop)
-            remaining_count = loop.run_until_complete(song_gen.get_limit_left())
+            remaining_count = await song_gen.get_limit_left()
+            logger.info("剩余次数为：" + str(remaining_count))
             if remaining_count == -1:
-                loop.run_until_complete(db_manager.delete_cookies(cookie))
+                await db_manager.delete_cookies(cookie)
             else:
-                loop.run_until_complete(delete_song_id(db_manager, remaining_count, cookie))
+                await delete_song_id(db_manager, remaining_count, cookie)
                 logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
-    finally:
-        loop.close()
