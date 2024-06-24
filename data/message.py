@@ -46,7 +46,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
     for try_count in range(RETRIES):
         cookie = None
-        remaining_count = -1
         try:
             cookie = str(await db_manager.get_request_cookie()).strip()
             if cookie is None:
@@ -253,16 +252,15 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
         finally:
-            try:
-                if cookie is not None:
-                    remaining_count = await song_gen.get_limit_left()
-                    if remaining_count == -1:
-                        await db_manager.delete_cookies(cookie)
-                    else:
-                        await delete_song_id(db_manager, remaining_count, cookie)
-                        logger.info("成功执行了删除cookie songID的操作!")
-            except Exception as e:
-                logger.error(f"创作结束出现错误：{str(e)}")
+            if cookie is not None:
+                logger.info("删除cookie songID")
+                remaining_count = await song_gen.get_limit_left()
+                logger.info("剩余次数为：" + str(remaining_count))
+                if remaining_count == -1:
+                    await db_manager.delete_cookies(cookie)
+                else:
+                    await delete_song_id(db_manager, remaining_count, cookie)
+                    logger.info("成功执行了删除cookie songID的操作!")
 
 
 # 返回消息，使用协程
