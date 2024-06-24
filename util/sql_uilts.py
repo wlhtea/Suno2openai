@@ -72,45 +72,48 @@ class DatabaseManager:
 
     # 创建数据库和表
     async def create_database_and_table(self):
-        await self.create_pool()
-        async with self.pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                try:
-                    # await cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{self.db_name}`")
-                    # logger.info(f"Database `{self.db_name}` created or already exists.")
-                    # await cursor.execute(f"USE `{self.user}`")
-                    await cursor.execute(f"""
-                        CREATE TABLE IF NOT EXISTS suno2openai (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            cookie TEXT NOT NULL,
-                            songID VARCHAR(255),
-                            songID2 VARCHAR(255),
-                            count INT,
-                            time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            UNIQUE(cookie(191))
-                        )
-                    """)
-                    # 查询表结构，检查是否存在 add_time 列
-                    await cursor.execute('''
-                        SHOW COLUMNS FROM suno2openai LIKE 'add_time';
-                    ''')
-                    column = await cursor.fetchone()
-
-                    if not column:
-                        # 如果 add_time 列不存在，添加该列
+        try:
+            await self.create_pool()
+            async with self.pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    try:
+                        # await cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{self.db_name}`")
+                        # logger.info(f"Database `{self.db_name}` created or already exists.")
+                        # await cursor.execute(f"USE `{self.user}`")
+                        await cursor.execute(f"""
+                            CREATE TABLE IF NOT EXISTS suno2openai (
+                                id INT AUTO_INCREMENT PRIMARY KEY,
+                                cookie TEXT NOT NULL,
+                                songID VARCHAR(255),
+                                songID2 VARCHAR(255),
+                                count INT,
+                                time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                UNIQUE(cookie(191))
+                            )
+                        """)
+                        # 查询表结构，检查是否存在 add_time 列
                         await cursor.execute('''
-                            ALTER TABLE suno2openai
-                            ADD COLUMN add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                            SHOW COLUMNS FROM suno2openai LIKE 'add_time';
                         ''')
-                        logger.info("成功添加 'add_time' 列。")
-                    else:
-                        logger.info("'add_time' 列已存在，跳过添加。")
+                        column = await cursor.fetchone()
 
-                    await conn.commit()
-                except Exception as e:
-                    await conn.rollback()
-                    raise HTTPException(status_code=500, detail=f"{str(e)}")
+                        if not column:
+                            # 如果 add_time 列不存在，添加该列
+                            await cursor.execute('''
+                                ALTER TABLE suno2openai
+                                ADD COLUMN add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                            ''')
+                            logger.info("成功添加 'add_time' 列。")
+                        else:
+                            logger.info("'add_time' 列已存在，跳过添加。")
+
+                        await conn.commit()
+                    except Exception as e:
+                        raise HTTPException(status_code=500, detail=f"{str(e)}")
+        except Exception as e:
+            await conn.rollback()
+            raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 获得cookie
     @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
