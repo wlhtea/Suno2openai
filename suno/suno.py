@@ -121,17 +121,19 @@ class SongsGen:
 
     # 获取剩余次数
     async def get_limit_left(self) -> int:
-        if self.request_session is None:
-            await self.init_limit_session()
         try:
-            response = await self.request_session.get("https://studio-api.suno.ai/api/billing/info/", proxy=PROXY)
+            await self.init_limit_session()
             try:
-                response.raise_for_status()
-                data = await response.json()
-                return int(data["total_credits_left"] / 10)
+                async with (self.request_session.get("https://studio-api.suno.ai/api/billing/info/", proxy=PROXY)
+                            as response):
+                    response.raise_for_status()
+                    data = await response.json()
+                    return int(data["total_credits_left"] / 10)
             except Exception as e:
                 logger.error(f"获取剩余次数失败: {e}")
                 return -1
         except Exception as e:
             logger.error(f"获取get_limit_left失败: {e}")
             return -1
+        finally:
+            await self.request_session.close()
