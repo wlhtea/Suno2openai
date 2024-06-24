@@ -218,7 +218,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                     yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
                                     _return_Forever_url = True
                                     # while循环
-                                    break
+                                    return
 
                                 else:
                                     count += 1
@@ -231,10 +231,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                     continue
                             except:
                                 pass
-                # 结束对songid的for重试
-                break
-            # 结束重试
-            return
 
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
