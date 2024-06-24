@@ -56,36 +56,14 @@ class SongsGen:
             }
 
             self.cookie_string = utils.parse_cookie_string(cookie)
-
-            self.request_session = None
-
             self.token_session = ClientSession()
             self.token_session.cookie_jar.update_cookies(self.cookie_string)
         except Exception as e:
             raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
 
-    # 初始化request_session会话
-    async def init_limit_session(self) -> None:
-        try:
-            self.request_session = ClientSession()
-            self.request_session.cookie_jar.update_cookies(self.cookie_string)
-            auth_token = await self.get_auth_token()
-            self.request_headers["Authorization"] = f"Bearer {auth_token}"
-            self.request_headers["user-agent"] = ua.edge
-            self.request_session.headers.update(self.request_headers)
-        except Exception as e:
-            raise Exception(f"初始化获取get_auth_token失败,请检查cookie是否有效: {e}")
-
     # 关闭会话
     async def close_session(self):
         try:
-            if self.request_session is not None:
-                try:
-                    await self.request_session.close()
-                except Exception as e:
-                    logger.error(f"Error closing request session: {e}")
-                finally:
-                    self.request_session = None
             if self.token_session is not None:
                 try:
                     await self.token_session.close()
@@ -121,21 +99,18 @@ class SongsGen:
 
     # 获取剩余次数
     async def get_limit_left(self) -> int:
-        try:
-            await self.init_limit_session()
+        async with ClientSession(cookies=self.cookie_string) as request_session:
             try:
-                async with (self.request_session.get("https://studio-api.suno.ai/api/billing/info/", proxy=PROXY)
-                            as response):
+                auth_token = await self.get_auth_token()
+                self.request_headers["Authorization"] = f"Bearer {auth_token}"
+                self.request_headers["user-agent"] = ua.edge
+                request_session.headers.update(self.request_headers)
+                async with request_session.get(
+                    "https://studio-api.suno.ai/api/billing/info/", proxy=PROXY
+                ) as response:
                     response.raise_for_status()
                     data = await response.json()
                     return int(data["total_credits_left"] / 10)
             except Exception as e:
-                logger.error(f"获取剩余次数失败: {e}")
+                logger.error(f"获取get_limit_left失败: {e}")
                 return -1
-        except Exception as e:
-            logger.error(f"获取get_limit_left失败: {e}")
-            return -1
-        finally:
-            if self.request_session is not None:
-                await self.request_session.close()
-                self.request_session = None
