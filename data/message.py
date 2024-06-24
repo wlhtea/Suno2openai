@@ -336,7 +336,7 @@ def end_chat(cookie, db_manager, song_gen):
                 loop.run_until_complete(db_manager.delete_cookies(cookie))
             else:
                 loop.run_until_complete(delete_song_id(db_manager, remaining_count, cookie))
-                logger.info("成功执行了删除cookie songID的操作!")
+                logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
     finally:
