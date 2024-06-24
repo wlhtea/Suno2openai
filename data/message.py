@@ -232,9 +232,9 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                     continue
                             except:
                                 pass
-                # 结束while
+                # 结束对songid的for重试
                 break
-            # 结束对songid的for重试
+            # 结束重试
             break
 
         except PromptException as e:
@@ -254,6 +254,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
         finally:
             try:
+                logger.info(f"cookie: {cookie}")
                 if song_gen is not None:
                     await song_gen.close_session()
                 if cookie is not None:
