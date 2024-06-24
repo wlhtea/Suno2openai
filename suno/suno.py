@@ -136,4 +136,6 @@ class SongsGen:
             logger.error(f"获取get_limit_left失败: {e}")
             return -1
         finally:
-            await self.request_session.close()
+            if self.request_session is not None:
+                await self.request_session.close()
+                self.request_session = None
