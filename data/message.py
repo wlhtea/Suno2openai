@@ -253,10 +253,11 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
         finally:
+            remaining_count = await song_gen.get_limit_left()
             if song_gen is not None:
                 await song_gen.close_session()
             if cookie is not None:
-                await deleteSongID(db_manager, cookie)
+                await deleteSongID(db_manager, remaining_count, cookie)
 
 
 # 返回消息，使用协程

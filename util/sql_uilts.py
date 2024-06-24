@@ -185,7 +185,7 @@ class DatabaseManager:
 
     # 删除单个cookie的songID
     @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
-    async def delete_song_ids(self, cookie):
+    async def delete_song_ids(self, count, cookie):
         await self.create_pool()
         async with self.pool.acquire() as conn:
             try:
@@ -198,9 +198,9 @@ class DatabaseManager:
                     ''', (cookie,))
                     await cur.execute('''
                         UPDATE suno2openai
-                        SET songID = NULL, songID2 = NULL
+                        SET songID = NULL, songID2 = NULL, count = %s
                         WHERE cookie = %s
-                    ''', cookie)
+                    ''', count, cookie)
                     await conn.commit()
             except Exception as e:
                 await conn.rollback()
@@ -221,7 +221,7 @@ class DatabaseManager:
                     ''')
                     await cur.execute('''
                         UPDATE suno2openai
-                        SET songID = NULL, songID2 = NULL;
+                        SET songID = NULL, songID2 = NULL where count > -1;
                     ''')
                     await conn.commit()
                     rows_updated = cur.rowcount
