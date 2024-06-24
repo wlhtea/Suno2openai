@@ -47,7 +47,6 @@ class SongsGen:
             self.token_headers = {
                 "User-Agent": ua.edge,
                 "Impersonate": browser_version,
-                # "Accept-Encoding": "gzip, deflate, br",
             }
             self.request_headers = {
                 "Accept-Encoding": "gzip, deflate, br",
@@ -66,12 +65,8 @@ class SongsGen:
     async def close_session(self):
         try:
             if self.token_session is not None:
-                try:
-                    await self.token_session.close()
-                except Exception as e:
-                    logger.error(f"Error closing token session: {e}")
-                finally:
-                    self.token_session = None
+                await self.token_session.close()
+                self.token_session = None
         except Exception as e:
             raise Exception(f"关闭song_gen会话失败: {e}")
 
@@ -116,18 +111,32 @@ class SongsGen:
 
     # 获取剩余次数
     async def get_limit_left(self) -> int:
-        async with ClientSession(cookies=self.cookie_string) as request_session:
-            try:
-                auth_token = await self.get_auth_token()
-                self.request_headers["Authorization"] = f"Bearer {auth_token}"
-                self.request_headers["user-agent"] = ua.edge
-                request_session.headers.update(self.request_headers)
-                async with request_session.get(
-                    "https://studio-api.suno.ai/api/billing/info/", proxy=self.proxy
-                ) as response:
-                    response.raise_for_status()
-                    data = await response.json()
-                    return int(data["total_credits_left"] / 10)
-            except Exception as e:
-                logger.error(f"获取get_limit_left失败: {e}")
-                return -1
+        try:
+            # 使用上下文管理器创建客户端会话
+            async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
+                try:
+                    # 获取认证令牌
+                    auth_token = await self.get_auth_token()
+                    # 更新请求头信息
+                    self.request_headers["Authorization"] = f"Bearer {auth_token}"
+                    self.request_headers["user-agent"] = ua.edge
+                    request_session.headers.update(self.request_headers)
+
+                    # 发送请求获取剩余次数信息
+                    async with request_session.get(
+                        "https://studio-api.suno.ai/api/billing/info/", proxy=self.proxy
+                    ) as response:
+                        # 检查响应状态码
+                        response.raise_for_status()
+                        # 解析响应数据
+                        data = await response.json()
+                        # 计算并返回剩余次数
+                        return int(data["total_credits_left"] / 10)
+                except Exception as e:
+                    # 记录获取剩余次数过程中的异常
+                    logger.error(f"获取get_limit_left失败: {e}")
+                    return -1
+        except Exception as outer_e:
+            # 记录会话创建过程中的异常
+            logger.error(f"无法建立会话: {outer_e}")
+            return -1
