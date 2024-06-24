@@ -54,7 +54,6 @@ class DatabaseManager:
                     password=self.password,
                     db=self.db_name,
                     maxsize=200,
-                    minsize=5,
                     connect_timeout=10,
                     pool_recycle=1800
                 )
@@ -118,6 +117,7 @@ class DatabaseManager:
     # 获得cookie
     @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def get_request_cookie(self):
+        await self.create_pool()
         async with self.pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
                 try:
@@ -194,24 +194,16 @@ class DatabaseManager:
             try:
                 async with conn.cursor() as cur:
                     await conn.begin()
-
                     # 使用参数化查询
                     select_query = "SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;"
                     await cur.execute(select_query, (cookie,))
-                    logger.info(f"查询 suno2openai 表中 cookie 为 {cookie} 的记录")
-
                     update_query = '''
                         UPDATE suno2openai
                         SET count = %s, songID = NULL, songID2 = NULL
                         WHERE cookie = %s;
                     '''
                     await cur.execute(update_query, (count, cookie))
-
                     await conn.commit()
-                    rows_updated = cur.rowcount
-                    logger.info(
-                        f"更新 suno2openai 表中 cookie 为 {cookie} 的记录，设置 count 为 {count}。受影响的行数: {rows_updated}")
-
             except Exception as e:
                 await conn.rollback()
                 raise Exception(f"更新操作失败，事务已回滚: {e}")
