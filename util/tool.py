@@ -72,3 +72,4 @@ async def deleteSongID(db_manager, count, cookie):
         except Exception as e:
             if attempt > RETRIES:
                 logger.info(f"删除音乐songID失败: {e}")
+            logger.info(f"删除音乐songID第{attempt + 1}次失败: {e}")
