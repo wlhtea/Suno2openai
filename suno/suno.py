@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
 import aiohttp
-from aiohttp import ClientSession
 from fake_useragent import UserAgent
 
 from util import utils
@@ -56,48 +55,40 @@ class SongsGen:
             }
             self.proxy = PROXY
             self.cookie_string = utils.parse_cookie_string(cookie)
-            self.token_session = ClientSession()
-            self.token_session.cookie_jar.update_cookies(self.cookie_string)
         except Exception as e:
             raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
 
-    # 关闭会话
-    async def close_session(self):
-        try:
-            if self.token_session is not None:
-                await self.token_session.close()
-                self.token_session = None
-        except Exception as e:
-            raise Exception(f"关闭song_gen会话失败: {e}")
-
     # 获取token
     async def _get_session_id(self):
-        try:
-            async with self.token_session.get(get_session_url, headers=self.token_headers, proxy=self.proxy) as response:
-                response.raise_for_status()
-                data = await response.json()
-                sessions = data.get("response", {}).get("sessions")
-                if not sessions:
-                    raise ValueError("No session data in response")
-                session_id = sessions[0].get('id')
-                if not session_id:
-                    raise ValueError("Failed to get session id")
-                return session_id
-        except (aiohttp.ClientError, ValueError) as e:
-            raise Exception(f"Failed to get session id: {e}")
+        async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
+            try:
+                async with request_session.get(get_session_url, headers=self.token_headers,
+                                               proxy=self.proxy) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    sessions = data.get("response", {}).get("sessions")
+                    if not sessions:
+                        raise ValueError("No session data in response")
+                    session_id = sessions[0].get('id')
+                    if not session_id:
+                        raise ValueError("Failed to get session id")
+                    return session_id
+            except (aiohttp.ClientError, ValueError) as e:
+                raise Exception(f"Failed to get session id: {e}")
 
     async def _get_jwt_token(self, session_id):
-        try:
-            async with self.token_session.post(exchange_token_url.format(sid=session_id),
-                                               headers=self.token_headers, proxy=self.proxy) as response:
-                response.raise_for_status()
-                data = await response.json()
-                jwt_token = data.get('jwt')
-                if not jwt_token:
-                    raise ValueError("Failed to get JWT token")
-                return jwt_token
-        except (aiohttp.ClientError, ValueError) as e:
-            raise Exception(f"Failed to get JWT token: {e}")
+        async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
+            try:
+                async with request_session.post(exchange_token_url.format(sid=session_id),
+                                                headers=self.token_headers, proxy=self.proxy) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    jwt_token = data.get('jwt')
+                    if not jwt_token:
+                        raise ValueError("Failed to get JWT token")
+                    return jwt_token
+            except (aiohttp.ClientError, ValueError) as e:
+                raise Exception(f"Failed to get JWT token: {e}")
 
     async def get_auth_token(self, w=None):
         try:
@@ -124,7 +115,7 @@ class SongsGen:
 
                     # 发送请求获取剩余次数信息
                     async with request_session.get(
-                        "https://studio-api.suno.ai/api/billing/info/", proxy=self.proxy
+                            "https://studio-api.suno.ai/api/billing/info/", proxy=self.proxy
                     ) as response:
                         # 检查响应状态码
                         response.raise_for_status()
