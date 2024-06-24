@@ -200,9 +200,9 @@ class DatabaseManager:
                     update_query = '''
                         UPDATE suno2openai
                         SET count = %s, songID = NULL, songID2 = NULL
-                        WHERE count > -1;
+                        WHERE cookie = %s;
                     '''
-                    await cur.execute(update_query, (count,))
+                    await cur.execute(update_query, (count, cookie))
                     await conn.commit()
             except Exception as e:
                 await conn.rollback()

@@ -9,7 +9,7 @@ from data.PromptException import PromptException
 from suno.suno import SongsGen
 from util.config import RETRIES
 from util.logger import logger
-from util.tool import get_clips_ids, check_status_complete, deleteSongID, calculate_token_costs
+from util.tool import get_clips_ids, check_status_complete, calculate_token_costs, delete_song_id
 from util.utils import generate_music, get_feed
 
 
@@ -56,6 +56,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 song_gen = SongsGen(cookie)
                 remaining_count = await song_gen.get_limit_left()
                 if remaining_count == -1:
+                    await db_manager.delete_cookies(cookie)
+                    cookie = None
                     raise RuntimeError("该账号剩余次数为 -1，无法使用")
 
                 # 测试并发集
@@ -237,6 +239,13 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 # 结束对songid的for重试
                 break
             # 结束重试
+            if cookie is not None:
+                if remaining_count == -1:
+                    await db_manager.delete_cookies(cookie)
+                else:
+                    await delete_song_id(db_manager, remaining_count, cookie)
+                    logger.info("成功执行了删除cookie songID的操作!")
+                cookie = None
             break
 
         except PromptException as e:
@@ -256,14 +265,14 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
         finally:
             try:
-                if song_gen is not None:
-                    await song_gen.close_session()
                 if cookie is not None:
                     if remaining_count == -1:
                         await db_manager.delete_cookies(cookie)
                     else:
-                        await deleteSongID(db_manager, remaining_count, cookie)
+                        await delete_song_id(db_manager, remaining_count, cookie)
                         logger.info("成功执行了删除cookie songID的操作!")
+                if song_gen is not None:
+                    await song_gen.close_session()
             except Exception as e:
                 logger.error(f"创作结束出现错误：{str(e)}")
 
