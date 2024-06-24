@@ -187,30 +187,32 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除单个cookie的songID
-    # @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def delete_song_ids(self, count, cookie):
-        try:
-            await self.create_pool()
-            async with self.pool.acquire() as conn:
-                try:
-                    # 开始事务
+        await self.create_pool()
+        async with self.pool.acquire() as conn:
+            try:
+                async with conn.cursor() as cur:
                     await conn.begin()
-                    async with conn.cursor() as cur:
-                        logger.info(f"更新 suno2openai 表中 cookie 为 {cookie} 的记录，设置 count 为 {count}")
-                        await cur.execute('''
-                                          UPDATE suno2openai
-                                          SET count = %s, songID = NULL, songID2 = NULL
-                                          WHERE cookie = %s;
-                                  ''', (count, cookie))
-                        await conn.commit()
-                        rows_updated = cur.rowcount
-                        logger.info(f"更新操作完成，受影响的行数: {rows_updated}")
-                except Exception as e:
-                    await conn.rollback()
-                    raise HTTPException(status_code=500, detail=f"更新操作失败，事务已回滚: {e}")
-        except Exception as e:
-            await conn.rollback()
-            raise HTTPException(status_code=500, detail=f"{str(e)}")
+                    await cur.execute('''
+                        SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
+                    ''', (cookie,))
+                    logger.info(f"查询 suno2openai 表中 cookie 为 {cookie} 的记录")
+
+                    await cur.execute('''
+                        UPDATE suno2openai
+                        SET count = %s, songID = NULL, songID2 = NULL
+                        WHERE cookie = %s;
+                    ''', (count, cookie))
+
+                    await conn.commit()
+                    rows_updated = cur.rowcount
+                    logger.info(
+                        f"更新 suno2openai 表中 cookie 为 {cookie} 的记录，设置 count 为 {count}。受影响的行数: {rows_updated}")
+
+            except Exception as e:
+                await conn.rollback()
+                raise Exception(f"更新操作失败，事务已回滚: {e}")
 
     # 删除所有的songID
     @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
