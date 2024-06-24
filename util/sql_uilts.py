@@ -194,16 +194,18 @@ class DatabaseManager:
             try:
                 async with conn.cursor() as cur:
                     await conn.begin()
-                    await cur.execute('''
-                        SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
-                    ''', (cookie,))
+
+                    # 使用参数化查询
+                    select_query = "SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;"
+                    await cur.execute(select_query, (cookie,))
                     logger.info(f"查询 suno2openai 表中 cookie 为 {cookie} 的记录")
 
-                    await cur.execute('''
+                    update_query = '''
                         UPDATE suno2openai
-                        SET songID = NULL, songID2 = NULL
+                        SET count = %s, songID = NULL, songID2 = NULL
                         WHERE cookie = %s;
-                    ''', cookie)
+                    '''
+                    await cur.execute(update_query, (count, cookie))
 
                     await conn.commit()
                     rows_updated = cur.rowcount
