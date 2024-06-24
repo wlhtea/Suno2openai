@@ -46,7 +46,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
     for try_count in range(RETRIES):
         cookie = None
-        song_gen = None
         remaining_count = -1
         try:
             cookie = str(await db_manager.get_request_cookie()).strip()
@@ -63,7 +62,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 # "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0,
                 # "delta": {"content": str(cookie)}, "finish_reason": None}]})}\n\n"""
                 # yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-            return
 
             _return_ids = False
             _return_tags = False
@@ -236,7 +234,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 # 结束对songid的for重试
                 break
             # 结束重试
-            break
+            return
 
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
@@ -261,8 +259,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                     else:
                         await delete_song_id(db_manager, remaining_count, cookie)
                         logger.info("成功执行了删除cookie songID的操作!")
-                if song_gen is not None:
-                    await song_gen.close_session()
             except Exception as e:
                 logger.error(f"创作结束出现错误：{str(e)}")
 
