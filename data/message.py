@@ -47,6 +47,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
     for try_count in range(RETRIES):
         cookie = None
         song_gen = None
+        remaining_count = -1
         try:
             cookie = str(await db_manager.get_request_cookie()).strip()
             if cookie is None:
