@@ -69,3 +69,4 @@ async def deleteSongID(db_manager, count, cookie):
         await db_manager.delete_song_ids(count, cookie)
     except Exception as e:
         logger.info(f"删除音乐songID失败: {e}")
+        raise ValueError(f"删除音乐songID失败: {e}")
