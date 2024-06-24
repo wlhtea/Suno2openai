@@ -200,7 +200,7 @@ class DatabaseManager:
                     update_query = '''
                         UPDATE suno2openai
                         SET count = %s, songID = NULL, songID2 = NULL
-                        WHERE count > -1;;
+                        WHERE count > -1;
                     '''
                     await cur.execute(update_query, (count,))
                     await conn.commit()
