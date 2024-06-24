@@ -64,7 +64,7 @@ async def get_clips_ids(response: json):
 #     return cookieSelected
 
 
-async def deleteSongID(db_manager, count, cookie):
+async def delete_song_id(db_manager, count, cookie):
     try:
         await db_manager.delete_song_ids(count, cookie)
     except Exception as e:
