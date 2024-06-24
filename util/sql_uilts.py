@@ -201,9 +201,9 @@ class DatabaseManager:
 
                     await cur.execute('''
                         UPDATE suno2openai
-                        SET count = %s, songID = NULL, songID2 = NULL
+                        SET songID = NULL, songID2 = NULL
                         WHERE cookie = %s;
-                    ''', (count, cookie))
+                    ''', cookie)
 
                     await conn.commit()
                     rows_updated = cur.rowcount
