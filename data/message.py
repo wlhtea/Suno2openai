@@ -251,15 +251,14 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
         finally:
-            if cookie is not None:
-                logger.info("删除cookie songID")
-                remaining_count = await song_gen.get_limit_left()
-                logger.info("剩余次数为：" + str(remaining_count))
-                if remaining_count == -1:
-                    await db_manager.delete_cookies(cookie)
-                else:
-                    await delete_song_id(db_manager, remaining_count, cookie)
-                    logger.info("成功执行了删除cookie songID的操作!")
+            loop = asyncio.new_event_loop()
+            try:
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+            finally:
+                loop.close()
 
 
 # 返回消息，使用协程
@@ -328,3 +327,18 @@ def request_chat(start_time, db_manager, data, content_all, chat_id, timeStamp, 
     finally:
         loop.close()
         return result
+
+
+async def end_chat(cookie, db_manager, song_gen):
+    try:
+        if cookie is not None:
+            logger.info("删除cookie songID")
+            remaining_count = await song_gen.get_limit_left()
+            logger.info("剩余次数为：" + str(remaining_count))
+            if remaining_count == -1:
+                await db_manager.delete_cookies(cookie)
+            else:
+                await delete_song_id(db_manager, remaining_count, cookie)
+                logger.info("成功执行了删除cookie songID的操作!")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
