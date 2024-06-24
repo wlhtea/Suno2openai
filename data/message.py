@@ -56,8 +56,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 song_gen = SongsGen(cookie)
                 remaining_count = await song_gen.get_limit_left()
                 if remaining_count == -1:
-                    await db_manager.delete_cookies(cookie)
-                    cookie = None
                     raise RuntimeError("该账号剩余次数为 -1，无法使用")
 
                 # 测试并发集
@@ -238,13 +236,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 # 结束对songid的for重试
                 break
             # 结束重试
-            if cookie is not None:
-                if remaining_count == -1:
-                    await db_manager.delete_cookies(cookie)
-                else:
-                    await delete_song_id(db_manager, remaining_count, cookie)
-                    logger.info("成功执行了删除cookie songID的操作!")
-                cookie = None
             break
 
         except PromptException as e:
