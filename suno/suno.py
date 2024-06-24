@@ -78,20 +78,23 @@ class SongsGen:
 
     # 关闭会话
     async def close_session(self):
-        if self.request_session is not None:
-            try:
-                await self.request_session.close()
-            except Exception as e:
-                logger.error(f"Error closing request session: {e}")
-            finally:
-                self.request_session = None
-        if self.token_session is not None:
-            try:
-                await self.token_session.close()
-            except Exception as e:
-                logger.error(f"Error closing token session: {e}")
-            finally:
-                self.token_session = None
+        try:
+            if self.request_session is not None:
+                try:
+                    await self.request_session.close()
+                except Exception as e:
+                    logger.error(f"Error closing request session: {e}")
+                finally:
+                    self.request_session = None
+            if self.token_session is not None:
+                try:
+                    await self.token_session.close()
+                except Exception as e:
+                    logger.error(f"Error closing token session: {e}")
+                finally:
+                    self.token_session = None
+        except Exception as e:
+            raise Exception(f"关闭song_gen会话失败: {e}")
 
     # 获取token
     async def get_auth_token(self, w=None):

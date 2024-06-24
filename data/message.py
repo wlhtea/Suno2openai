@@ -235,6 +235,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                 pass
                 # 结束while
                 break
+            # 结束对songid的for重试
+            break
 
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
@@ -252,13 +254,14 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
         finally:
-            remaining_count = await song_gen.get_limit_left()
-            if cookie is not None:
-                await deleteSongID(db_manager, remaining_count, cookie)
-            if song_gen is not None:
-                await song_gen.close_session()
-            # 结束对songid的for重试
-            break
+            try:
+                if song_gen is not None:
+                    remaining_count = await song_gen.get_limit_left()
+                    await song_gen.close_session()
+                if cookie is not None:
+                    await deleteSongID(db_manager, remaining_count, cookie)
+            except Exception as e:
+                logger.error(f"创作结束出现错误：{str(e)}")
 
 
 # 返回消息，使用协程
