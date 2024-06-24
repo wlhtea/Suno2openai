@@ -184,7 +184,7 @@ class DatabaseManager:
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除单个cookie的songID
-    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
+    # @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def delete_song_ids(self, count, cookie):
         await self.create_pool()
         async with self.pool.acquire() as conn:
