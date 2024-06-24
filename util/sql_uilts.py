@@ -194,12 +194,12 @@ class DatabaseManager:
                 async with conn.cursor() as cur:
                     # 锁定目标行以防止其他事务修改
                     await cur.execute(f'''
-                       SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
+                            SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
                     ''', (cookie,))
-                    await cur.execute(f'''
-                       UPDATE suno2openai
-                       SET songID = NULL, songID2 = NULL, count = %s
-                       WHERE cookie = %s
+                    await cur.execute('''
+                            UPDATE suno2openai
+                            SET count = %s, songID = NULL, songID2 = NULL
+                            WHERE cookie = %s;
                     ''', (count, cookie))
                     await conn.commit()
             except Exception as e:
