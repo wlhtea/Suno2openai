@@ -46,6 +46,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
     for try_count in range(RETRIES):
         cookie = None
+        song_gen = None
         try:
             cookie = str(await db_manager.get_request_cookie()).strip()
             if cookie is None:
@@ -252,15 +253,14 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
         finally:
-            # loop = asyncio.get_event_loop()
-            # try:
-            #     loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
-            # except Exception as e:
-            #     raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
-            try:
-                asyncio.run(end_chat(cookie, db_manager, song_gen))
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(end_chat(cookie, db_manager, song_gen))
+            else:
+                try:
+                    loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
 
 # 返回消息，使用协程
