@@ -196,13 +196,6 @@ class DatabaseManager:
                     # 开始事务
                     await conn.begin()
                     async with conn.cursor() as cur:
-                        logger.info(f"锁定 cookie 为 {cookie} 的行")
-                        # 锁定目标行以防止其他事务修改
-                        await cur.execute('''
-                                          SELECT cookie FROM suno2openai WHERE cookie = %s FOR UPDATE;
-                                  ''', (cookie,))
-                        logger.info("行已锁定")
-
                         logger.info(f"更新 suno2openai 表中 cookie 为 {cookie} 的记录，设置 count 为 {count}")
                         await cur.execute('''
                                           UPDATE suno2openai
@@ -211,17 +204,13 @@ class DatabaseManager:
                                   ''', (count, cookie))
                         affected_rows = cur.rowcount
                         logger.info(f"更新操作完成，受影响的行数: {affected_rows}")
-
                     # 提交事务
                     await conn.commit()
-                    logger.info("事务已成功提交")
                 except Exception as e:
                     await conn.rollback()
-                    logger.error(f"更新操作失败，事务已回滚: {e}")
-                    raise HTTPException(status_code=500, detail=f"{str(e)}")
+                    raise HTTPException(status_code=500, detail=f"更新操作失败，事务已回滚: {e}")
         except Exception as e:
             await conn.rollback()
-            logger.error(f"更新操作失败，事务已回滚: {e}")
             raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # 删除所有的songID
