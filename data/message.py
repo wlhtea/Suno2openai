@@ -56,7 +56,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 song_gen = SongsGen(cookie)
                 remaining_count = await song_gen.get_limit_left()
                 if remaining_count == -1:
-                    await db_manager.delete_cookies(cookie)
                     raise RuntimeError("该账号剩余次数为 -1，无法使用")
 
                 # 测试并发集
@@ -257,10 +256,12 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         finally:
             try:
                 if song_gen is not None:
-                    remaining_count = await song_gen.get_limit_left()
                     await song_gen.close_session()
                 if cookie is not None:
-                    await deleteSongID(db_manager, remaining_count, cookie)
+                    if remaining_count == -1:
+                        await db_manager.delete_cookies(cookie)
+                    else:
+                        await deleteSongID(db_manager, remaining_count, cookie)
             except Exception as e:
                 logger.error(f"创作结束出现错误：{str(e)}")
 
