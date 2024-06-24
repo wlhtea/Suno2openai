@@ -134,7 +134,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         try:
                             title = now_data[0]["title"]
                             if title != '':
-                                title_data = f"- **🤖 歌名**：{title} \n\n"
+                                title_data = f"- **🤖 歌名**：{title} \n"
                                 yield """data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
                                 _return_title = True
                                 continue
