@@ -258,10 +258,13 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 logger.info(f"cookie: {cookie}")
                 if song_gen is not None:
                     await song_gen.close_session()
+                    logger.info("成功关闭session")
                 if cookie is not None:
                     if remaining_count == -1:
+                        logger.info("执行了删除cookie的操作")
                         await db_manager.delete_cookies(cookie)
                     else:
+                        logger.info("执行了删除cookie songID的操作")
                         await deleteSongID(db_manager, remaining_count, cookie)
             except Exception as e:
                 logger.error(f"创作结束出现错误：{str(e)}")
