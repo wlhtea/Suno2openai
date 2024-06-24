@@ -202,10 +202,9 @@ class DatabaseManager:
                                           SET count = %s, songID = NULL, songID2 = NULL
                                           WHERE cookie = %s;
                                   ''', (count, cookie))
-                        affected_rows = cur.rowcount
-                        logger.info(f"更新操作完成，受影响的行数: {affected_rows}")
-                    # 提交事务
-                    await conn.commit()
+                        await conn.commit()
+                        rows_updated = cur.rowcount
+                        logger.info(f"更新操作完成，受影响的行数: {rows_updated}")
                 except Exception as e:
                     await conn.rollback()
                     raise HTTPException(status_code=500, detail=f"更新操作失败，事务已回滚: {e}")
