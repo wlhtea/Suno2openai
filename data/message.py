@@ -332,7 +332,6 @@ def request_chat(start_time, db_manager, data, content_all, chat_id, timeStamp, 
 async def end_chat(cookie, db_manager, song_gen):
     try:
         if cookie is not None:
-            logger.info("删除cookie songID")
             remaining_count = await song_gen.get_limit_left()
             logger.info("剩余次数为：" + str(remaining_count))
             if remaining_count == -1:
