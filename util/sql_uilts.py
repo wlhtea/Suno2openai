@@ -211,6 +211,10 @@ class DatabaseManager:
                 # 提交事务
                 await conn.commit()
                 logger.info("事务已成功提交")
+            except Exception as e:
+                await conn.rollback()
+                raise HTTPException(status_code=500, detail=f"{str(e)}")
+
 
     # 删除所有的songID
     @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
