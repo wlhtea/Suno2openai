@@ -60,35 +60,47 @@ class SongsGen:
 
     # 获取token
     async def _get_session_id(self):
-        async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
-            try:
-                async with request_session.get(get_session_url, headers=self.token_headers,
-                                               proxy=self.proxy) as response:
-                    response.raise_for_status()
-                    data = await response.json()
-                    sessions = data.get("response", {}).get("sessions")
-                    if not sessions:
-                        raise ValueError("No session data in response")
-                    session_id = sessions[0].get('id')
-                    if not session_id:
-                        raise ValueError("Failed to get session id")
-                    return session_id
-            except (aiohttp.ClientError, ValueError) as e:
-                raise Exception(f"Failed to get session id: {e}")
+        try:
+            async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
+                try:
+                    async with request_session.get(get_session_url, headers=self.token_headers,
+                                                   proxy=self.proxy) as response:
+                        response.raise_for_status()
+                        data = await response.json()
+                        sessions = data.get("response", {}).get("sessions")
+                        if not sessions:
+                            raise ValueError("No session data in response")
+                        session_id = sessions[0].get('id')
+                        if not session_id:
+                            raise ValueError("Failed to get session id")
+                        return session_id
+                except (aiohttp.ClientError, ValueError) as e:
+                    raise Exception(f"Failed to get session id: {e}")
+        except Exception as outer_e:
+            # 记录会话创建过程中的异常
+            logger.error(f"无法建立会话: {outer_e}")
+            return -1
+
 
     async def _get_jwt_token(self, session_id):
-        async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
-            try:
-                async with request_session.post(exchange_token_url.format(sid=session_id),
-                                                headers=self.token_headers, proxy=self.proxy) as response:
-                    response.raise_for_status()
-                    data = await response.json()
-                    jwt_token = data.get('jwt')
-                    if not jwt_token:
-                        raise ValueError("Failed to get JWT token")
-                    return jwt_token
-            except (aiohttp.ClientError, ValueError) as e:
-                raise Exception(f"Failed to get JWT token: {e}")
+        try:
+            async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
+                try:
+                    async with request_session.post(exchange_token_url.format(sid=session_id),
+                                                    headers=self.token_headers, proxy=self.proxy) as response:
+                        response.raise_for_status()
+                        data = await response.json()
+                        jwt_token = data.get('jwt')
+                        if not jwt_token:
+                            raise ValueError("Failed to get JWT token")
+                        return jwt_token
+                except (aiohttp.ClientError, ValueError) as e:
+                    raise Exception(f"Failed to get JWT token: {e}")
+        except Exception as outer_e:
+            # 记录会话创建过程中的异常
+            logger.error(f"无法建立会话: {outer_e}")
+            return -1
+
 
     async def get_auth_token(self, w=None):
         try:
