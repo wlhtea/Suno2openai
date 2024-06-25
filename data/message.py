@@ -244,8 +244,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 continue
             else:
                 logger.error(f"生成歌曲错误，尝试歌曲到达最大次数，错误为：{str(e)}")
-                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
-                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
         finally:
             loop = asyncio.get_event_loop()
