@@ -17,6 +17,7 @@ from util.utils import generate_music, get_feed
 async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         timeStamp, ModelVersion, tags=None, title=None,
                         continue_at=None, continue_clip_id=None):
+    
     if ModelVersion == "suno-v3":
         Model = "chirp-v3-0"
     elif ModelVersion == "suno-v3.5":
@@ -43,6 +44,9 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             "continue_at": continue_at,
             "continue_clip_id": continue_clip_id
         }
+
+    if len(chat_user_message) > 200:
+        raise HTTPException(status_code=400, detail=f"请求生成音乐出错: [{chat_user_message}], {str('输入的歌曲提示长度超过200')}")
 
     for try_count in range(RETRIES):
         cookie = None
