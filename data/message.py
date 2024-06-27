@@ -244,7 +244,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             break
 
         except Exception as e:
-            if try_count < RETRIES:
+            if try_count < RETRIES - 1:
                 logger.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}，重试中......")
                 continue
             else:
