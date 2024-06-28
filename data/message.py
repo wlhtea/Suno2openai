@@ -17,7 +17,6 @@ from util.utils import generate_music, get_feed
 async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         timeStamp, ModelVersion, tags=None, title=None,
                         continue_at=None, continue_clip_id=None):
-    
     if ModelVersion == "suno-v3":
         Model = "chirp-v3-0"
     elif ModelVersion == "suno-v3.5":
@@ -46,7 +45,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         }
 
     if len(chat_user_message) > 200:
-        raise HTTPException(status_code=400, detail=f"请求生成音乐出错: [{chat_user_message}], {str('输入的歌曲提示长度超过200')}")
+        raise HTTPException(status_code=400,
+                            detail=f"请求生成音乐出错: [{chat_user_message}], {str('输入的歌曲提示长度超过200')}")
 
     for try_count in range(RETRIES):
         cookie = None
@@ -252,14 +252,20 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
         finally:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(end_chat(cookie, db_manager, song_gen))
-            else:
-                try:
-                    loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
-                except Exception as e:
-                    raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(end_chat(cookie, db_manager, song_gen))
+                else:
+                    try:
+                        loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+                    except Exception as e:
+                        raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+            finally:
+                if not loop.is_running():
+                    loop.close()
 
 
 # 返回消息，使用协程
