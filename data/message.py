@@ -272,7 +272,7 @@ async def response_async(start_time, db_manager, data, content_all, chat_id, tim
 
     # 检查输入的歌曲提示长度
     if len(last_user_content) > 200:
-        raise HTTPException(status_code=500, detail=f"请求生成音乐出错: [{last_user_content}], {str('输入的歌曲提示长度超过200')}")
+        raise HTTPException(status_code=400, detail=f"请求生成音乐出错: [{last_user_content}], {str('输入的歌曲提示长度超过200')}")
 
     if not data.stream:
         try:
