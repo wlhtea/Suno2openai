@@ -266,17 +266,13 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 if not loop.is_running():
                     await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
                 else:
-                    # 当前事件循环正在运行，使用新的事件循环来运行 end_chat
-                    new_loop = asyncio.new_event_loop()
-                    await new_loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
-                    new_loop.close()
+                    future = asyncio.run_coroutine_threadsafe(end_chat(cookie, db_manager, remaining_count), loop)
+                    future.result()
             except Exception as e:
                 logger.error(f"结束聊天时出错: {str(e)}")
             finally:
                 if loop:
                     loop.close()
-                if new_loop:
-                    new_loop.close()
 
 
 async def end_chat(cookie, db_manager, remaining_count):
