@@ -263,12 +263,15 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             loop = None
             try:
                 loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    await loop.create_task(end_chat(cookie, db_manager, remaining_count))
-                else:
+                if not loop.is_running():
                     await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
+                else:
+                    # 当前事件循环正在运行，使用新的事件循环来运行 end_chat
+                    new_loop = asyncio.new_event_loop()
+                    await new_loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
+                    new_loop.close()
             except Exception as e:
-                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+                logger.error(f"结束聊天时出错: {str(e)}")
             finally:
                 if loop and not loop.is_running():
                     loop.close()
