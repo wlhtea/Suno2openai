@@ -277,7 +277,9 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
 async def end_chat(cookie, db_manager, song_gen):
     try:
+        logger.info("进入end_chat")
         if cookie is not None:
+            logger.info("开启查询次数")
             remaining_count = await song_gen.get_limit_left()
             if remaining_count == -1:
                 logger.info("准备删除cookie")
