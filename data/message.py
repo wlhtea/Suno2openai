@@ -5,7 +5,8 @@ import json
 from fastapi import HTTPException
 from starlette.responses import StreamingResponse, JSONResponse
 
-from data.PromptException import PromptException
+from exception.MaxTokenException import MaxTokenException
+from exception.PromptException import PromptException
 from suno.suno import SongsGen
 from util.config import RETRIES
 from util.logger import logger
@@ -45,8 +46,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         }
 
     if len(chat_user_message) > 200:
-        raise HTTPException(status_code=400,
-                            detail=f"请求生成音乐出错: [{chat_user_message}], {str('输入的歌曲提示长度超过200')}")
+        raise MaxTokenException(f"请求生成音乐出错: [{chat_user_message}], {str('输入的歌曲提示长度超过200')}")
 
     for try_count in range(RETRIES):
         cookie = None
@@ -237,6 +237,10 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                             except:
                                 pass
 
+        except MaxTokenException as e:
+            logger.error(f"生成歌曲失败，错误为：{str(e)}")
+            raise HTTPException(status_code=400, detail=f"{str(e)}")
+
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
@@ -252,19 +256,17 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
         finally:
+            loop = None
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    loop.create_task(end_chat(cookie, db_manager, song_gen))
+                    await loop.create_task(end_chat(cookie, db_manager, song_gen))
                 else:
-                    try:
-                        loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
-                    except Exception as e:
-                        raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+                    loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
             finally:
-                if not loop.is_running():
+                if loop and not loop.is_running():
                     loop.close()
 
 
