@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 import asyncio
 import json
-from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import HTTPException
 from starlette.responses import StreamingResponse, JSONResponse
@@ -13,8 +12,6 @@ from util.config import RETRIES
 from util.logger import logger
 from util.tool import get_clips_ids, check_status_complete, calculate_token_costs, delete_song_id
 from util.utils import generate_music, get_feed
-
-executor = ThreadPoolExecutor(max_workers=300, thread_name_prefix="Music_songId_delete")
 
 
 # 流式请求
@@ -263,27 +260,23 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
         finally:
+            loop = None
             try:
-                future = executor.submit(end_chat(cookie, db_manager, song_gen))
-                future.result()
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    logger.info("loop.is_running()")
+                    await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+                else:
+                    await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-
-            # loop = None
-            # try:
-            #     loop = asyncio.get_event_loop()
-            #     if loop.is_running():
-            #         await loop.create_task(end_chat(cookie, db_manager, song_gen))
-            #     else:
-            #         await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
-            # except Exception as e:
-            #     raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
-            # finally:
-            #     if loop and not loop.is_running():
-            #         loop.close()
+                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+            finally:
+                if loop and not loop.is_running():
+                    loop.close()
 
 
-async def end_chat_sync(cookie, db_manager, song_gen):
+async def end_chat(cookie, db_manager, song_gen):
     try:
         if cookie is not None:
             remaining_count = await song_gen.get_limit_left()
@@ -291,21 +284,9 @@ async def end_chat_sync(cookie, db_manager, song_gen):
                 await db_manager.delete_cookies(cookie)
             else:
                 await delete_song_id(db_manager, remaining_count, cookie)
-            logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
+                logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
-
-
-def end_chat(cookie, db_manager, song_gen):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            future = executor.submit(asyncio.run, end_chat_sync(cookie, db_manager, song_gen))
-            future.result()
-        else:
-            asyncio.run(end_chat_sync(cookie, db_manager, song_gen))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
 
 # 返回消息，使用协程
@@ -374,5 +355,6 @@ def request_chat(start_time, db_manager, data, content_all, chat_id, timeStamp, 
     finally:
         loop.close()
         return result
+
 
 
