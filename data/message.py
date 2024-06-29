@@ -263,15 +263,16 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             loop = None
             try:
                 loop = asyncio.get_event_loop()
-                if not loop.is_running():
+                if loop.is_running():
+                    loop.close()
+                    loop = asyncio.new_event_loop()
                     await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
                 else:
-                    future = asyncio.run_coroutine_threadsafe(end_chat(cookie, db_manager, remaining_count), loop)
-                    future.result()
+                    await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
             except Exception as e:
                 logger.error(f"结束聊天时出错: {str(e)}")
             finally:
-                if loop:
+                if loop and not loop.is_running():
                     loop.close()
 
 
