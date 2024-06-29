@@ -264,12 +264,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             while True:
                 try:
                     loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        task = await loop.create_task(end_chat(cookie, db_manager, remaining_count))
-                        while not task.done():
-                            logger.info("检测任务完成中。。。。。。")
-                        break
-                    else:
+                    if not loop.is_running():
                         await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
                         break
                 except Exception as e:
@@ -289,6 +284,7 @@ async def end_chat(cookie, db_manager, remaining_count):
                 logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
+
 
 
 # 返回消息，使用协程
