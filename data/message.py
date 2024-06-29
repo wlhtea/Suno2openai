@@ -50,12 +50,14 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         cookie = None
         remaining_count = 0
         try:
+            tem_text = "\n### 🤯 Creating\n\n```suno\n{prompt:" + f"{chat_user_message}" + "}\n```\n\n"
             if len(chat_user_message) > 200:
-                raise MaxTokenException(f"### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
+                raise MaxTokenException(f"{tem_text}### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
                                         f"输入的歌曲提示词长度超过`200`，歌曲创作失败😭\n\n### "
                                         f"👀 更多\n\n**🤗请更换提示词，我会为你重新创作**🎶✨\n")
 
-            cookie = str(await db_manager.get_request_cookie()).strip()
+            cookie = await db_manager.get_request_cookie()
+            cookie = str(cookie).strip()
             if cookie is None:
                 raise RuntimeError("没有可用的cookie")
             else:
@@ -92,7 +94,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             if not song_id_1 and not song_id_2:
                 raise Exception("生成clip_ids为空")
 
-            tem_text = "\n### 🤯 Creating\n\n```suno\n{prompt:" + f"{chat_user_message}" + "}\n```\n\n"
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"role": "assistant", "content": tem_text}, "finish_reason": None}]})}\n\n"""
             for clip_id in clip_ids:
                 count = 0
