@@ -18,34 +18,35 @@ from util.utils import generate_music, get_feed
 async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         timeStamp, ModelVersion, tags=None, title=None,
                         continue_at=None, continue_clip_id=None):
-    if ModelVersion == "suno-v3":
-        Model = "chirp-v3-0"
-    elif ModelVersion == "suno-v3.5":
-        Model = "chirp-v3-5"
-    else:
-        yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("请选择suno-v3 或者 suno-v3.5其中一个")}, "finish_reason": None}]})}\n\n"""
-        yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-        return
-
-    data = {
-        "gpt_description_prompt": f"{chat_user_message}",
-        "prompt": "",
-        "mv": Model,
-        "title": "",
-        "tags": ""
-    }
-
-    if continue_clip_id is not None:
-        data = {
-            "prompt": chat_user_message,
-            "mv": Model,
-            "title": title,
-            "tags": tags,
-            "continue_at": continue_at,
-            "continue_clip_id": continue_clip_id
-        }
 
     for try_count in range(RETRIES):
+        if ModelVersion == "suno-v3":
+            Model = "chirp-v3-0"
+        elif ModelVersion == "suno-v3.5":
+            Model = "chirp-v3-5"
+        else:
+            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("请选择suno-v3 或者 suno-v3.5其中一个")}, "finish_reason": None}]})}\n\n"""
+            yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            return
+
+        data = {
+            "gpt_description_prompt": f"{chat_user_message}",
+            "prompt": "",
+            "mv": Model,
+            "title": "",
+            "tags": ""
+        }
+
+        if continue_clip_id is not None:
+            data = {
+                "prompt": chat_user_message,
+                "mv": Model,
+                "title": title,
+                "tags": tags,
+                "continue_at": continue_at,
+                "continue_clip_id": continue_clip_id
+            }
+
         cookie = None
         song_gen = None
         try:
@@ -241,14 +242,14 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         except MaxTokenException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-            # 结束请求重试
             break
+            # 结束请求重试
 
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-            # 结束请求重试
             break
+            # 结束请求重试
 
         except Exception as e:
             if try_count < RETRIES - 1:
@@ -259,18 +260,22 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
         finally:
-            loop = None
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    await loop.create_task(end_chat(cookie, db_manager, song_gen))
-                else:
-                    loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
-            finally:
-                if loop and not loop.is_running():
-                    loop.close()
+            asyncio.run(handle_end_chat(cookie, db_manager, song_gen))
+
+
+async def handle_end_chat(cookie, db_manager, song_gen):
+    loop = None
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            await loop.create_task(end_chat(cookie, db_manager, song_gen))
+        else:
+            await end_chat(cookie, db_manager, song_gen)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+    finally:
+        if not loop.is_running():
+            loop.close()
 
 
 # 返回消息，使用协程
