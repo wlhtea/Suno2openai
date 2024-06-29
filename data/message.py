@@ -47,7 +47,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             }
 
         cookie = None
-        song_gen = None
         remaining_count = 0
         try:
             if len(chat_user_message) > 200:
@@ -265,8 +264,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    logger.info("loop.is_running()")
-                    await end_chat(cookie, db_manager, remaining_count)
+                    await loop.create_task(end_chat(cookie, db_manager, remaining_count))
                 else:
                     await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
             except Exception as e:
@@ -278,14 +276,10 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
 async def end_chat(cookie, db_manager, remaining_count):
     try:
-        logger.info("进入end_chat")
         if cookie is not None:
             if remaining_count == -1:
-                logger.info("准备删除cookie")
                 await db_manager.delete_cookies(cookie)
-                logger.info("删除cookie成功")
             else:
-                logger.info("准备更新cookie")
                 await db_manager.delete_song_ids(remaining_count, cookie)
                 logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
     except Exception as e:
