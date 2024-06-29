@@ -45,6 +45,11 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             "continue_clip_id": continue_clip_id
         }
 
+    if len(chat_user_message) > 200:
+        raise MaxTokenException(f"### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
+                                f"输入的歌曲提示词长度超过200，歌曲创作失败😭\n\n### "
+                                f"👀 更多\n\n**🤗请更换提示词，我会为你重新创作**🎶✨\n")
+
     for try_count in range(RETRIES):
         cookie = None
         song_gen = None
@@ -235,8 +240,10 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                 pass
 
         except MaxTokenException as e:
-            logger.error(f"生成歌曲失败，错误为：{str(e)}")
-            raise HTTPException(status_code=400, detail=f"{str(e)}")
+            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
+            yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            # 结束请求重试
+            break
 
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
@@ -269,11 +276,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
 # 返回消息，使用协程
 async def response_async(start_time, db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
-
-    # 检查输入的歌曲提示长度
-    if len(last_user_content) > 200:
-        raise HTTPException(status_code=400, detail=f"请求生成音乐出错: [{last_user_content}], {str('输入的歌曲提示长度超过200')}")
-
     if not data.stream:
         try:
             async for data_string in generate_data(start_time, db_manager, last_user_content,
