@@ -5,11 +5,12 @@ import json
 from fastapi import HTTPException
 from starlette.responses import StreamingResponse, JSONResponse
 
-from data.PromptException import PromptException
+from exception.MaxTokenException import MaxTokenException
+from exception.PromptException import PromptException
 from suno.suno import SongsGen
 from util.config import RETRIES
 from util.logger import logger
-from util.tool import get_clips_ids, check_status_complete, deleteSongID, calculate_token_costs
+from util.tool import get_clips_ids, check_status_complete, calculate_token_costs, delete_song_id
 from util.utils import generate_music, get_feed
 
 
@@ -48,6 +49,11 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         cookie = None
         song_gen = None
         try:
+            if len(chat_user_message) > 200:
+                raise MaxTokenException(f"### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
+                                        f"输入的歌曲提示词长度超过`200`，歌曲创作失败😭\n\n### "
+                                        f"👀 更多\n\n**🤗请更换提示词，我会为你重新创作**🎶✨\n")
+
             cookie = str(await db_manager.get_request_cookie()).strip()
             if cookie is None:
                 raise RuntimeError("没有可用的cookie")
@@ -55,7 +61,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 song_gen = SongsGen(cookie)
                 remaining_count = await song_gen.get_limit_left()
                 if remaining_count == -1:
-                    await db_manager.delete_cookies(cookie)
                     raise RuntimeError("该账号剩余次数为 -1，无法使用")
 
                 # 测试并发集
@@ -63,7 +68,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 # "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0,
                 # "delta": {"content": str(cookie)}, "finish_reason": None}]})}\n\n"""
                 # yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
-                # return
 
             _return_ids = False
             _return_tags = False
@@ -134,7 +138,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         try:
                             title = now_data[0]["title"]
                             if title != '':
-                                title_data = f"- **🤖 歌名**：{title} \n\n"
+                                title_data = f"- **🤖 歌名**：{title} \n"
                                 yield """data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": title_data}, "finish_reason": None}]})}\n\n"""
                                 _return_title = True
                                 continue
@@ -220,7 +224,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                         f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                                     yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
                                     _return_Forever_url = True
-                                    break
+                                    # while循环
+                                    return
 
                                 else:
                                     count += 1
@@ -233,9 +238,11 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                     continue
                             except:
                                 pass
-                # 结束while
-                break
-            # 结束对songid的for重试
+
+        except MaxTokenException as e:
+            yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
+            yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            # 结束请求重试
             break
 
         except PromptException as e:
@@ -245,19 +252,26 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             break
 
         except Exception as e:
-            if try_count < RETRIES:
+            if try_count < RETRIES - 1:
                 logger.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}，重试中......")
                 continue
             else:
                 logger.error(f"生成歌曲错误，尝试歌曲到达最大次数，错误为：{str(e)}")
-                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
-                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
         finally:
-            if song_gen is not None:
-                await song_gen.close_session()
-            if cookie is not None:
-                await deleteSongID(db_manager, cookie)
+            loop = None
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    await loop.create_task(end_chat(cookie, db_manager, song_gen))
+                else:
+                    loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+            finally:
+                if loop and not loop.is_running():
+                    loop.close()
 
 
 # 返回消息，使用协程
@@ -326,3 +340,16 @@ def request_chat(start_time, db_manager, data, content_all, chat_id, timeStamp, 
     finally:
         loop.close()
         return result
+
+
+async def end_chat(cookie, db_manager, song_gen):
+    try:
+        if cookie is not None:
+            remaining_count = await song_gen.get_limit_left()
+            if remaining_count == -1:
+                await db_manager.delete_cookies(cookie)
+            else:
+                await delete_song_id(db_manager, remaining_count, cookie)
+                logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")

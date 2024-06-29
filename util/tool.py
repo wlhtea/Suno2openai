@@ -64,11 +64,9 @@ async def get_clips_ids(response: json):
 #     return cookieSelected
 
 
-async def deleteSongID(db_manager, cookie):
-    for attempt in range(RETRIES):
-        try:
-            await db_manager.delete_song_ids(cookie)
-            return
-        except Exception as e:
-            if attempt > RETRIES - 1:
-                logger.info(f"删除音乐songID失败: {e}")
+async def delete_song_id(db_manager, count, cookie):
+    try:
+        await db_manager.delete_song_ids(count, cookie)
+    except Exception as e:
+        logger.info(f"删除音乐songID失败: {e}")
+        raise ValueError(f"删除音乐songID失败: {e}")

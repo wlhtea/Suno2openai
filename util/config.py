@@ -8,7 +8,7 @@ from util.logger import logger
 load_dotenv(encoding="ascii")
 
 # 版本号
-VERSION = "0.2.1"
+VERSION = "0.2.3"
 
 # BASE_URL
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')

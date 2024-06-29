@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, HTTPException, Query
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -111,7 +111,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
     # 初始化并启动 APScheduler
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(cron_optimize_cookies, IntervalTrigger(minutes=60), id='Refresh_and_delete_run')
+
+    scheduler.add_job(cron_optimize_cookies, CronTrigger(hour=13, minute=0), id='Refresh_and_delete_run')
     scheduler.start()
 
     try:
