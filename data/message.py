@@ -284,8 +284,8 @@ async def end_chat(cookie, db_manager, remaining_count):
             if remaining_count == -1:
                 await db_manager.delete_cookies(cookie)
             else:
-                end_time = int(time.time())
                 await db_manager.delete_song_ids(remaining_count, cookie)
+                end_time = int(time.time())
                 logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次, 耗时：{end_time - start_time}秒")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
