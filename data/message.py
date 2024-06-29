@@ -10,7 +10,7 @@ from exception.PromptException import PromptException
 from suno.suno import SongsGen
 from util.config import RETRIES
 from util.logger import logger
-from util.tool import get_clips_ids, check_status_complete, calculate_token_costs, delete_song_id
+from util.tool import get_clips_ids, check_status_complete, calculate_token_costs
 from util.utils import generate_music, get_feed
 
 
@@ -280,9 +280,12 @@ async def end_chat(cookie, db_manager, song_gen):
         if cookie is not None:
             remaining_count = await song_gen.get_limit_left()
             if remaining_count == -1:
+                logger.info("准备删除cookie")
                 await db_manager.delete_cookies(cookie)
+                logger.info("删除cookie成功")
             else:
-                await delete_song_id(db_manager, remaining_count, cookie)
+                logger.info("准备更新cookie")
+                await db_manager.delete_song_ids(remaining_count, cookie)
                 logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
