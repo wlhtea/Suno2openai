@@ -102,8 +102,9 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                     #         _return_title and _return_prompt and _return_image_url and _return_audio_url):
                     #     break
 
+                    token, sid = await song_gen.get_auth_token(w=1)
+
                     try:
-                        token, sid = await song_gen.get_auth_token(w=1)
                         now_data = await get_feed(ids=clip_id, token=token)
                         more_information_ = now_data[0]['metadata']
                     except:
@@ -260,15 +261,26 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
         finally:
-            asyncio.run(handle_end_chat(cookie, db_manager, song_gen))
+            loop = None
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    future = asyncio.ensure_future(end_chat(cookie, db_manager, song_gen))
+                    loop.run_until_complete(future)
+                else:
+                    loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+            finally:
+                if loop and not loop.is_running():
+                    loop.close()
 
 
 async def handle_end_chat(cookie, db_manager, song_gen):
-    loop = None
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            await loop.create_task(end_chat(cookie, db_manager, song_gen))
+            loop.create_task(end_chat(cookie, db_manager, song_gen))
         else:
             await end_chat(cookie, db_manager, song_gen)
     except Exception as e:
@@ -276,7 +288,6 @@ async def handle_end_chat(cookie, db_manager, song_gen):
     finally:
         if not loop.is_running():
             loop.close()
-
 
 # 返回消息，使用协程
 async def response_async(start_time, db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
