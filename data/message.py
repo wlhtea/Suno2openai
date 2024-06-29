@@ -273,8 +273,10 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             except Exception as e:
                 logger.error(f"结束聊天时出错: {str(e)}")
             finally:
-                if loop and not loop.is_running():
+                if loop:
                     loop.close()
+                if new_loop:
+                    new_loop.close()
 
 
 async def end_chat(cookie, db_manager, remaining_count):
