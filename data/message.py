@@ -283,6 +283,31 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             #         loop.close()
 
 
+async def end_chat_sync(cookie, db_manager, song_gen):
+    try:
+        if cookie is not None:
+            remaining_count = await song_gen.get_limit_left()
+            if remaining_count == -1:
+                await db_manager.delete_cookies(cookie)
+            else:
+                await delete_song_id(db_manager, remaining_count, cookie)
+            logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
+
+
+def end_chat(cookie, db_manager, song_gen):
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            future = executor.submit(asyncio.run, end_chat_sync(cookie, db_manager, song_gen))
+            future.result()
+        else:
+            asyncio.run(end_chat_sync(cookie, db_manager, song_gen))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+
+
 # 返回消息，使用协程
 async def response_async(start_time, db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
     if not data.stream:
@@ -351,18 +376,3 @@ def request_chat(start_time, db_manager, data, content_all, chat_id, timeStamp, 
         return result
 
 
-def end_chat(cookie, db_manager, song_gen):
-    loop = asyncio.new_event_loop()
-    try:
-        asyncio.set_event_loop(loop)
-        if cookie is not None:
-            remaining_count = loop.run_until_complete(song_gen.get_limit_left())
-            if remaining_count == -1:
-                loop.run_until_complete(db_manager.delete_cookies(cookie))
-            else:
-                loop.run_until_complete(delete_song_id(db_manager, remaining_count, cookie))
-                logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
-    finally:
-        loop.close()
