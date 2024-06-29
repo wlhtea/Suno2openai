@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 import asyncio
 import json
+import time
 
 from fastapi import HTTPException
 from starlette.responses import StreamingResponse, JSONResponse
@@ -261,35 +262,33 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
         finally:
             loop = None
-            while True:
-                try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        task = loop.create_task(end_chat(cookie, db_manager, remaining_count))
-                        await task
-                        break
-                    else:
-                        await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
-                        logger.info("结束聊天成功")
-                        break
-                except Exception as e:
-                    logger.error(f"结束聊天时出错: {str(e)}")
-                finally:
-                    if loop and not loop.is_running():
-                        loop.close()
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(end_chat(cookie, db_manager, remaining_count))
+                    await asyncio.sleep(3)
+                else:
+                    await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
+                    logger.info("结束聊天成功")
+            except Exception as e:
+                logger.error(f"结束聊天时出错: {str(e)}")
+            finally:
+                if loop and not loop.is_running():
+                    loop.close()
 
 
 async def end_chat(cookie, db_manager, remaining_count):
     try:
+        start_time = int(time.time())
         if cookie is not None:
             if remaining_count == -1:
                 await db_manager.delete_cookies(cookie)
             else:
+                end_time = int(time.time())
                 await db_manager.delete_song_ids(remaining_count, cookie)
-                logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次")
+                logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次, 耗时：{end_time - start_time}秒")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
-
 
 
 # 返回消息，使用协程
