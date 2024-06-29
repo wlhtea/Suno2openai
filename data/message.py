@@ -264,7 +264,12 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             while True:
                 try:
                     loop = asyncio.get_event_loop()
-                    if not loop.is_running():
+                    if loop.is_running():
+                        task = loop.create_task(end_chat(cookie, db_manager, remaining_count))
+                        while not task.done():
+                            logger.info("检测任务完成中。。。。。。")
+                        break
+                    else:
                         await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
                         break
                 except Exception as e:
