@@ -51,8 +51,9 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         try:
             if len(chat_user_message) > 200:
                 raise MaxTokenException(f"### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
-                                        f"输入的歌曲提示词长度超过200，歌曲创作失败😭\n\n### "
+                                        f"输入的歌曲提示词长度超过`200`，歌曲创作失败😭\n\n### "
                                         f"👀 更多\n\n**🤗请更换提示词，我会为你重新创作**🎶✨\n")
+
             cookie = str(await db_manager.get_request_cookie()).strip()
             if cookie is None:
                 raise RuntimeError("没有可用的cookie")
