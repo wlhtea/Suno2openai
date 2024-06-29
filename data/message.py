@@ -48,6 +48,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
         cookie = None
         song_gen = None
+        remaining_count = 0
         try:
             if len(chat_user_message) > 200:
                 raise MaxTokenException(f"### 🚨 违规\n\n- **歌曲提示词**：`{chat_user_message}`，"
@@ -265,9 +266,9 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
                     logger.info("loop.is_running()")
-                    await end_chat(cookie, db_manager, song_gen)
+                    await end_chat(cookie, db_manager, remaining_count)
                 else:
-                    await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+                    await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
             finally:
@@ -275,13 +276,10 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                     loop.close()
 
 
-async def end_chat(cookie, db_manager, song_gen):
+async def end_chat(cookie, db_manager, remaining_count):
     try:
         logger.info("进入end_chat")
         if cookie is not None:
-            logger.info("开启查询次数")
-            remaining_count = await song_gen.get_limit_finally()
-            logger.info(f"查询次数为：{remaining_count}")
             if remaining_count == -1:
                 logger.info("准备删除cookie")
                 await db_manager.delete_cookies(cookie)
