@@ -81,7 +81,6 @@ class SongsGen:
             logger.error(f"无法建立会话: {outer_e}")
             return -1
 
-
     async def _get_jwt_token(self, session_id):
         try:
             async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
@@ -101,7 +100,6 @@ class SongsGen:
             logger.error(f"无法建立会话: {outer_e}")
             return -1
 
-
     async def get_auth_token(self, w=None):
         try:
             session_id = await self._get_session_id()
@@ -114,6 +112,37 @@ class SongsGen:
 
     # 获取剩余次数
     async def get_limit_left(self) -> int:
+        try:
+            # 使用上下文管理器创建客户端会话
+            async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
+                try:
+                    # 获取认证令牌
+                    auth_token = await self.get_auth_token()
+                    # 更新请求头信息
+                    self.request_headers["Authorization"] = f"Bearer {auth_token}"
+                    self.request_headers["user-agent"] = ua.edge
+                    request_session.headers.update(self.request_headers)
+
+                    # 发送请求获取剩余次数信息
+                    async with request_session.get(
+                            "https://studio-api.suno.ai/api/billing/info/", proxy=self.proxy
+                    ) as response:
+                        # 检查响应状态码
+                        response.raise_for_status()
+                        # 解析响应数据
+                        data = await response.json()
+                        # 计算并返回剩余次数
+                        return int(data["total_credits_left"] / 10)
+                except Exception as e:
+                    # 记录获取剩余次数过程中的异常
+                    logger.error(f"获取get_limit_left失败: {e}")
+                    return -1
+        except Exception as outer_e:
+            # 记录会话创建过程中的异常
+            logger.error(f"无法建立会话: {outer_e}")
+            return -1
+
+    async def get_limit_finally(self) -> int:
         try:
             # 使用上下文管理器创建客户端会话
             async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
