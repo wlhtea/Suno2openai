@@ -18,7 +18,6 @@ from util.utils import generate_music, get_feed
 async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         timeStamp, ModelVersion, tags=None, title=None,
                         continue_at=None, continue_clip_id=None):
-
     for try_count in range(RETRIES):
         if ModelVersion == "suno-v3":
             Model = "chirp-v3-0"
@@ -264,30 +263,13 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             loop = None
             try:
                 loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    future = asyncio.ensure_future(end_chat(cookie, db_manager, song_gen))
-                    loop.run_until_complete(future)
-                else:
-                    loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+                loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
             finally:
                 if loop and not loop.is_running():
                     loop.close()
 
-
-async def handle_end_chat(cookie, db_manager, song_gen):
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            loop.create_task(end_chat(cookie, db_manager, song_gen))
-        else:
-            await end_chat(cookie, db_manager, song_gen)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
-    finally:
-        if not loop.is_running():
-            loop.close()
 
 # 返回消息，使用协程
 async def response_async(start_time, db_manager, data, content_all, chat_id, timeStamp, last_user_content, headers):
