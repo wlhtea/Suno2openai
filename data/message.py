@@ -264,7 +264,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
         finally:
             try:
-                executor.submit(end_chat, cookie, db_manager, song_gen)
+                future = executor.submit(end_chat(cookie, db_manager, song_gen))
+                future.result()
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
 
