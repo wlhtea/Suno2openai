@@ -262,20 +262,21 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
         finally:
-            loop = None
+            # loop = None
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    await end_chat(cookie, db_manager, song_gen)
-                    await asyncio.sleep(3)
-                else:
-                    await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
-                    logger.info("结束聊天成功")
+                await end_chat(cookie, db_manager, song_gen)
+                # loop = asyncio.get_event_loop()
+                # if loop.is_running():
+                #     await end_chat(cookie, db_manager, song_gen)
+                #     await asyncio.sleep(3)
+                # else:
+                #     await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+                #     logger.info("结束聊天成功")
             except Exception as e:
                 logger.error(f"结束聊天时出错: {str(e)}")
-            finally:
-                if loop and not loop.is_running():
-                    loop.close()
+            # finally:
+            #     if loop and not loop.is_running():
+            #         loop.close()
 
 
 async def end_chat(cookie, db_manager, song_gen):
