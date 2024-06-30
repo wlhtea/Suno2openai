@@ -48,7 +48,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             }
 
         cookie = None
-        remaining_count = 0
+        song_gen = None
         try:
             tem_text = "\n### 🤯 Creating\n\n```suno\n{prompt:" + f"{chat_user_message}" + "}\n```\n\n"
             if len(chat_user_message) > 200:
@@ -266,10 +266,10 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    loop.create_task(end_chat(cookie, db_manager, remaining_count))
+                    loop.create_task(end_chat(cookie, db_manager, song_gen))
                     await asyncio.sleep(3)
                 else:
-                    await loop.run_until_complete(end_chat(cookie, db_manager, remaining_count))
+                    await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
                     logger.info("结束聊天成功")
             except Exception as e:
                 logger.error(f"结束聊天时出错: {str(e)}")
@@ -278,16 +278,18 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                     loop.close()
 
 
-async def end_chat(cookie, db_manager, remaining_count):
+async def end_chat(cookie, db_manager, song_gen):
     try:
         start_time = int(time.time())
         if cookie is not None:
+            remaining_count = await song_gen.get_limit_left()
             if remaining_count == -1:
                 await db_manager.delete_cookies(cookie)
             else:
                 await db_manager.delete_song_ids(remaining_count, cookie)
                 end_time = int(time.time())
-                logger.info(f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次, 耗时：{end_time - start_time}秒")
+                logger.info(
+                    f"该账号成功执行了删除cookie songID的操作, 剩余次数{remaining_count}次, 耗时：{end_time - start_time}秒")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"结束聊天时出错: {str(e)}")
 
@@ -358,6 +360,3 @@ def request_chat(start_time, db_manager, data, content_all, chat_id, timeStamp, 
     finally:
         loop.close()
         return result
-
-
-
