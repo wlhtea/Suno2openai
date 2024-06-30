@@ -11,6 +11,6 @@ RUN apt-get update && apt-get install -y tzdata && \
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 8000
+EXPOSE 8000 8501
 
-CMD ["python", "app.py"]
+CMD bash -c "python app.py & streamlit run background/main.py"

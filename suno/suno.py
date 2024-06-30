@@ -1,17 +1,17 @@
 # -*- coding:utf-8 -*-
 from aiohttp import ClientSession
 from fake_useragent import UserAgent
-
+from util.logger import logger
 from util import utils
 from util.config import PROXY
 from util.logger import logger
 
 ua = UserAgent(browsers=["edge"])
 
-get_session_url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.73.2"
+get_session_url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.73.3"
 
 exchange_token_url = (
-    "https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_client?_clerk_js_version=4.73.2"
+    "https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_client?_clerk_js_version=4.73.3"
 )
 
 base_url = "https://studio-api.suno.ai"
@@ -96,12 +96,13 @@ class SongsGen:
     # 获取token
     async def get_auth_token(self, w=None):
         try:
+
             async with self.token_session.get(get_session_url, headers=self.token_headers, proxy=PROXY) as response_sid:
                 data_sid = await response_sid.json()
                 r = data_sid.get("response")
                 if not r or not r.get('sessions'):
                     raise Exception("No session data in response")
-                sid = r['sessions'][0].get('id')
+                sid = r.get('sessions')[0].get('id')
                 if not sid:
                     raise Exception("Failed to get session id")
             async with self.token_session.post(exchange_token_url.format(sid=sid),
