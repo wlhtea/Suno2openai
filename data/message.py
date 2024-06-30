@@ -266,7 +266,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    loop.create_task(end_chat(cookie, db_manager, song_gen))
+                    await loop.create_task(end_chat(cookie, db_manager, song_gen))
                     await asyncio.sleep(3)
                 else:
                     await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
@@ -285,6 +285,9 @@ async def end_chat(cookie, db_manager, song_gen):
             remaining_count = await song_gen.get_limit_left()
             if remaining_count == -1:
                 await db_manager.delete_cookies(cookie)
+                end_time = int(time.time())
+                logger.info(
+                    f"该账号成功执行了删除cookie的操作, 剩余次数{remaining_count}次, 耗时：{end_time - start_time}秒")
             else:
                 await db_manager.delete_song_ids(remaining_count, cookie)
                 end_time = int(time.time())
