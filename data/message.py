@@ -263,20 +263,23 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
         finally:
-            loop = None
-            try:
-                loop = asyncio.get_event_loop()
-                task = run_task_with_timeout(end_chat(cookie, db_manager, song_gen), timeout=3)
-                if loop.is_running():
-                    loop.create_task(task)
-                else:
-                    loop.run_until_complete(task)
-            except Exception as e:
-                logger.error(f"结束聊天时出错: {str(e)}")
-            finally:
-                if loop and not loop.is_running():
-                    logger.info(f"请求生成音乐结束，已关闭所有进程！")
-                    loop.close()
+            await clean_up(cookie, db_manager, song_gen)
+
+
+async def clean_up(cookie, db_manager, song_gen):
+    try:
+        loop = asyncio.get_event_loop()
+        task = run_task_with_timeout(end_chat(cookie, db_manager, song_gen), timeout=3)
+        if loop.is_running():
+            await loop.create_task(task)
+        else:
+            await loop.run_until_complete(task)
+    except Exception as e:
+        logger.error(f"结束聊天时出错: {str(e)}")
+    finally:
+        if loop and not loop.is_running():
+            logger.info(f"请求生成音乐结束，已关闭所有进程！")
+            loop.close()
 
 
 async def run_task_with_timeout(coro, timeout):
