@@ -246,15 +246,17 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
             await end_chat(cookie, db_manager, song_gen)
-            break
             # 结束请求重试
+            return
+
 
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
             await end_chat(cookie, db_manager, song_gen)
-            break
             # 结束请求重试
+            return
+
 
         except Exception as e:
             if try_count < RETRIES - 1:
