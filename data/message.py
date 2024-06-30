@@ -245,13 +245,13 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
             # 结束请求重试
-            return
+            break
 
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
             # 结束请求重试
-            return
+            break
 
         except Exception as e:
             if try_count < RETRIES - 1:
@@ -271,7 +271,7 @@ async def clean_up(cookie, db_manager, song_gen):
         loop = asyncio.get_event_loop()
         task = run_task_with_timeout(end_chat(cookie, db_manager, song_gen), timeout=3)
         if loop.is_running():
-            loop.create_task(task)
+            await loop.create_task(task)
         else:
             await loop.run_until_complete(task)
     except Exception as e:
