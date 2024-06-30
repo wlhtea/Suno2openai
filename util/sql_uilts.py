@@ -133,7 +133,7 @@ class DatabaseManager:
                         ''')
                     row = await cursor.fetchone()
                     if not row:
-                        raise HTTPException(status_code=429, detail="未找到可用的suno cookie")
+                        raise RuntimeError("未找到可用的suno cookie")
 
                     cookie = row['cookie']
 
@@ -146,7 +146,7 @@ class DatabaseManager:
 
                     row = await cursor.fetchone()
                     if not row:
-                        raise HTTPException(status_code=429, detail="并发更新cookie时发生并发冲突，重试中...")
+                        raise RuntimeError("并发更新cookie时发生并发冲突，重试中...")
 
                     cookie = row['cookie']
                     # 然后更新选中的cookie
@@ -161,13 +161,13 @@ class DatabaseManager:
                 except aiomysql.MySQLError as mysql_error:
                     await conn.rollback()
                     if '锁等待超时' in str(mysql_error):
-                        raise HTTPException(status_code=504, detail="数据库锁等待超时，请稍后再试")
+                        raise RuntimeError(detail="数据库锁等待超时，请稍后再试")
                     else:
-                        raise HTTPException(status_code=429, detail=f"数据库错误：{str(mysql_error)}")
+                        raise RuntimeError(detail=f"数据库错误：{str(mysql_error)}")
 
                 except Exception as e:
                     await conn.rollback()
-                    raise HTTPException(status_code=429, detail=f"发生未知错误：{str(e)}")
+                    raise Exception(detail=f"发生未知错误：{str(e)}")
 
     @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):

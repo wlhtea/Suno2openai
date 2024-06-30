@@ -259,7 +259,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 continue
             else:
                 logger.error(f"生成歌曲错误，尝试歌曲到达最大次数，错误为：{str(e)}")
-                raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
+                yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": "生成歌曲错误，尝试重新创作歌曲到达最大次数😭"}, "finish_reason": None}]})}\n\n"""
+                yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
 
         finally:
             try:
@@ -268,8 +269,6 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                     logger.info("结束聊天成功")
             except Exception as e:
                 logger.error(f"结束聊天时出错: {str(e)}")
-            # 成功完成后退出重试循环
-            break
 
 
 async def end_chat(cookie, db_manager, song_gen):
@@ -338,8 +337,7 @@ async def response_async(start_time, db_manager, data, content_all, chat_id, tim
         return json_string
     else:
         try:
-            data_generator = await generate_data(start_time, db_manager, last_user_content,
-                                                 chat_id, timeStamp, data.model)
+            data_generator = generate_data(start_time, db_manager, last_user_content, chat_id, timeStamp, data.model)
             return StreamingResponse(data_generator, headers=headers, media_type="text/event-stream")
         except Exception as e:
             return JSONResponse(status_code=500, content={"detail": f"生成流式响应时出错: {str(e)}"})
