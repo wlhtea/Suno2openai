@@ -266,7 +266,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    await loop.create_task(end_chat(cookie, db_manager, song_gen))
+                    await end_chat(cookie, db_manager, song_gen)
                     await asyncio.sleep(3)
                 else:
                     await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
