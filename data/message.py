@@ -226,7 +226,8 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                                         f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
                                     yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
                                     _return_Forever_url = True
-                                    # while循环
+                                    # 跳出所有循环
+                                    await end_chat(cookie, db_manager, song_gen)
                                     return
 
                                 else:
@@ -244,39 +245,43 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
         except MaxTokenException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            await end_chat(cookie, db_manager, song_gen)
             break
             # 结束请求重试
 
         except PromptException as e:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str(e)}, "finish_reason": None}]})}\n\n"""
             yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            await end_chat(cookie, db_manager, song_gen)
             break
             # 结束请求重试
 
         except Exception as e:
             if try_count < RETRIES - 1:
                 logger.error(f"第 {try_count + 1} 次尝试歌曲失败，错误为：{str(e)}，重试中......")
+                await end_chat(cookie, db_manager, song_gen)
                 continue
             else:
                 logger.error(f"生成歌曲错误，尝试歌曲到达最大次数，错误为：{str(e)}")
+                await end_chat(cookie, db_manager, song_gen)
                 raise HTTPException(status_code=500, detail=f"请求聊天时出错: {str(e)}")
 
-        finally:
-            # loop = None
-            try:
-                await end_chat(cookie, db_manager, song_gen)
-                # loop = asyncio.get_event_loop()
-                # if loop.is_running():
-                #     await end_chat(cookie, db_manager, song_gen)
-                #     await asyncio.sleep(3)
-                # else:
-                #     await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
-                #     logger.info("结束聊天成功")
-            except Exception as e:
-                logger.error(f"结束聊天时出错: {str(e)}")
-            # finally:
-            #     if loop and not loop.is_running():
-            #         loop.close()
+        # finally:
+        #     # loop = None
+        #     try:
+        #         await end_chat(cookie, db_manager, song_gen)
+        #         # loop = asyncio.get_event_loop()
+        #         # if loop.is_running():
+        #         #     await end_chat(cookie, db_manager, song_gen)
+        #         #     await asyncio.sleep(3)
+        #         # else:
+        #         #     await loop.run_until_complete(end_chat(cookie, db_manager, song_gen))
+        #         #     logger.info("结束聊天成功")
+        #     except Exception as e:
+        #         logger.error(f"结束聊天时出错: {str(e)}")
+        #     # finally:
+        #     #     if loop and not loop.is_running():
+        #     #         loop.close()
 
 
 async def end_chat(cookie, db_manager, song_gen):
