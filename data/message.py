@@ -268,7 +268,7 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                 loop = asyncio.get_event_loop()
                 task = run_task_with_timeout(end_chat(cookie, db_manager, song_gen), timeout=3)
                 if loop.is_running():
-                    await asyncio.create_task(task)
+                    asyncio.create_task(task)
                 else:
                     loop.run_until_complete(task)
             except Exception as e:

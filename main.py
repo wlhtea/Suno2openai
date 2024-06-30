@@ -121,7 +121,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         # 停止调度器
         scheduler.shutdown(wait=True)
         # 关闭数据库连接池
-        await db_manager.close_db_pool()
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(db_manager.close_db_pool())
+                await asyncio.sleep(3)
+            else:
+                await loop.run_until_complete(db_manager.close_db_pool())
+        except Exception as e:
+            print(f"Cleanup error: {e}")
+        finally:
+            if loop and not loop.is_running():
+                loop.close()
 
 
 # FastAPI 应用初始化

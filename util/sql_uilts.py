@@ -161,13 +161,13 @@ class DatabaseManager:
                 except aiomysql.MySQLError as mysql_error:
                     await conn.rollback()
                     if '锁等待超时' in str(mysql_error):
-                        raise RuntimeError(detail="数据库锁等待超时，请稍后再试")
+                        raise RuntimeError("数据库锁等待超时，请稍后再试")
                     else:
-                        raise RuntimeError(detail=f"数据库错误：{str(mysql_error)}")
+                        raise RuntimeError(f"数据库错误：{str(mysql_error)}")
 
                 except Exception as e:
                     await conn.rollback()
-                    raise Exception(detail=f"发生未知错误：{str(e)}")
+                    raise Exception(f"发生未知错误：{str(e)}")
 
     @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
     async def insert_or_update_cookie(self, cookie, songID=None, songID2=None, count=0):
