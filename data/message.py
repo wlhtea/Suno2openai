@@ -271,7 +271,7 @@ async def clean_up(cookie, db_manager, song_gen):
         loop = asyncio.get_event_loop()
         task = run_task_with_timeout(end_chat(cookie, db_manager, song_gen), timeout=3)
         if loop.is_running():
-            await loop.create_task(task)
+            loop.create_task(task)
         else:
             await loop.run_until_complete(task)
     except Exception as e:
