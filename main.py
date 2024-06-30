@@ -201,7 +201,7 @@ async def verify_auth_header(authorization: str = Header(...)):
 
 
 # 获取cookies的详细详细
-@app.post(f"{COOKIES_PREFIX}/cookies")
+@app.post(f"/{COOKIES_PREFIX}/cookies")
 async def get_cookies(authorization: str = Header(...), cookies_type: str = Query(None)):
     try:
         await verify_auth_header(authorization)
@@ -244,7 +244,7 @@ async def get_cookies(authorization: str = Header(...), cookies_type: str = Quer
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-@app.put(f"{COOKIES_PREFIX}/cookies")
+@app.put(f"/{COOKIES_PREFIX}/cookies")
 async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -253,25 +253,30 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
         cookies = data.cookies
         total_cookies = len(cookies)
 
-        async def stream_results():
+        async def stream_results(cookies,total_cookies):
             processed_count = 0
             for i in range(0, total_cookies, BATCH_SIZE):
                 cookie_batch = cookies[i:i + BATCH_SIZE]
                 for result in process_cookie.refresh_add_cookie(cookie_batch, BATCH_SIZE, False):
                     if result:
                         processed_count += 1
-                        yield f"data: Cookie {processed_count}/{total_cookies} 添加成功!\n\n"
+                        # yield f"data: Cookie {processed_count}/{total_cookies} 添加成功!\n\n"
                     else:
-                        yield f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n"
+                        logger.info(f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n")
+                        # yield f"data: Cookie {processed_count}/{total_cookies} 添加失败!\n\n"
 
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
             logger.info(f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，"
                         f"成功率：({success_percentage:.2f}%)")
             logger.info(f"==========================================")
-            yield f"data: 所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
-            yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            # yield f"data: 所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
+            # yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            return f"所有 Cookies 添加完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)"
 
-        return StreamingResponse(stream_results(), media_type="text/event-stream")
+        # return StreamingResponse(stream_results(cookies,total_cookies), media_type="text/event-stream")
+        # return JSONResponse({"message":stream_results(cookies,total_cookies)},status_code=200)
+        messageResult = await stream_results(cookies, total_cookies)
+        return JSONResponse({"messages":messageResult},status_code=200)
 
     except HTTPException as http_exc:
         raise http_exc
@@ -281,7 +286,7 @@ async def add_cookies(data: schemas.Cookies, authorization: str = Header(...)):
 
 
 # 删除cookie
-@app.delete(f"{COOKIES_PREFIX}/cookies")
+@app.delete(f"/{COOKIES_PREFIX}/cookies")
 async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -304,7 +309,7 @@ async def delete_cookies(data: schemas.Cookies, authorization: str = Header(...)
 
 
 # 请求刷新cookies
-@app.get(f"{COOKIES_PREFIX}/refresh/cookies")
+@app.get(f"/{COOKIES_PREFIX}/refresh/cookies")
 async def refresh_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -320,19 +325,22 @@ async def refresh_cookies(authorization: str = Header(...)):
                 for result in process_cookie.refresh_add_cookie(cookie_batch, BATCH_SIZE, False):
                     if result:
                         processed_count += 1
-                        yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
+                        # yield f"data: Cookie {processed_count}/{total_cookies} 刷新成功!\n\n"
                     else:
-                        yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
-
+                        # yield f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n"
+                        logger.info(f"data: Cookie {processed_count}/{total_cookies} 刷新失败!\n\n")
             success_percentage = (processed_count / total_cookies) * 100 if total_cookies > 0 else 100
             logger.info(f"所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，"
                         f"成功率：({success_percentage:.2f}%)")
             logger.info(f"==========================================")
-            yield f"data: 所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
-            yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            # yield f"data: 所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
+            # yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
+            return f"data: 所有 Cookies 刷新完毕。{processed_count}/{total_cookies} 个成功，成功率：({success_percentage:.2f}%)\n\n"
 
-        return StreamingResponse(stream_results(), media_type="text/event-stream")
 
+        messgaesResultRefresh = await stream_results()
+        # return StreamingResponse(stream_results(), media_type="text/event-stream")
+        return JSONResponse({"messages":messgaesResultRefresh},status_code=200)
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
@@ -341,7 +349,7 @@ async def refresh_cookies(authorization: str = Header(...)):
 
 
 # 删除cookie
-@app.delete(f"{COOKIES_PREFIX}/refresh/cookies")
+@app.delete(f"/{COOKIES_PREFIX}/refresh/cookies")
 async def delete_invalid_cookies(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)
@@ -369,7 +377,7 @@ async def delete_invalid_cookies(authorization: str = Header(...)):
 
 
 # 获取cookies的详细详细
-@app.delete(f"{COOKIES_PREFIX}/songID/cookies")
+@app.delete(f"/{COOKIES_PREFIX}/songID/cookies")
 async def delete_songID(authorization: str = Header(...)):
     try:
         await verify_auth_header(authorization)

@@ -51,6 +51,7 @@ copy all content about the cookie
    ```bash
    docker run -d --name wsunoapi \
       -p 8000:8000 \
+      -p 8501:8501 \
       -e BASE_URL='<BASE_URL>' \
       -e SESSION_ID='<SESSION_ID>' \
       -e USER_NAME='<USER_NAME>' \
@@ -72,6 +73,7 @@ copy all content about the cookie
    ```bash
    docker run -d --name wsunoapi \
       -p 8000:8000 \
+      -p 8501:8501 \
       -e BASE_URL='https://studio-api.suno.ai' \
       -e SESSION_ID='your-session-id' \
       -e USER_NAME='suno2openaiUsername' \
