@@ -3,15 +3,15 @@ import aiohttp
 from fake_useragent import UserAgent
 
 from util import utils
-from util.config import PROXY
+from util.config import PROXY, CLERK_JS_VERSION
 from util.logger import logger
 
 ua = UserAgent(browsers=["edge"])
 
-get_session_url = "https://clerk.suno.com/v1/client?_clerk_js_version=4.73.2"
+get_session_url = f"https://clerk.suno.com/v1/client?_clerk_js_version={CLERK_JS_VERSION}"
 
 exchange_token_url = (
-    "https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_client?_clerk_js_version=4.73.2"
+    "https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_client?_clerk_js_version={CLERK_JS_VERSION}"
 )
 
 base_url = "https://studio-api.suno.ai"
@@ -86,8 +86,9 @@ class SongsGen:
         try:
             async with aiohttp.ClientSession(cookies=self.cookie_string) as request_session:
                 try:
-                    async with request_session.post(exchange_token_url.format(sid=session_id),
-                                                    headers=self.token_headers, proxy=self.proxy) as response:
+                    async with request_session.post(
+                            exchange_token_url.format(sid=session_id, CLERK_JS_VERSION=CLERK_JS_VERSION),
+                            headers=self.token_headers, proxy=self.proxy) as response:
                         response.raise_for_status()
                         data = await response.json()
                         jwt_token = data.get('jwt')

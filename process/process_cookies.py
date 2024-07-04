@@ -19,7 +19,6 @@ class processCookies:
     async def cookies_task(db_manage, cookie, is_insert):
         tem_word = "添加" if is_insert else "刷新"
         remaining_count = -1
-        song_gen = None
         try:
             song_gen = SongsGen(cookie)
             remaining_count = await song_gen.get_limit_left()
@@ -27,6 +26,7 @@ class processCookies:
                 logger.info(f"该账号剩余次数: {remaining_count}，添加失败！")
                 return False
             else:
+                logger.info(f"该账号剩余次数: {remaining_count}，{tem_word}成功！")
                 await db_manage.insert_or_update_cookie(cookie=cookie, count=remaining_count)
                 return True
         except Exception as e:

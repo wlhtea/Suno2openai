@@ -12,6 +12,8 @@ VERSION = "0.2.3"
 
 # BASE_URL
 BASE_URL = os.getenv('BASE_URL', 'https://studio-api.suno.ai')
+# CLERK_JS_VERSION
+CLERK_JS_VERSION = os.getenv('CLERK_JS_VERSION', '4.73.3')
 # SESSION_ID
 SESSION_ID = os.getenv('SESSION_ID')
 # 代理
@@ -45,6 +47,7 @@ if not PROXY:
 logger.info("==========================================")
 logger.info(f"VERSION: {VERSION}")
 logger.info(f"BASE_URL: {BASE_URL}")
+logger.info(f"CLERK_JS_VERSION: {CLERK_JS_VERSION}")
 logger.info(f"SESSION_ID: {SESSION_ID}")
 logger.info(f"PROXY: {PROXY}")
 logger.info(f"USER_NAME: {USER_NAME}")
