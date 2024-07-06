@@ -199,6 +199,5 @@ with tab3:
     项目地址: [Suno2OpenAI](https://github.com/wlhtea/Suno2openai)
     - **Cookies 操作** 选项卡允许用户获取、添加、删除和刷新 Cookies。
     - **表内容查看** 选项卡允许用户选择一个表并查看表的内容。
-
     请确保安全使用，避免泄露敏感信息。
     """)
