@@ -5,59 +5,65 @@ import requests
 from pyecharts.charts import Pie, Bar, Line, Scatter
 from pyecharts import options as opts
 from streamlit_echarts import st_pyecharts
-from streamlit_option_menu import option_menu  # 导入 Streamlit Option Menu
+from streamlit_option_menu import option_menu
 
 from config import (SQL_IP, SQL_DK, USER_NAME,
                     SQL_PASSWORD, SQL_NAME, COOKIES_PREFIX,
-                    BATCH_SIZE, AUTH_KEY, PROXY)
+                    BATCH_SIZE, AUTH_KEY, PROXY, VALID_USERNAME, VALID_PASSWORD, OpenManager)
 
 st.set_page_config(page_title="Suno2OpenAI Backend", layout="wide")
 Server_Base_Url = f'127.0.0.1:8000'
 
-# 设置默认用户名和密码
-VALID_USERNAME = "wlhtea"
-VALID_PASSWORD = "wlhtea"
 
+class Suno2OpenAIApp:
+    def __init__(self):
+        self.check_authentication()
 
-# 创建登录界面
-def login_page():
-    st.markdown("<h2 style='text-align: center;'>登录</h2>", unsafe_allow_html=True)
-    st.markdown("<style>div.stButton > button:first-child {width: 100%;}</style>", unsafe_allow_html=True)
+    def check_authentication(self):
+        if "authenticated" not in st.session_state:
+            st.session_state["authenticated"] = False
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        username = st.text_input("用户名", key="username", max_chars=20)
-        password = st.text_input("密码", type="password", key="password", max_chars=20)
-        st.button("登录", on_click=authenticate_user)
+        # 创建侧边栏
+        with st.sidebar:
+            self.selected = option_menu(
+                "Main Menu", ["管理员面板", "体验 Suno2OpenAI", "关于"],
+                icons=['lock', 'robot', 'info-circle'],
+                menu_icon="cast", default_index=0,
+            )
 
+        if self.selected == "管理员面板":
+            if OpenManager:
+                if not st.session_state["authenticated"]:
+                    self.login_page()
+                else:
+                    st.sidebar.success("已登录")
+                    self.show_admin_panel()
+            else:
+                st.session_state["authenticated"] = True
+                self.show_admin_panel()
+        elif self.selected == "体验 Suno2OpenAI":
+            self.show_experience_page()
+        elif self.selected == "关于":
+            self.show_about_page()
 
-def authenticate_user():
-    if st.session_state["username"] == VALID_USERNAME and st.session_state["password"] == VALID_PASSWORD:
-        st.session_state["authenticated"] = True
-    else:
-        st.session_state["authenticated"] = False
-        st.error("用户名或密码错误")
+    def login_page(self):
+        st.markdown("<h2 style='text-align: center;'>登录</h2>", unsafe_allow_html=True)
+        st.markdown("<style>div.stButton > button:first-child {width: 100%;}</style>", unsafe_allow_html=True)
 
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            username = st.text_input("用户名", key="username", max_chars=20)
+            password = st.text_input("密码", type="password", key="password", max_chars=20)
+            st.button("登录", on_click=self.authenticate_user)
 
-# 检查认证状态
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
+    def authenticate_user(self):
+        if st.session_state["username"] == VALID_USERNAME and st.session_state["password"] == VALID_PASSWORD:
+            st.session_state["authenticated"] = True
+        else:
+            st.session_state["authenticated"] = False
+            st.error("用户名或密码错误")
 
-# 创建侧边栏
-with st.sidebar:
-    selected = option_menu(
-        "Suno2openai", ["登录管理员面板", "体验 Suno2OpenAI"],
-        icons=['lock', 'robot'],
-        menu_icon="cast", default_index=0,
-    )
-
-if selected == "登录管理员面板":
-    if not st.session_state["authenticated"]:
-        login_page()
-    else:
-        st.sidebar.success("已登录")
-
-
+    def show_admin_panel(self):
         def create_connection():
             return pymysql.connect(
                 host=SQL_IP,
@@ -67,7 +73,6 @@ if selected == "登录管理员面板":
                 database=SQL_NAME
             )
 
-
         def get_table_content(table_name):
             connection = create_connection()
             query = f"SELECT * FROM {table_name}"
@@ -75,14 +80,12 @@ if selected == "登录管理员面板":
             connection.close()
             return df
 
-
         def get_all_tables():
             connection = create_connection()
             query = "SHOW TABLES"
             tables = pd.read_sql(query, connection)
             connection.close()
             return tables
-
 
         def perform_request(endpoint, method="GET", headers=None, json_data=None):
             url = f"http://{Server_Base_Url}{endpoint}"
@@ -111,10 +114,9 @@ if selected == "登录管理员面板":
                 st.error(f"Request failed: {str(e)}")
                 return None
 
-
         st.title("🌞 Suno2OpenAI 后端操作界面")
 
-        tab1, tab2, tab3 = st.tabs(["🍪 Cookies 操作", "🗃️ 表内容查看", "ℹ️ 关于"])
+        tab1, tab2 = st.tabs(["🍪 Cookies 操作", "🗃️ 表内容查看"])
 
         with tab1:
             st.header("Cookies")
@@ -248,16 +250,21 @@ if selected == "登录管理员面板":
             except Exception as e:
                 st.error(f"获取表内容时出错: {str(e)}")
 
-        with tab3:
-            st.header("关于")
-            st.write("""
-            这个应用展示了如何使用 Streamlit 与 FastAPI 进行前后端分离。
-            项目地址: [Suno2OpenAI](https://github.com/wlhtea/Suno2openai)
-            - **Cookies 操作** 选项卡允许用户获取、添加、删除和刷新 Cookies。
-            - **表内容查看** 选项卡允许用户选择一个表并查看表的内容。
-            请确保安全使用，避免泄露敏感信息。
-            """)
-else:
-    st.title("体验 Suno2OpenAI")
-    st.write("这里展示了 Suno2OpenAI 的功能，可以供用户体验。")
-    # 这里可以添加 Suno2OpenAI 的体验功能
+    def show_experience_page(self):
+        st.title("体验 Suno2OpenAI")
+        st.write("这里展示了 Suno2OpenAI 的功能，可以供用户体验。")
+        # 这里可以添加 Suno2OpenAI 的体验功能
+
+    def show_about_page(self):
+        st.title("关于")
+        st.write("""
+        这个应用展示了如何使用 Streamlit 与 FastAPI 进行前后端分离。
+        项目地址: [Suno2OpenAI](https://github.com/wlhtea/Suno2openai)
+        - **Cookies 操作** 选项卡允许用户获取、添加、删除和刷新 Cookies。
+        - **表内容查看** 选项卡允许用户选择一个表并查看表的内容。
+        请确保安全使用，避免泄露敏感信息。
+        """)
+
+
+if __name__ == "__main__":
+    Suno2OpenAIApp()

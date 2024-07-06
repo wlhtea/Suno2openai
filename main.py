@@ -9,6 +9,7 @@ from typing import AsyncGenerator
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from chainlit.utils import mount_chainlit
 from fastapi import FastAPI, HTTPException, Query
 from fastapi import Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -390,3 +391,5 @@ async def delete_songID(authorization: str = Header(...)):
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+mount_chainlit(app=app, target="background/BackManagement.py", path="/chat2suno")

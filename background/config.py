@@ -35,6 +35,13 @@ BATCH_SIZE = int(os.getenv('BATCH_SIZE', 10))
 # 最大等待时间（分钟）
 MAX_TIME = int(os.getenv('MAX_TIME', 5))
 
+OpenManager = os.getenv('OpenManager', False)
+
+VALID_USERNAME = os.getenv('VALID_USERNAME', None)
+
+VALID_PASSWORD = os.getenv('VALID_USERNAME', None)
+
+Address = os.getenv('Address', None)
 # 处理措施
 if not PROXY:
     PROXY = None
