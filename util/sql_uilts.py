@@ -172,8 +172,32 @@ class DatabaseManager:
         async with self.pool.acquire() as conn:
             try:
                 async with conn.cursor() as cur:
+                    # 查询现有记录的 songID 和 songID2
+                    select_sql = """
+                        SELECT songID, songID2, time FROM suno2openai
+                        WHERE cookie = %s
+                    """
+                    await cur.execute(select_sql, (cookie,))
+                    result = await cur.fetchone()
+
+                    if result:
+                        db_songID, db_songID2, record_time = result
+                        current_time = datetime.now()
+                        time_diff = current_time - record_time
+
+                        # 如果 songID 和 songID2 不为空，并且时间差超过10分钟，则清空 songID 和 songID2
+                        if db_songID is not None and db_songID2 is not None and time_diff > timedelta(minutes=10):
+                            update_sql = """
+                                UPDATE suno2openai
+                                SET songID = NULL, songID2 = NULL
+                                WHERE cookie = %s
+                            """
+                            await cur.execute(update_sql, (cookie,))
+                            await conn.commit()
+
+                    # 插入或更新记录
                     sql = """
-                        INSERT INTO suno2openai (cookie, songID, songID2, count, add_time)
+                        INSERT INTO suno2openai (cookie, songID, songID2, count, time)
                         VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
                         ON DUPLICATE KEY UPDATE count = VALUES(count)
                     """
