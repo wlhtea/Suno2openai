@@ -9,10 +9,10 @@ from streamlit_option_menu import option_menu
 
 from config import (SQL_IP, SQL_DK, USER_NAME,
                     SQL_PASSWORD, SQL_NAME, COOKIES_PREFIX,
-                    BATCH_SIZE, AUTH_KEY, PROXY, VALID_USERNAME, VALID_PASSWORD, OpenManager)
+                    BATCH_SIZE, AUTH_KEY, PROXY, VALID_USERNAME, VALID_PASSWORD, OpenManager,Address)
 
 st.set_page_config(page_title="Suno2OpenAI Backend", layout="wide")
-Server_Base_Url = f'127.0.0.1:8000'
+Server_Base_Url = Address
 
 
 class Suno2OpenAIApp:
@@ -26,7 +26,7 @@ class Suno2OpenAIApp:
         # 创建侧边栏
         with st.sidebar:
             self.selected = option_menu(
-                "Main Menu", ["管理员面板", "体验 Suno2OpenAI", "关于"],
+                "Suno2openai", ["管理员面板", "体验 Suno2OpenAI", "关于"],
                 icons=['lock', 'robot', 'info-circle'],
                 menu_icon="cast", default_index=0,
             )
