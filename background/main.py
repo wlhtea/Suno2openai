@@ -88,7 +88,7 @@ class Suno2OpenAIApp:
             return tables
 
         def perform_request(endpoint, method="GET", headers=None, json_data=None):
-            url = f"http://{Server_Base_Url}{endpoint}"
+            url = f"{Server_Base_Url}{endpoint}"
             headers = {
                 'Authorization': f'Bearer {AUTH_KEY}'
             }
