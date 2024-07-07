@@ -136,10 +136,7 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-async def get_root():
-    return schemas.Response()
-
+mount_chainlit(app=app, target="background/BackManagement.py", path="/")
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data, authorization: str = Header(...)):
@@ -392,4 +389,3 @@ async def delete_songID(authorization: str = Header(...)):
         logger.error(f"Unexpected error: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-mount_chainlit(app=app, target="background/BackManagement.py", path="/chat2suno")
