@@ -20,9 +20,12 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
                         timeStamp, ModelVersion, tags=None, title=None,
                         continue_at=None, continue_clip_id=None):
     for try_count in range(RETRIES):
+        user_html = False
         if ModelVersion == "suno-v3":
             Model = "chirp-v3-0"
-        elif ModelVersion == "suno-v3.5":
+        elif "suno-v3.5" in ModelVersion:
+            if "suno-v3.5-html" in ModelVersion:
+                user_html = True
             Model = "chirp-v3-5"
         else:
             yield f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": str("请选择suno-v3 或者 suno-v3.5其中一个")}, "finish_reason": None}]})}\n\n"""
@@ -206,24 +209,64 @@ async def generate_data(start_time, db_manager, chat_user_message, chat_id,
 
                 # 第七步：拿歌曲CDN链接，没有获取到，则
                 elif (_return_ids and _return_tags and _return_title and _return_prompt and
-                        _return_image_url and _return_audio_url):
+                      _return_image_url and _return_audio_url):
                     if not _return_Forever_url:
                         try:
                             if check_status_complete(now_data, start_time):
-                                Aideo_Markdown_Conetent = (f""
-                                                           f"\n\n### 🎷 CDN音乐链接\n\n"
-                                                           f"- **🎧 音乐1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp3'} \n"
-                                                           f"- **🎧 音乐2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
-                                Video_Markdown_Conetent = (f""
-                                                           f"\n### 📺 CDN视频链接\n\n"
-                                                           f"- **📽️ 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
-                                                           f"- **📽️ 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n"
-                                                           f"\n### 👀 更多\n\n"
-                                                           f"**🤗还想听更多歌吗，快来告诉我**🎶✨\n")
+                                Aideo_Markdown_Content = (f""
+                                                          f"\n\n### 🎷 CDN音乐链接\n\n"
+                                                          f"- **🎧 音乐1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp3'} \n"
+                                                          f"- **🎧 音乐2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp3'} \n")
+                                if not user_html:
+                                    Video_Markdown_Content = (f""
+                                                              f"\n### 📺 CDN视频链接\n\n"
+                                                              f"- **📽️ 视频1️⃣**：{'https://cdn1.suno.ai/' + song_id_1 + '.mp4'} \n"
+                                                              f"- **📽️ 视频2️⃣**：{'https://cdn1.suno.ai/' + song_id_2 + '.mp4'} \n"
+                                                              f"\n### 👀 更多\n\n"
+                                                              f"**🤗还想听更多歌吗，快来告诉我**🎶✨\n")
+                                else:
+                                    Video_Markdown_Content = f"""
+                                        ### 📺 CDN视频链接
+                                        
+                                        ```html
+                                            <!DOCTYPE html>
+                                            <html lang="en">
+                                            <head>
+                                                <meta charset="UTF-8">
+                                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                                <title>suno音乐视频预览</title>
+                                                <style>
+                                                    body, html {{
+                                                        margin: 0;
+                                                        padding: 0;
+                                                        width: 100%;
+                                                        height: 100%;
+                                                        display: flex;
+                                                        justify-content: center;
+                                                        align-items: center;
+                                                        background-color: black;
+                                                    }}
+                                                    video {{
+                                                        max-width: 100%;
+                                                        max-height: 100%;
+                                                    }}
+                                                </style>
+                                            </head>
+                                            <body>
+                                                <video controls>
+                                                    <source src="https://cdn1.suno.ai/{song_id_1}.mp4" type="video/mp4">
+                                                </video>
+                                            </body>
+                                            </html>
+                                        ```
+                                        ### 👀 更多
+        
+                                        **🤗还想听更多歌吗，快来告诉我**🎶✨
+                                    """
                                 yield str(
-                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
+                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Aideo_Markdown_Content}, "finish_reason": None}]})}\n\n""")
                                 yield str(
-                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Conetent}, "finish_reason": None}]})}\n\n""")
+                                    f"""data:""" + ' ' + f"""{json.dumps({"id": f"chatcmpl-{chat_id}", "object": "chat.completion.chunk", "model": ModelVersion, "created": timeStamp, "choices": [{"index": 0, "delta": {"content": Video_Markdown_Content}, "finish_reason": None}]})}\n\n""")
                                 yield f"""data:""" + ' ' + f"""[DONE]\n\n"""
                                 _return_Forever_url = True
                                 # 跳出所有循环
