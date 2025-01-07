@@ -136,7 +136,7 @@ app.add_middleware(
 )
 
 
-mount_chainlit(app=app, target="background/BackManagement.py", path="/")
+# mount_chainlit(app=app, target="background/BackManagement.py", path="")
 
 @app.post("/v1/chat/completions")
 async def get_last_user_message(data: schemas.Data, authorization: str = Header(...)):
@@ -199,16 +199,20 @@ async def verify_auth_header(authorization: str = Header(...)):
 
 
 # 获取cookies的详细详细
-@app.post(f"/{COOKIES_PREFIX}/cookies")
+@app.get(f"/{COOKIES_PREFIX}/cookies")
 async def get_cookies(authorization: str = Header(...), cookies_type: str = Query(None)):
     try:
         await verify_auth_header(authorization)
 
         if cookies_type == "list":
             cookies = await db_manager.get_row_cookies()
+            if not isinstance(cookies, list):
+                cookies = []
             return JSONResponse(
                 content={
-                    "cookies": cookies
+                    "cookies": cookies,
+                    "status": "success",
+                    "message": "Cookies retrieved successfully"
                 }
             )
         else:

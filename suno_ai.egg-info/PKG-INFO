@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: suno_ai
+Version: 0.1
+License-File: LICENSE
+Requires-Dist: aiohttp
+Requires-Dist: fake-useragent
