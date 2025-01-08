@@ -1,382 +1,249 @@
-# -*- coding:utf-8 -*-
-from aiohttp import ClientSession
+from typing import Optional
 from fake_useragent import UserAgent
 from util.logger import logger
 from util import utils
 from util.config import PROXY
-from util.logger import logger
+from constants import *
+from http_client import HttpClient
 import asyncio
 
-ua = UserAgent(browsers=["edge"])
-
-get_session_url = "https://clerk.suno.com/v1/client?__clerk_api_version=2024-10-01&_clerk_js_version=5.43.2&_method=PATCH"
-
-exchange_token_url = (
-    "https://clerk.suno.com/v1/client/sessions/{sid}/tokens?_client??__clerk_api_version=2024-10-01&_clerk_js_version=5.43.2"
-)
-
-base_url = "https://studio-api.suno.ai"
-
-browser_version = "edge101"
-
-MUSIC_GENRE_LIST = [
-    "African",
-    "Asian",
-    "South and southeast Asian",
-    "Avant-garde",
-    "Blues",
-    "Caribbean and Caribbean-influenced",
-    "Comedy",
-    "Country",
-    "Easy listening",
-    "Electronic",
-    "Folk",
-    "Hip hop",
-    "Jazz",
-    "Latin",
-    "Pop",
-    "R&B and soul",
-    "Rock",
-]
-
-
 class SongsGen:
-    # 初始化
-    def __init__(self, cookie: str) -> None:
-        try:
-            self.token_headers = {
-                "accept": "*/*",
-                "accept-encoding": "gzip, deflate, br, zstd",
-                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-                "cache-control": "no-cache",
-                "content-type": "application/x-www-form-urlencoded",
-                "origin": "https://suno.com",
-                "pragma": "no-cache",
-                "priority": "u=1, i",
-                "referer": "https://suno.com/",
-                "sec-ch-ua": '"Chromium";v="130", "Microsoft Edge";v="130", "Not?A_Brand";v="99"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"macOS"',
-                "sec-fetch-dest": "empty",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-site": "same-site",
-                "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0"
-            }
+    def __init__(self, cookie: str, capsolver_apikey: str) -> None:
+        if not cookie or not capsolver_apikey:
+            raise ValueError("Cookie and capsolver_apikey are required")
             
-            self.request_headers = self.token_headers.copy()
-            self.cookie_string = utils.parse_cookie_string(cookie)
-            self.request_session = None
-            self.token_session = ClientSession()
-            self.token_session.cookie_jar.update_cookies(self.cookie_string)
-            self.site_keys = ["0x4AAAAAAAFV93qQdS0ycilX", "0x4AAAAAAAWXJGBD7bONzLBd"]
-            self.site_urls = [
-                "https://clerk.suno.com/cloudflare/turnstile/v0/api.js?render=explicit&__clerk_api_version=2024-10-01&_clerk_js_version=5.43.2",
-                "https://suno.com/",
-                "https://clerk.suno.com/v1/client?__clerk_api_version=2024-10-01&_clerk_js_version=5.43.2&_method=PATCH"
-            ]
-        except Exception as e:
-            raise Exception(f"初始化失败,请检查cookie是否有效: {e}")
-
-    # 初始化request_session会话
-    async def init_limit_session(self) -> None:
-        try:
-            self.request_session = ClientSession()
-            self.request_session.cookie_jar.update_cookies(self.cookie_string)
-            auth_token = await self.get_auth_token()
-            self.request_headers["Authorization"] = f"Bearer {auth_token}"
-            self.request_headers["user-agent"] = ua.edge
-            self.request_session.headers.update(self.request_headers)
-        except Exception as e:
-            raise Exception(f"初始化获取get_auth_token失败,请检查cookie是否有效: {e}")
-
-    # 关闭会话
-    async def close_session(self):
-        if self.request_session is not None:
-            try:
-                await self.request_session.close()
-            except Exception as e:
-                logger.error(f"Error closing request session: {e}")
-            finally:
-                self.request_session = None
-        if self.token_session is not None:
-            try:
-                await self.token_session.close()
-            except Exception as e:
-                logger.error(f"Error closing token session: {e}")
-            finally:
-                self.token_session = None
-        if hasattr(self, 'hcaptcha_session'):
-            try:
-                await self.hcaptcha_session.close()
-            except Exception as e:
-                logger.error(f"Error closing hcaptcha session: {e}")
-            finally:
-                delattr(self, 'hcaptcha_session')
-
-    # 获取token
-    async def get_auth_token(self, w=None):
-        try:
-            logger.info("Starting get_auth_token process...")
+        self.ua = UserAgent(browsers=["edge"])
+        self.base_headers = {
+            "accept": "*/*",
+            "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "content-type": "application/x-www-form-urlencoded",
+            "origin": "https://suno.com",
+            "referer": "https://suno.com/",
+            "user-agent": self.ua.edge
+        }
+        
+        self.capsolver_apikey = capsolver_apikey
+        self.cookie_dict = utils.parse_cookie_string(cookie)
+        
+        if not self.cookie_dict:
+            raise ValueError("Invalid cookie format")
+        
+        # Initialize HTTP clients
+        self.token_client = HttpClient(self.base_headers, self.cookie_dict, PROXY)
+        self.request_client = HttpClient(self.base_headers, self.cookie_dict, PROXY)
+        
+        # 设置验证码处理器
+        self.token_client.set_captcha_handler(self.get_captcha_token)
+        self.request_client.set_captcha_handler(self.get_captcha_token)
+        
+        # 认证相关的实例变量
+        self.auth_token: Optional[str] = None
+        self.session_id: Optional[str] = None
+        self.user_id: Optional[str] = None
+        self.session_expire_at: Optional[int] = None
+        
+        self._closed = False
+        
+    async def __aenter__(self):
+        """异步上下文管理器入口"""
+        if self._closed:
+            raise RuntimeError("SongsGen instance is closed")
             
-            # 构建完整的URL
-            url = "https://clerk.suno.com/v1/client"
+        try:
+            await self.init_clients()
+            return self
+        except Exception as e:
+            logger.error(f"Failed to initialize SongsGen: {e}")
+            await self.close()
+            raise
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """异步上下文管理器退出"""
+        try:
+            await self.close()
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+            raise
+        
+    async def init_clients(self):
+        """Initialize HTTP clients and get auth token"""
+        if self._closed:
+            raise RuntimeError("SongsGen instance is closed")
+            
+        try:
+            # 只在auth_token为None时获取token
+            if self.auth_token is None:
+                self.auth_token = await self.get_auth_token()
+                if self.auth_token:
+                    self.request_client.base_headers["Authorization"] = f"Bearer {self.auth_token}"
+                else:
+                    raise RuntimeError("Failed to obtain auth token")
+            else:
+                logger.info("Auth token already exists, skipping token request")
+        except Exception as e:
+            logger.error(f"Failed to initialize clients: {e}")
+            raise
+            
+    async def close(self):
+        """Close all HTTP clients"""
+        self._closed = True
+        try:
+            await asyncio.gather(
+                self.token_client.close(),
+                self.request_client.close(),
+                return_exceptions=True
+            )
+        except Exception as e:
+            logger.error(f"Error during close: {e}")
+            raise
+
+    async def get_auth_token(self) -> Optional[str]:
+        """Get authentication token with retry and CAPTCHA handling"""
+        if self._closed:
+            raise RuntimeError("SongsGen instance is closed")
+            
+        try:
             params = {
-                "__clerk_api_version": "2024-10-01",
-                "_clerk_js_version": "5.43.2",
+                "__clerk_api_version": CLERK_API_VERSION,
+                "_clerk_js_version": CLERK_JS_VERSION,
                 "_method": "PATCH"
             }
             
-            # 设置请求头
-            headers = {
-                "accept": "*/*",
-                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-                "cache-control": "no-cache",
-                "content-type": "application/x-www-form-urlencoded",
-                "origin": "https://suno.com",
-                "pragma": "no-cache",
-                "priority": "u=1, i",
-                "referer": "https://suno.com/",
-                "sec-ch-ua": '"Chromium";v="130", "Microsoft Edge";v="130", "Not?A_Brand";v="99"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"macOS"',
-                "sec-fetch-dest": "empty",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-site": "same-site",
-                "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
-                "cookie": self.cookie_string
-            }
+            # 现在请求会自动处理401和验证码
+            response = await self.token_client.request("POST", URLS["GET_SESSION"], params=params)
             
-            logger.info(f"Using URL: {url}")
-            logger.info(f"With params: {params}")
-            logger.info(f"With headers: {headers}")
+            # 检查响应结构
+            if not response:
+                logger.error("Empty response received from token request")
+                return None
+                
+            # 验证响应中是否包含必要的字段
+            if not isinstance(response, dict):
+                logger.error(f"Unexpected response type: {type(response)}")
+                return None
+                
+            # 提取会话信息
+            sessions = response.get('sessions', [])
+            if not sessions:
+                logger.error("No sessions found in response")
+                return None
+                
+            session = sessions[0]  # 获取第一个会话
+            session_id = session.get('id')
+            session_status = session.get('status')
+            expire_at = session.get('expire_at')
             
-            async with self.token_session.post(url, 
-                                             params=params,
-                                             headers=headers, 
-                                             proxy=PROXY) as response_sid:
-                status = response_sid.status
-                logger.info(f"Initial response status: {status}")
-                text = await response_sid.text()
-                logger.info(f"Initial response text: {text}")
+            # 提取用户信息
+            user = session.get('user', {})
+            user_id = user.get('id')
+            email = user.get('email_addresses', [{}])[0].get('email_address')
+            name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+            
+            # 记录重要信息
+            logger.info(f"Session ID: {session_id}")
+            logger.info(f"Session Status: {session_status}")
+            logger.info(f"Session Expires: {expire_at}")
+            logger.info(f"User ID: {user_id}")
+            logger.info(f"User Email: {email}")
+            logger.info(f"User Name: {name}")
+            
+            # 获取JWT令牌
+            last_active_token = session.get('last_active_token', {})
+            if not isinstance(last_active_token, dict):
+                logger.error("Invalid token format in response")
+                return None
                 
-                if status == 401:
-                    logger.warning("Received 401 Unauthorized, attempting to solve CAPTCHA...")
-                    
-                    # 尝试不同的组合
-                    total_combinations = len(self.site_keys) * len(self.site_urls)
-                    for combination_index in range(total_combinations):
-                        logger.info(f"Trying combination index: {combination_index}")
-                        captcha_token = await self.get_captcha_token(combination_index)
-                        if not captcha_token:
-                            logger.error(f"Failed to get captcha token for combination index: {combination_index}")
-                            continue
-                        
-                        # 构建带有captcha token的请求数据
-                        data = {
-                            'captcha_token': captcha_token,
-                            'captcha_widget_type': 'invisible'
-                        }
-                        
-                        logger.info(f"Retrying with CAPTCHA token: {captcha_token[:50]}...")
-                        
-                        # 重新发送请求
-                        async with self.token_session.post(url,
-                                                         params=params,
-                                                         headers=headers,
-                                                         data=data,
-                                                         proxy=PROXY) as retry_response:
-                            status = retry_response.status
-                            logger.info(f"Retry response status: {status}")
-                            text = await retry_response.text()
-                            logger.info(f"Retry response text: {text}")
-                            
-                            if status == 200:
-                                logger.info(f"Successful response with combination index: {combination_index}")
-                                data_sid = await retry_response.json()
-                                return data_sid
-                            else:
-                                logger.error(f"Retry with combination index {combination_index} failed: {text}")
-                else:
-                    data_sid = await response_sid.json()
-                    return data_sid
+            jwt = last_active_token.get('jwt')
+            if not jwt:
+                logger.error("No JWT token found in response")
+                return None
                 
-            logger.error("Failed to authenticate after trying all combinations.")
+            # 记录JWT令牌的前20个字符（用于调试）
+            logger.info(f"JWT Token (first 20 chars): {jwt[:20]}...")
+            
+            # 保存重要信息到实例变量
+            self.session_id = session_id
+            self.user_id = user_id
+            self.session_expire_at = expire_at
+            
+            return jwt  # 返回JWT token而不是整个response
+            
+        except Exception as e:
+            logger.error(f"Failed to get auth token: {e}")
             return None
-        except Exception as e:
-            logger.error(f"获取get_auth_token失败: {str(e)}")
-            raise
 
-    # 获取剩余次数
     async def get_limit_left(self) -> int:
-        if self.request_session is None:
-            await self.init_limit_session()
+        """Get remaining credits with retry"""
+        if self._closed:
+            raise RuntimeError("SongsGen instance is closed")
+            
         try:
-            response = await self.request_session.get("https://studio-api.suno.ai/api/billing/info/", proxy=PROXY)
-            try:
-                response.raise_for_status()
-                data = await response.json()
-                return int(data["total_credits_left"] / 10)
-            except Exception as e:
-                logger.error(f"获取剩余次数失败: {e}")
+            response = await self.request_client.request("GET", URLS["BILLING_INFO"])
+            if not isinstance(response, dict):
+                logger.error(f"Unexpected response type: {type(response)}")
                 return -1
+                
+            credits = response.get("total_credits_left", 0)
+            if not isinstance(credits, (int, float)):
+                logger.error(f"Invalid credits value: {credits}")
+                return -1
+                
+            return int(credits / 10)
         except Exception as e:
-            logger.error(f"获取get_limit_left失败: {e}")
+            logger.error(f"Failed to get remaining credits: {e}")
             return -1
-
-    async def get_hcaptcha_config(self) -> str:
-        """获取hcaptcha配置"""
+            
+    async def get_captcha_token(self, combination_index: int) -> Optional[str]:
+        """Get CAPTCHA token with improved error handling"""
         try:
-            url = "https://api.hcaptcha.com/checksiteconfig"
-            params = {
-                "v": "b4956db",
-                "host": "suno.com",
-                "sitekey": "d65453de-3f1a-4aac-9366-a0f06e52b2ce",
-                "sc": "1",
-                "swa": "1",
-                "spst": "1"
-            }
+            site_key_index = combination_index // len(SITE_URLS)
+            site_url_index = combination_index % len(SITE_URLS)
             
-            headers = {
-                "accept": "application/json",
-                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-                "cache-control": "no-cache",
-                "content-type": "text/plain",
-                "origin": "https://newassets.hcaptcha.com",
-                "pragma": "no-cache",
-                "priority": "u=1, i",
-                "referer": "https://newassets.hcaptcha.com/",
-                "sec-ch-ua": '"Chromium";v="130", "Microsoft Edge";v="130", "Not?A_Brand";v="99"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"macOS"',
-                "sec-fetch-dest": "empty",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-site": "same-site",
-                "user-agent": ua.edge
-            }
-
-            if not hasattr(self, 'hcaptcha_session'):
-                self.hcaptcha_session = ClientSession()
-
-            async with self.hcaptcha_session.post(url, params=params, headers=headers, proxy=PROXY) as response:
-                logger.info(f"Response from hcaptcha_session: {response}")
-                if response.status == 200:
-                    data = await response.json()
-                    logger.info("Successfully got hcaptcha config")
-                    if 'c' in data and 'req' in data['c']:
-                        req = data['c']['req']
-                        logger.info(f"Got hcaptcha req: {req}")
-                        return req
-                    else:
-                        logger.error("No req found in response")
-                        return ""
-                else:
-                    logger.error(f"Failed to get hcaptcha config, status: {response.status}")
-                    return ""
-        except Exception as e:
-            logger.error(f"Error getting hcaptcha config: {e}")
-            return ""
-        finally:
-            if hasattr(self, 'hcaptcha_session'):
-                await self.hcaptcha_session.close()
-                delattr(self, 'hcaptcha_session')
-
-    async def get_captcha_token(self, combination_index: int) -> str:
-        """获取 captcha token"""
-        try:
-            api_key = ""
-            site_keys = ["0x4AAAAAAAFV93qQdS0ycilX", "0x4AAAAAAAWXJGBD7bONzLBd"]
-            site_urls = [
-                "https://clerk.suno.com/cloudflare/turnstile/v0/api.js?render=explicit&__clerk_api_version=2024-10-01&_clerk_js_version=5.43.2",
-                "https://suno.com/",
-                "https://clerk.suno.com/v1/client?__clerk_api_version=2024-10-01&_clerk_js_version=5.43.2&_method=PATCH"
-            ]
-
-            # 计算组合总数
-            total_combinations = len(site_keys) * len(site_urls)
+            if site_key_index >= len(SITE_KEYS):
+                return None
+                
+            site_key = SITE_KEYS[site_key_index]
+            site_url = SITE_URLS[site_url_index]
             
-            if combination_index < 0 or combination_index >= total_combinations:
-                logger.error(f"Invalid combination index: {combination_index}")
-                return ""
-
-            # 计算当前组合的 site_key 和 site_url
-            site_key_index = combination_index // len(site_urls)
-            site_url_index = combination_index % len(site_urls)
-            
-            site_key = site_keys[site_key_index]
-            site_url = site_urls[site_url_index]
-            
-            logger.info(f"Trying combination index {combination_index}: site_key: {site_key}, site_url: {site_url}")
-            
-            # 创建任务
             payload = {
-                "clientKey": api_key,
+                "clientKey": self.capsolver_apikey,
                 "task": {
                     "type": "AntiTurnstileTaskProxyLess",
                     "websiteURL": site_url,
                     "websiteKey": site_key,
-                    "metadata": {
-                        "action": "invisible"  # 设置为 invisible，因为 widgetType 是 'invisible'
-                    }
+                    "metadata": {"action": "invisible"}
                 }
             }
             
-            if not hasattr(self, 'captcha_session'):
-                self.captcha_session = ClientSession()
-                
-            # 创建任务
-            async with self.captcha_session.post(
-                "https://api.capsolver.com/createTask",
+            # Create task
+            response = await self.request_client.request(
+                "POST",
+                URLS["CAPSOLVER_CREATE"],
                 json=payload
-            ) as response:
-                data = await response.json()
+            )
+            
+            task_id = response.get("taskId")
+            if not task_id:
+                return None
                 
-                if data.get("errorId", 0) != 0:
-                    logger.error(f"Failed to create task with site_key: {site_key} and site_url: {site_url}, error: {data}")
-                    return ""
-                    
-                task_id = data.get("taskId")
-                if not task_id:
-                    logger.error(f"No taskId in response with site_key: {site_key} and site_url: {site_url}")
-                    return ""
-                    
-                logger.info(f"Got taskId: {task_id} / Getting result...")
+            # Poll for result
+            max_attempts = 30
+            for attempt in range(max_attempts):
+                await asyncio.sleep(2)  # Wait between checks
                 
-                # 轮询获取结果
-                while True:
-                    await asyncio.sleep(1)  # 每秒检查一次
+                status_response = await self.request_client.request(
+                    "POST",
+                    URLS["CAPSOLVER_RESULT"],
+                    json={"clientKey": self.capsolver_apikey, "taskId": task_id}
+                )
+                
+                if status_response.get("status") == "ready":
+                    self.token_captcha = status_response.get("solution", {}).get("token")
+                    return self.token_captcha
+                elif status_response.get("status") == "failed":
+                    break
                     
-                    status_payload = {
-                        "clientKey": api_key,
-                        "taskId": task_id
-                    }
-                    
-                    async with self.captcha_session.post(
-                        "https://api.capsolver.com/getTaskResult",
-                        json=status_payload
-                    ) as status_response:
-                        status_data = await status_response.json()
-                        
-                        if status_data.get("errorId", 0) != 0:
-                            logger.error(f"Error getting result with site_key: {site_key} and site_url: {site_url}, error: {status_data}")
-                            return ""
-                            
-                        status = status_data.get("status")
-                        if status == "ready":
-                            token = status_data.get("solution", {}).get("token")
-                            if token:
-                                logger.info(f"Got token with site_key: {site_key} and site_url: {site_url}: {token[:50]}...")
-                                return token
-                            else:
-                                logger.error(f"No token in solution with site_key: {site_key} and site_url: {site_url}")
-                                return ""
-                        elif status == "failed":
-                            logger.error(f"Solve failed with site_key: {site_key} and site_url: {site_url}, error: {status_data}")
-                            return ""
-                        
+            return None
         except Exception as e:
-            logger.error(f"Error in get_captcha_token: {e}")
-            return ""
-        finally:
-            if hasattr(self, 'captcha_session'):
-                await self.captcha_session.close()
-                delattr(self, 'captcha_session')
+            logger.error(f"Failed to get CAPTCHA token: {e}")
+            return None
