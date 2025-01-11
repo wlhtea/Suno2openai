@@ -13,14 +13,11 @@ URLS = {
 }
 
 SITE_KEYS = [
-    "0x4AAAAAAAFV93qQdS0ycilX",
-    "0x4AAAAAAAWXJGBD7bONzLBd"
+    "0x4AAAAAAAFV93qQdS0ycilX"
 ]
 
 SITE_URLS = [
-    "https://clerk.suno.com/cloudflare/turnstile/v0/api.js?render=explicit&__clerk_api_version=2024-10-01&_clerk_js_version=5.43.6",
-    "https://suno.com/",
-    "https://clerk.suno.com/v1/client?__clerk_api_version=2024-10-01&_clerk_js_version=5.43.2&_method=PATCH"
+    "https://clerk.suno.com/cloudflare/turnstile/v0/api.js?render=explicit&__clerk_api_version=2024-10-01&_clerk_js_version=5.43.6"
 ]
 
 MUSIC_GENRE_LIST = [

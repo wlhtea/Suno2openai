@@ -60,60 +60,75 @@ class HttpClient:
             logger.info(f"Got captcha token: {captcha_token[:20]}...")
             
             # 保持原始请求的所有参数
-            params = kwargs.get('params', {})
+            params = kwargs.get('params', {}).copy() if kwargs.get('params') else {}
             if not params and '?' in url:
                 # 如果URL中包含参数，解析它们
                 query_string = url.split('?')[1]
-                params = {}
                 for param in query_string.split('&'):
                     if '=' in param:
                         key, value = param.split('=', 1)
                         params[key] = value
             
-            # 将验证码token添加到form data中，确保使用URLEncoded格式
+            # 将验证码token添加到form data中
             form_data = {
                 'captcha_token': captcha_token,
                 'captcha_widget_type': 'invisible'
             }
-            encoded_data = urlencode(form_data)
             
-            # 使用完整的headers
+            # 使用完整的headers，确保与curl请求一致
             headers = {
                 "accept": "*/*",
                 "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+                "cache-control": "no-cache",
                 "content-type": "application/x-www-form-urlencoded",
                 "origin": "https://suno.com",
-                "referer": "https://suno.com/",
-                "sec-ch-ua": '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-                "cache-control": "no-cache",
                 "pragma": "no-cache",
                 "priority": "u=1, i",
+                "referer": "https://suno.com/",
+                "sec-ch-ua": '"Chromium";v="130", "Microsoft Edge";v="130", "Not?A_Brand";v="99"',
                 "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"Windows"',
+                "sec-ch-ua-platform": '"macOS"',
                 "sec-fetch-dest": "empty",
                 "sec-fetch-mode": "cors",
                 "sec-fetch-site": "same-site",
-                **kwargs.get('headers', {})
+                "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0"
             }
             kwargs['headers'] = headers
             
-            # 使用encoded form data
+            # 设置form data
+            encoded_data = urlencode(form_data)
             kwargs['data'] = encoded_data
             
             # 确保使用原始参数
             if params:
                 kwargs['params'] = params
             
-            logger.info(f"Retrying request with captcha token...")
+            logger.info("=== Request Details ===")
+            logger.info(f"Method: {method}")
             logger.info(f"URL: {url}")
-            logger.info(f"Headers: {headers}")
-            logger.info(f"Params: {params}")
-            logger.info(f"Form data: {encoded_data}")
+            logger.info("Headers:")
+            for key, value in headers.items():
+                logger.info(f"  {key}: {value}")
+            logger.info("Cookies:")
+            if self.session and self.session.cookie_jar:
+                for cookie in self.session.cookie_jar:
+                    logger.info(f"  {cookie.key}: {cookie.value}")
+            logger.info(f"Query Params: {params}")
+            logger.info(f"Form Data: {encoded_data}")
+            logger.info("=== End Request Details ===")
             
             # 重试请求
             async with self.session.request(method, url, **kwargs) as retry_response:
                 # 首先读取响应内容
                 response_text = await retry_response.text()
+                
+                logger.info("=== Response Details ===")
+                logger.info(f"Status: {retry_response.status}")
+                logger.info("Response Headers:")
+                for key, value in retry_response.headers.items():
+                    logger.info(f"  {key}: {value}")
+                logger.info(f"Response Body: {response_text}")
+                logger.info("=== End Response Details ===")
                 
                 if retry_response.status >= 400:
                     logger.warning(f"Retry with captcha token failed: {retry_response.status}")

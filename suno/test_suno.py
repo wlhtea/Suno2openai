@@ -1,14 +1,17 @@
 import asyncio
-from util import utils
 import sys
 import os
 from dotenv import load_dotenv
 from contextlib import suppress
 import aiohttp
 
-load_dotenv('/root/Suno2openai/test.env')
-# 添加父目录到系统路径以导入模块
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add the project root directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+sys.path.append(project_root)
+
+from util import utils
+load_dotenv('test.env')
 
 from suno import SongsGen
 from util.logger import logger

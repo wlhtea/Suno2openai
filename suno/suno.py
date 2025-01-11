@@ -247,8 +247,7 @@ class SongsGen:
                     "websiteURL": site_url,
                     "websiteKey": site_key,
                     "metadata": {
-                        "action": "InVisible",
-                        "type": "turnstile"
+                        "action": "login",
                     }
                 }
             }
@@ -282,7 +281,9 @@ class SongsGen:
                 logger.info(f"Captcha status check {attempt + 1}: {status}")
                 
                 if status == "ready":
-                    token = status_response.get("solution", {}).get("token")
+                    solution = status_response.get("solution", {})
+                    token = solution.get("token")
+                    logger.info(f"Solution: {solution}")
                     if token:
                         logger.info(f"Got captcha token (first 20 chars): {token[:20]}...")
                         return token
