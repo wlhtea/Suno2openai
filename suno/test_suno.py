@@ -59,6 +59,7 @@ async def main():
     songs_gen = None
     try:
         async with SongsGen(COOKIE, CAPSOLVER_APIKEY) as songs_gen:
+            # 现在验证码请求会自动携带cookies
             auth_result = await test_auth()
             if not auth_result:
                 logger.error("Authentication test failed")

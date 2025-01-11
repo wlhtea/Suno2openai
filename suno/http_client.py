@@ -5,6 +5,7 @@ from util.logger import logger
 from constants import SITE_KEYS, SITE_URLS, URLS
 import aiohttp
 from urllib.parse import urlencode
+import time
 
 class HttpClient:
     def __init__(self, base_headers: Dict[str, str], cookies: Dict[str, str], proxy: str = None):
@@ -25,6 +26,12 @@ class HttpClient:
         if self.session is None or self.session.closed:
             connector = None
             try:
+                current_timestamp = str(int(time.time()))
+                self.cookies.update({
+                    "__client_uat": current_timestamp,
+                    "__client_uat_U9tcbTPE": current_timestamp
+                })
+                
                 connector = aiohttp.TCPConnector(ssl=False)
                 self.session = ClientSession(connector=connector)
                 self.session.cookie_jar.update_cookies(self.cookies)
@@ -52,7 +59,7 @@ class HttpClient:
             
         try:
             logger.info("Attempting to get captcha token...")
-            captcha_token = await self.captcha_handler(0)
+            captcha_token = await self.captcha_handler(0, self.cookies)
             if not captcha_token:
                 logger.error("Failed to get captcha token")
                 return None
@@ -78,6 +85,7 @@ class HttpClient:
             # 使用完整的headers，确保与curl请求一致
             headers = {
                 "accept": "*/*",
+                "accept-encoding": "gzip, deflate, br, zstd",
                 "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
                 "cache-control": "no-cache",
                 "content-type": "application/x-www-form-urlencoded",
@@ -152,6 +160,12 @@ class HttpClient:
         if self._closed:
             raise RuntimeError("HttpClient is closed")
             
+        current_timestamp = str(int(time.time()))
+        self.cookies.update({
+            "__client_uat": current_timestamp,
+            "__client_uat_U9tcbTPE": current_timestamp
+        })
+        
         await self.ensure_session()
         
         headers = {**self.base_headers, **kwargs.get('headers', {})}

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 from fake_useragent import UserAgent
 from util.logger import logger
 from util import utils
@@ -225,8 +225,8 @@ class SongsGen:
             logger.error(f"Failed to get remaining credits: {e}")
             return -1
             
-    async def get_captcha_token(self, combination_index: int) -> Optional[str]:
-        """Get CAPTCHA token with improved error handling"""
+    async def get_captcha_token(self, combination_index: int, cookies: Optional[Dict] = None) -> Optional[str]:
+        """Get CAPTCHA token with improved error handling and cookie support"""
         try:
             site_key_index = combination_index // len(SITE_URLS)
             site_url_index = combination_index % len(SITE_URLS)
@@ -240,6 +240,7 @@ class SongsGen:
             logger.info(f"Getting captcha token with site_key: {site_key}")
             logger.info(f"Site URL: {site_url}")
             
+            # 构建payload，添加cookies
             payload = {
                 "clientKey": self.capsolver_apikey,
                 "task": {
@@ -247,10 +248,17 @@ class SongsGen:
                     "websiteURL": site_url,
                     "websiteKey": site_key,
                     "metadata": {
-                        "action": "login",
-                    }
+                        "action": "smart",
+                    },
+                    # # 添加cookies支持
+                    # "cookies": [
+                    #     {"name": name, "value": value}
+                    #     for name, value in (cookies or {}).items()
+                    # ] if cookies else []
                 }
             }
+            
+            logger.info("Sending captcha request with cookies...")
             
             # Create task
             response = await self.request_client.request(
@@ -283,7 +291,7 @@ class SongsGen:
                 if status == "ready":
                     solution = status_response.get("solution", {})
                     token = solution.get("token")
-                    logger.info(f"Solution: {solution}")
+                    logger.info(f"Solution: {status_response}")
                     if token:
                         logger.info(f"Got captcha token (first 20 chars): {token[:20]}...")
                         return token
