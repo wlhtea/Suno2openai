@@ -17,5 +17,5 @@ env
 *.pyc
 *.pyc
 util/test.py
-/suno
-util/test.py
+*.env
+test.env

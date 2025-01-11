@@ -19,12 +19,28 @@ class SongsGen:
             "content-type": "application/x-www-form-urlencoded",
             "origin": "https://suno.com",
             "referer": "https://suno.com/",
-            "user-agent": self.ua.edge
+            "user-agent": self.ua.edge,
+            "sec-ch-ua": '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            "cache-control": "no-cache",
+            "pragma": "no-cache",
+            "priority": "u=1, i",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
         }
         
         self.capsolver_apikey = capsolver_apikey
-        self.cookie_dict = utils.parse_cookie_string(cookie)
         
+        # 解析并设置cookie
+        if isinstance(cookie, str):
+            self.cookie_dict = utils.parse_cookie_string(cookie)
+        elif isinstance(cookie, dict):
+            self.cookie_dict = cookie
+        else:
+            raise ValueError("Cookie must be a string or dictionary")
+            
         if not self.cookie_dict:
             raise ValueError("Invalid cookie format")
         
@@ -106,11 +122,27 @@ class SongsGen:
             params = {
                 "__clerk_api_version": CLERK_API_VERSION,
                 "_clerk_js_version": CLERK_JS_VERSION,
-                "_method": "PATCH"
             }
             
             # 现在请求会自动处理401和验证码
-            response = await self.token_client.request("POST", URLS["GET_SESSION"], params=params)
+            response = await self.token_client.request(
+                "POST", 
+                URLS["GET_SESSION"], 
+                params=params,
+                headers={
+                    "accept": "*/*",
+                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+                    "content-type": "application/x-www-form-urlencoded",
+                    "origin": "https://suno.com",
+                    "referer": "https://suno.com/",
+                    "sec-ch-ua": '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": '"Windows"',
+                    "sec-fetch-dest": "empty",
+                    "sec-fetch-mode": "cors",
+                    "sec-fetch-site": "same-site"
+                }
+            )
             
             # 检查响应结构
             if not response:
@@ -205,13 +237,19 @@ class SongsGen:
             site_key = SITE_KEYS[site_key_index]
             site_url = SITE_URLS[site_url_index]
             
+            logger.info(f"Getting captcha token with site_key: {site_key}")
+            logger.info(f"Site URL: {site_url}")
+            
             payload = {
                 "clientKey": self.capsolver_apikey,
                 "task": {
                     "type": "AntiTurnstileTaskProxyLess",
                     "websiteURL": site_url,
                     "websiteKey": site_key,
-                    "metadata": {"action": "invisible"}
+                    "metadata": {
+                        "action": "InVisible",
+                        "type": "turnstile"
+                    }
                 }
             }
             
@@ -224,8 +262,11 @@ class SongsGen:
             
             task_id = response.get("taskId")
             if not task_id:
+                logger.error("No taskId in response")
                 return None
                 
+            logger.info(f"Created captcha task with ID: {task_id}")
+            
             # Poll for result
             max_attempts = 30
             for attempt in range(max_attempts):
@@ -237,13 +278,25 @@ class SongsGen:
                     json={"clientKey": self.capsolver_apikey, "taskId": task_id}
                 )
                 
-                if status_response.get("status") == "ready":
-                    self.token_captcha = status_response.get("solution", {}).get("token")
-                    return self.token_captcha
-                elif status_response.get("status") == "failed":
+                status = status_response.get("status")
+                logger.info(f"Captcha status check {attempt + 1}: {status}")
+                
+                if status == "ready":
+                    token = status_response.get("solution", {}).get("token")
+                    if token:
+                        logger.info(f"Got captcha token (first 20 chars): {token[:20]}...")
+                        return token
+                    else:
+                        logger.error("No token in solution")
+                        return None
+                elif status == "failed":
+                    error = status_response.get("error")
+                    logger.error(f"Captcha task failed: {error}")
                     break
                     
+            logger.error("Max attempts reached waiting for captcha")
             return None
+            
         except Exception as e:
             logger.error(f"Failed to get CAPTCHA token: {e}")
             return None
