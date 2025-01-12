@@ -1,10 +1,15 @@
+"""
+Suno AI API Client
+主要类实现
+"""
+
 from typing import Optional, Dict
 from fake_useragent import UserAgent
 from util.logger import logger
 from util import utils
 from util.config import PROXY
-from constants import *
-from http_client import HttpClient
+from .constants import URLs, DEFAULT_HEADERS, CaptchaConfig, CLERK_API_VERSION, CLERK_JS_VERSION
+from .http_client import HttpClient
 import asyncio
 
 class SongsGen:
@@ -14,21 +19,8 @@ class SongsGen:
             
         self.ua = UserAgent(browsers=["edge"])
         self.base_headers = {
-            "accept": "*/*",
-            "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-            "content-type": "application/x-www-form-urlencoded",
-            "origin": "https://suno.com",
-            "referer": "https://suno.com/",
+            **DEFAULT_HEADERS,
             "user-agent": self.ua.edge,
-            "sec-ch-ua": '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-            "cache-control": "no-cache",
-            "pragma": "no-cache",
-            "priority": "u=1, i",
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"',
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-site"
         }
         
         self.capsolver_apikey = capsolver_apikey
@@ -127,7 +119,7 @@ class SongsGen:
             # 现在请求会自动处理401和验证码
             response = await self.token_client.request(
                 "POST", 
-                URLS["GET_SESSION"], 
+                URLs.VERIFY, 
                 params=params,
                 headers={
                     "accept": "*/*",
@@ -139,8 +131,8 @@ class SongsGen:
                     "sec-ch-ua-mobile": "?0",
                     "sec-ch-ua-platform": '"Windows"',
                     "sec-fetch-dest": "empty",
-                    # "sec-fetch-mode": "cors",
-                    # "sec-fetch-site": "same-site"
+                    "sec-fetch-mode": "cors",
+                    "sec-fetch-site": "same-site"
                 }
             )
             
@@ -189,9 +181,6 @@ class SongsGen:
             if not jwt:
                 logger.error("No JWT token found in response")
                 return None
-                
-            # 记录JWT令牌的前20个字符（用于调试）
-            logger.info(f"JWT Token (first 20 chars): {jwt[:20]}...")
             
             # 保存重要信息到实例变量
             self.session_id = session_id
@@ -210,7 +199,7 @@ class SongsGen:
             raise RuntimeError("SongsGen instance is closed")
             
         try:
-            response = await self.request_client.request("GET", URLS["BILLING_INFO"])
+            response = await self.request_client.request("GET", URLs.BILLING_INFO)
             if not isinstance(response, dict):
                 logger.error(f"Unexpected response type: {type(response)}")
                 return -1
@@ -228,14 +217,14 @@ class SongsGen:
     async def get_captcha_token(self, combination_index: int, cookies: Optional[Dict] = None) -> Optional[str]:
         """Get CAPTCHA token with improved error handling and cookie support"""
         try:
-            site_key_index = combination_index // len(SITE_URLS)
-            site_url_index = combination_index % len(SITE_URLS)
+            site_key_index = combination_index // len(CaptchaConfig.SITE_URLS)
+            site_url_index = combination_index % len(CaptchaConfig.SITE_URLS)
             
-            if site_key_index >= len(SITE_KEYS):
+            if site_key_index >= len(CaptchaConfig.SITE_KEYS):
                 return None
                 
-            site_key = SITE_KEYS[site_key_index]
-            site_url = SITE_URLS[site_url_index]
+            site_key = CaptchaConfig.SITE_KEYS[site_key_index]
+            site_url = CaptchaConfig.SITE_URLS[site_url_index]
             
             logger.info(f"Getting captcha token with site_key: {site_key}")
             logger.info(f"Site URL: {site_url}")
@@ -263,7 +252,7 @@ class SongsGen:
             # Create task
             response = await self.request_client.request(
                 "POST",
-                URLS["CAPSOLVER_CREATE"],
+                URLs.CAPSOLVER_CREATE,
                 json=payload
             )
             
@@ -281,7 +270,7 @@ class SongsGen:
                 
                 status_response = await self.request_client.request(
                     "POST",
-                    URLS["CAPSOLVER_RESULT"],
+                    URLs.CAPSOLVER_RESULT,
                     json={"clientKey": self.capsolver_apikey, "taskId": task_id}
                 )
                 

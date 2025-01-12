@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: suno2openai
+Version: 0.2.1
+License-File: LICENSE
+Requires-Dist: aiohttp
+Requires-Dist: fake-useragent
+Requires-Dist: python-dotenv
