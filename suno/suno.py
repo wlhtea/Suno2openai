@@ -131,16 +131,16 @@ class SongsGen:
                 params=params,
                 headers={
                     "accept": "*/*",
-                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+                    "accept-language": "en-US,en;q=0.9",
                     "content-type": "application/x-www-form-urlencoded",
                     "origin": "https://suno.com",
                     "referer": "https://suno.com/",
-                    "sec-ch-ua": '"Microsoft Edge";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+                    "sec-ch-ua": '"Microsoft Edge";v="131", "Chromium";v="131";v="24"',
                     "sec-ch-ua-mobile": "?0",
                     "sec-ch-ua-platform": '"Windows"',
                     "sec-fetch-dest": "empty",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-site": "same-site"
+                    # "sec-fetch-mode": "cors",
+                    # "sec-fetch-site": "same-site"
                 }
             )
             
@@ -248,13 +248,13 @@ class SongsGen:
                     "websiteURL": site_url,
                     "websiteKey": site_key,
                     "metadata": {
-                        "action": "smart",
+                        "action": "invisible",
                     },
-                    # # 添加cookies支持
-                    # "cookies": [
-                    #     {"name": name, "value": value}
-                    #     for name, value in (cookies or {}).items()
-                    # ] if cookies else []
+                    # 添加cookies支持
+                    "cookies": [
+                        {"name": name, "value": value}
+                        for name, value in (cookies or {}).items()
+                    ] if cookies else []
                 }
             }
             

@@ -1,21 +1,20 @@
-/suno_打号取cookie/outlook.csv
-/suno_打号取cookie/sign_suno.py
-*.txt
-*.txt
-suno_打号取cookie/goodOutLook2.txt
-*.xml
-*.iml
-/suno_打号取cookie
-*.iml
-/suno_打号取cookie
-/.idea
-.idea/Suno2openai.iml
-suno_打号取cookie/打号机.py
-*.iml
-/suno_打号取cookie
-env
+# Python
 *.pyc
-*.pyc
-util/test.py
+__pycache__/
+env/
+venv/
+
+# IDE
+.idea/
+*.iml
+
+# Environment files
+.env
 *.env
 test.env
+
+# Project specific
+/suno_打号取cookie/
+*.txt
+*.xml
+util/test.py
