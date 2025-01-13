@@ -240,10 +240,10 @@ class SongsGen:
                         "action": "invisible",
                     },
                     # 添加cookies支持
-                    "cookies": [
-                        {"name": name, "value": value}
-                        for name, value in (cookies or {}).items()
-                    ] if cookies else []
+                    # "cookies": [
+                    #     {"name": name, "value": value}
+                    #     for name, value in (cookies or {}).items()
+                    # ] if cookies else []
                 }
             }
             
