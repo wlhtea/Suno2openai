@@ -145,4 +145,51 @@ class HttpClient:
                     
         except Exception as e:
             logger.error(f"Request failed: {e}")
+            return None
+            
+    async def request_with_headers(
+        self,
+        method: str,
+        url: str,
+        **kwargs
+    ) -> Optional[tuple[Dict[str, Any], Dict[str, str]]]:
+        """
+        发送HTTP请求并返回响应数据和头信息
+        
+        Args:
+            method: HTTP方法
+            url: 请求URL
+            **kwargs: 传递给aiohttp的其他参数
+            
+        Returns:
+            (响应数据字典, 响应头字典)元组或None(失败时)
+        """
+        try:
+            headers = {**self.base_headers}
+            if 'headers' in kwargs:
+                headers.update(kwargs.pop('headers'))
+            
+            async with aiohttp.ClientSession(cookies=self.cookies) as session:
+                async with session.request(
+                    method,
+                    url,
+                    headers=headers,
+                    **kwargs
+                ) as response:
+                    if response.status == 401:
+                        logger.info("Got 401, trying with captcha...")
+                        result = await self.handle_401_response(url)
+                        if result:
+                            return result, dict(response.headers)
+                        logger.error("Failed to handle 401 response")
+                        return None
+                        
+                    if response.status >= 400:
+                        logger.error(f"Request failed with status {response.status}")
+                        return None
+                        
+                    return await response.json(), dict(response.headers)
+                    
+        except Exception as e:
+            logger.error(f"Request failed: {e}")
             return None 

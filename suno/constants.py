@@ -13,7 +13,7 @@ CLERK_JS_VERSION = "5.43.6"
 class URLs:
     """所有API端点的URL常量"""
     CLERK_BASE = "https://clerk.suno.com"
-    SUNO_BASE = "https://studio-api.suno.ai"
+    SUNO_BASE = "https://studio-api.prod.suno.com"
     
     # Clerk认证相关
     VERIFY = f"{CLERK_BASE}/v1/client/verify"
@@ -21,6 +21,8 @@ class URLs:
     
     # Suno API
     BILLING_INFO = f"{SUNO_BASE}/api/billing/info/"
+    PLAYLIST = f"{SUNO_BASE}/api/playlist/{{playlist_id}}/"
+    FEED = f"{SUNO_BASE}/api/feed/v2"
     
     # Captcha相关
     CAPSOLVER_CREATE = "https://api.capsolver.com/createTask"
