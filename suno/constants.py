@@ -9,6 +9,26 @@ from typing import Dict, List
 CLERK_API_VERSION = "2024-10-01"
 CLERK_JS_VERSION = "5.43.6"
 
+# 重试配置
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # seconds
+TOKEN_REFRESH_STATUS_CODES = [401, 403]  # 需要刷新token的状态码
+RETRIABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504]  # 可以重试的状态码
+
+# 任务状态
+class TaskStatus:
+    """任务状态常量"""
+    SUBMITTED = "submitted"
+    PROCESSING = "processing"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    ERROR = "error"
+    
+    # 终态状态列表
+    FINAL_STATES = [COMPLETE, FAILED, ERROR]
+    # 可以重试的状态
+    RETRIABLE_STATES = [FAILED, ERROR]
+
 # API 端点
 class URLs:
     """所有API端点的URL常量"""

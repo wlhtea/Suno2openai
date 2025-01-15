@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 import uuid
+import json
 # 加载环境变量
 load_dotenv('test.env')
 
@@ -73,12 +74,48 @@ async def test_get_playlist(songs_gen):
 async def generate_music(songs_gen):
     """测试生成音乐"""
     try:
-        prompt = "A beautiful sunset over a calm ocean"
-        title = "Sunset at the Beach"
-        result = await songs_gen.generate_music(prompt, title)
+        prompt = """[Intro]
+                    Hey hey
+
+                    [Chorus: Elton John type]
+                    Long time no see
+                    I've been finally 20
+                    You came to see how the view works
+                    And I love you like a new word
+
+                    [Post-Chorus]
+                    Wow
+
+                    [Chorus: MJ type]
+                    Where have you been?
+                    I got my air dirty now
+                    Past that dying bird
+                    You look like you can't believe it
+
+                    [Verse: Paul McCartney type]
+                    And I hate it when you call me
+                    I hate it when you miss me
+                    Come home to your new world
+                    I love you like a songbird
+
+                    [Verse 3]
+                    Maybe if you get yourself a little closer
+                    You'd see the best part of me
+                    Darling there's more than words to
+                    Everything that's shitty in the air again"""
+        title = "Long Time No See"
+        result, error_message = await songs_gen.generate_music(prompt=prompt, title=title, mv="chirp-v3-5")
+        
+        if error_message:
+            logger.error(f"Failed to generate music: {error_message}")
+            if "Insufficient credits" in error_message:
+                logger.error("No credits available to generate music")
+                return None, None
+            return None, None
+            
         if not result:
-            logger.error("Failed to generate music")
-            return None
+            logger.error("Failed to generate music with no error message")
+            return None, None
             
         logger.info(f"Generate music result: {result}")
         
@@ -90,24 +127,52 @@ async def generate_music(songs_gen):
                 logger.info(f"Clip {i}: {clip_id}")
         else:
             logger.error("Failed to extract clip IDs")
-            return None
+            return None, None
             
         return result, clip_ids
         
     except Exception as e:
         logger.error(f"Generate music test failed: {e}")
-        return None
+        return None, None
 
-async def test_get_feed(songs_gen,ids=None):
+async def test_get_feed(songs_gen, ids=None):
     """测试获取歌曲任务状态"""
     try:
+        if ids is None or not ids:
+            ids = ['9425da8a-ad79-455a-af54-70e5df52c7e7', 'e3ec7b95-e390-40dc-bb33-fa789aadca37']
+            
+        logger.info(f"Checking status for clips: {ids}")
+            
+        # 获取初始状态
         feed_data = await songs_gen.get_feed(ids)
-        if feed_data:
-            logger.info(f"Got feed data for {len(ids)} songs")
-            return feed_data
-        else:
-            logger.error("Failed to get feed data")
+        if not feed_data:
+            logger.error("Failed to get initial feed data")
             return None
+            
+        logger.info("\nInitial Feed Response:")
+        logger.info("-" * 50)
+        # 记录完整的响应数据
+        logger.info(json.dumps(feed_data, indent=2))
+        logger.info("-" * 50)
+        
+        # 持续检查任务状态
+        final_status = await songs_gen.check_task_status(
+            ids,
+            interval=2,  # 每2秒检查一次
+            timeout=300  # 最多等待5分钟
+        )
+        
+        if final_status:
+            logger.info("\nFinal Feed Response:")
+            logger.info("-" * 50)
+            # 记录完整的最终响应数据
+            logger.info(json.dumps(final_status, indent=2))
+            logger.info("-" * 50)
+            return final_status
+        else:
+            logger.error("Failed to get final task status")
+            return None
+            
     except Exception as e:
         logger.error(f"Get feed test failed: {e}")
         return None
@@ -128,7 +193,7 @@ async def main():
             if limit_result < 0:
                 logger.error("Failed to get remaining credits")
                 return
-            pass
+
             # 测试获取播放列表
             playlist_result = await test_get_playlist(songs_gen)
             if not playlist_result:
@@ -136,19 +201,18 @@ async def main():
                 return
 
             # 测试生成音乐
-            music_result,ids = await generate_music(songs_gen)
+            music_result, clip_ids = await generate_music(songs_gen)
             if not music_result:
                 logger.error("Failed to generate music")
                 return
-            
+                
             # 测试获取歌曲任务状态
-            if ids is None:
-                ids = ['9425da8a-ad79-455a-af54-70e5df52c7e7', 'e3ec7b95-e390-40dc-bb33-fa789aadca37']
-            feed_result = await test_get_feed(songs_gen,ids)
-            logger.info(f"Feed result: {feed_result}")
-            if not feed_result:
-                logger.error("Failed to get feed data")
-                return
+            if clip_ids:
+                feed_result = await test_get_feed(songs_gen, clip_ids)
+                if not feed_result:
+                    logger.error("Failed to get feed data")
+                    return
+                    
             logger.info("All tests completed successfully")
             
     except Exception as e:
