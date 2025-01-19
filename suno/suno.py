@@ -48,6 +48,7 @@ class SongsGen:
             
         if not self.cookie_dict:
             raise ValueError("Invalid cookie format")
+            
         
         # Initialize HTTP clients
         self.token_client = HttpClient(self.base_headers, self.cookie_dict, PROXY)
@@ -269,8 +270,9 @@ class SongsGen:
 
     async def generate_music(
         self,
-        prompt: str,
-        title: str,
+        token: str = None,
+        prompt: str = None,
+        title: str = None,
         tags: str = "",
         negative_tags: str = "",
         mv: str = "chirp-v4",
@@ -318,7 +320,7 @@ class SongsGen:
         try:
             # Prepare request data
             data = {
-                "token": None,
+                "token": token,
                 "prompt": prompt,
                 "generation_type": generation_type,
                 "tags": tags,
@@ -334,7 +336,9 @@ class SongsGen:
                 "artist_clip_id": artist_clip_id,
                 "artist_start_s": artist_start_s,
                 "artist_end_s": artist_end_s,
-                "metadata": metadata or {}
+                "metadata": metadata or {"lyrics_model": "default"},
+                "make_instrumental": False,
+                "user_uploaded_images_b64": [],
             }
             
             # Get headers and add content-type
@@ -811,6 +815,7 @@ class SongsGen:
                     ) as response:
                         result, should_retry = await self._handle_feed_response(response, ids)
                         if result:
+                            logger.info(result)
                             return result
                         if not should_retry:
                             return None
@@ -892,3 +897,97 @@ class SongsGen:
             headers["session-id"] = self.notification_session_id
             
         return headers
+
+    async def get_notification(self, after_datetime_utc: str = None) -> Optional[Dict]:
+        """
+        Get notifications after a specific datetime
+        
+        Args:
+            after_datetime_utc: UTC datetime string in format "YYYY-MM-DDTHH:MM:SS.sssZ"
+                           If None, defaults to a future date
+    
+        Returns:
+            Notification data dictionary or None if failed
+        """
+        if self._closed:
+            raise RuntimeError("SongsGen instance is closed")
+        
+        if not self.auth_token:
+            logger.error("No auth token available")
+            return None
+        
+        try:
+            # If no datetime provided, use a future date
+            if not after_datetime_utc:
+                # Use a date far in the future to ensure we get all notifications
+                after_datetime_utc = "2025-01-19T09:58:43.194Z"
+            
+            # Prepare query parameters
+            params = {
+                "after_datetime_utc": after_datetime_utc
+            }
+            
+            # Get headers
+            headers = self._get_common_headers()
+            
+            # Make request
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{URLs.SUNO_BASE}/api/notification",
+                    headers=headers,
+                    params=params
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        logger.info(f"Got notification response: {data}")
+                        return data
+                    else:
+                        logger.error(f"Failed to get notifications: {response.status}")
+                        return None
+                    
+        except Exception as e:
+            logger.error(f"Failed to get notifications: {e}")
+            return None
+
+    async def check_generation_permission(self) -> Optional[Dict]:
+        """
+        Check if user has permission to generate music
+        
+        Returns:
+            Response data dictionary or None if failed
+        """
+        if self._closed:
+            raise RuntimeError("SongsGen instance is closed")
+        
+        if not self.auth_token:
+            logger.error("No auth token available")
+            return None
+        
+        try:
+            # Get headers
+            headers = self._get_common_headers()
+            headers["content-type"] = "text/plain;charset=UTF-8"
+            
+            # Request data
+            data = {
+                "ctype": "generation"
+            }
+            
+            # Make request
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{URLs.SUNO_BASE}/api/c/check",
+                    headers=headers,
+                    json=data
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        logger.info(f"Generation permission check response: {data}")
+                        return data
+                    else:
+                        logger.error(f"Failed to check generation permission: {response.status}")
+                        return None
+                    
+        except Exception as e:
+            logger.error(f"Failed to check generation permission: {e}")
+            return None

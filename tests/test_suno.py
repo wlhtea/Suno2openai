@@ -74,6 +74,18 @@ async def test_get_playlist(songs_gen):
 async def generate_music(songs_gen):
     """测试生成音乐"""
     try:
+        # 检查生成权限
+        check_result = await songs_gen.check_generation_permission()
+        if check_result is None:
+            logger.error("Failed to check generation permission")
+            return None, None
+            
+        # 获取通知连接
+        notification_data = await songs_gen.get_notification()
+        if notification_data is None:
+            logger.error("Failed to establish notification connection")
+            return None, None
+
         prompt = """[Intro]
                     Hey hey
 
@@ -104,7 +116,8 @@ async def generate_music(songs_gen):
                     Darling there's more than words to
                     Everything that's shitty in the air again"""
         title = "Long Time No See"
-        result, error_message = await songs_gen.generate_music(prompt=prompt, title=title, mv="chirp-v3-5")
+        token = "P1_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.hadwYXNza2V5xQWl4F9ZWvTC4PKjA9_7UaEUvAGavE7TUZFXqRE5Gqy9zBjYxg84Z_rZMMpKEjwcl1wQ2RTZr6-0hi2vB30pHD82wHPsGe3-986iOT-zFOiMDW4PSWu38XuobMQNDjhX_EeEHRh1sgFS8baPQBYMAMmpGLhfutQk7J284CdhlCEuVe6c_VAWfvmQ_MVFRxQNVsIN_32_Du4N54vFFt0SPE-4hiLfiMNedvBe4vlAxPmdGoIgpNttYpxJbhkfNI2pBlwgCdltLir--jwT5o9kD2cu4WEXqjEhVUCWXMPqQahG4-onQ5FkG7VAEcymJ3Xp78OhmdzS_4WO_tw3T5vlnX2oPFFY_XH3lccNwPFoQExjPqrrtoGD6i1FtbVW294BmcgyEIqKMrb4m97gCqsnqROUDpnE_vvm0q3__AGj33szloiWH92Vn4-zL0BUOkJwR65OqUFN4ZlRNSD7mVxUM9h9-afPuPQPK7PF-WkAT0AugMQdbkYkHecSZ9XVKVaLI-EXp3lM6J5avr5YwTa5yt7iIkLCbHNtV7b_kDEDcfojkB3FCBYcd5pah9Jyh_LIIo4rAoLoC074LomvkuvuVdkKuFdi7ZJeqj5hG8tPV7b4WF84ylP95A7vAA4cTnjWtKciJ94SIMKcAwIloath4omzPIkBoSOO81nzwzrCq080fVLi6yxVnnhAq4kqa_84skMT_ryaUv3dGvxtKO48IT3pzq-dzjDf1zBkhqvxG7I8y4bZfHn5aq_BtDAYjn5GejD6BvOc57-pNIKwhVh6aqvVrLOHK54TGGkZX1m0yL67Z4jeR32PkDZMa0WQ7XBMznLn4dv1ad6E3EPYwvX302MXFSQTIcHckhBzjqYlJNluk7CmJ0rqbZ442OcW1V4clcE_tWqKd2oitE5yIBM-UHAejMdlE8_6MyLHOYKqXEF5aEgFsChr8ff68yuTaJj1Bd5xQugm7NNB0-kKuoFYr1zDvwwOdPX3R2i1lS5koogf8g2zY8pROMRb47Gubhqx5LSX7rWgr-6xr4J44AOEWkPkgMacUHNmblzbZz_LE2Z390JoyuVtVPnHRZrvQsGcZhTpAVVDHnUxd4sP7zKoMnkCBK5ww5u8LP3pzKMXe0MWfS0mQPZcails-KJNqKibax6wZA7Vu7GA5r8d6GktS2lwjETOunAvEaXRHpZ8yDWsAm3po_kjjYmPDHZezS9eMVmB45Wiasa2__Gp-awFNXaY1mkpQhlKZOQ4PU3c_uVG2QVYQKe2ovsJGV15aN3SsWExb-0rt6d4OjIF7gR_uqh4vYcFGSq0nOsIXeazV7MwVjq7xusVMyjJCVJB9YglU9rk2XFOdd0I1RWBACUB30QhgiW8-T3EusLY587d6y8BtqUgTjgObMi64GgUg9QT4qUPFZnDiglnsIEORUXzHevbH3ss0UKOtMJ7gTZHFtie9ACbIXIfVQ1TD8y8kIAFFf5_nhJD74gUK8EwtdxgpL6N8g-kf_0P_Y8X40s0j_0W5v_bOnhaXFQBImUymnTtqG2ggEjnfoOHwzgQEWb1AhBLyCex-vXLHEForPv4oW8oLAYUbfuOXgOsOEUn_bm0L-9auIYO8Vit2sx-BSvSNt7WqzQrABJG4obR35ToXxEeLfmIZ6kWAb2TE9PaFNAMsaRabUY5I0DNDyDeOmVxwqsXxbuxZFIVpqttT9-28xEjFo4pGP0aYmbdkj2MJHVMJ4xo7vxfPRD01M9hIAE6sWlJhnRPSSguwEZRXpOuN0Ud7Kho1HzFhzqRFi7V3vnX2JdiwTyJUMP-ACZntgSzKmwroxWoRE4WK2usDfZTtj1Db7vjTquARPTJvyVjWs5Xm7J9yfUksfWxvbO6uszAmgDl4kbm5QvSVlcS6p9y-cDBhzNZ3hEMgTCDMKg-FdOlwRs8XaPZmIKjZXhwzmeMya-oc2hhcmRfaWTODTtkKaJrcqg0N2ZjZTdlMqJwZAA.oKjo4bHJHmyoDXgUmvqRkD66aXv8moqPp3fq5ihS3SU"
+        result, error_message = await songs_gen.generate_music(token=token, prompt=prompt, title=title, mv="chirp-v3-5")
         
         if error_message:
             logger.error(f"Failed to generate music: {error_message}")

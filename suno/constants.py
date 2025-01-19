@@ -47,6 +47,9 @@ class URLs:
     # Captcha相关
     CAPSOLVER_CREATE = "https://api.capsolver.com/createTask"
     CAPSOLVER_RESULT = "https://api.capsolver.com/getTaskResult"
+    
+    # Check
+    CHECK = f"{SUNO_BASE}/api/c/check"
 
 # Captcha配置
 class CaptchaConfig:

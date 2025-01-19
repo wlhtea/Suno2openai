@@ -89,6 +89,7 @@ class DatabaseManager:
                             count INT,
                             time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                             add_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            captcha_token TEXT,
                             UNIQUE(cookie(191))
                         )
                     """)
@@ -430,6 +431,40 @@ class DatabaseManager:
             except Exception as e:
                 await conn.rollback()
                 raise HTTPException(status_code=500, detail=f"{str(e)}")
+
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
+    async def update_captcha_token(self, cookie: str, captcha_token: str):
+        """更新指定cookie的captcha_token"""
+        await self.create_pool()
+        async with self.pool.acquire() as conn:
+            try:
+                async with conn.cursor() as cur:
+                    await cur.execute('''
+                        UPDATE suno2openai
+                        SET captcha_token = %s
+                        WHERE cookie = %s
+                    ''', (captcha_token, cookie))
+                    await conn.commit()
+            except Exception as e:
+                await conn.rollback()
+                raise HTTPException(status_code=500, detail=f"更新captcha_token失败: {str(e)}")
+
+    @retry(stop=stop_after_attempt(RETRIES + 2), wait=wait_random(min=0.10, max=0.3))
+    async def get_captcha_token(self, cookie: str) -> str:
+        """获取指定cookie的captcha_token"""
+        await self.create_pool()
+        async with self.pool.acquire() as conn:
+            try:
+                async with conn.cursor(aiomysql.DictCursor) as cur:
+                    await cur.execute('''
+                        SELECT captcha_token 
+                        FROM suno2openai 
+                        WHERE cookie = %s
+                    ''', (cookie,))
+                    result = await cur.fetchone()
+                    return result['captcha_token'] if result else None
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"获取captcha_token失败: {str(e)}")
 
 # async def main():
 #     db_manager = DatabaseManager('127.0.0.1', 3306, 'root', '12345678', 'WSunoAPI')

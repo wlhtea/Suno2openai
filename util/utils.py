@@ -21,18 +21,23 @@ COMMON_HEADERS = {
 }
 
 
-async def fetch(url, headers=None, data=None, method="POST"):
+async def fetch(url, headers=None, data=None, method="POST", captcha_token=None):
     try:
         if headers is None:
             headers = {}
         headers.update(COMMON_HEADERS)
+        
+        # 如果提供了captcha_token，添加到请求头中
+        if captcha_token:
+            headers['X-Captcha-Token'] = captcha_token
+            
         if data is not None:
             data = json.dumps(data)
 
         async with aiohttp.ClientSession() as session:
             async with session.request(method=method, url=url, data=data, headers=headers, proxy=PROXY) as resp:
                 if resp.status != 200:
-                    raise ValueError(f"请求状态码：{resp.status}，请求报错：{resp.text()}")
+                    raise ValueError(f"请求状态码：{resp.status}，请求报错：{await resp.text()}")
                 return await resp.json()
     except Exception as e:
         raise ValueError(f"Error fetching data:{e}")
